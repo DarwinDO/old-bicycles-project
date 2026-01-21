@@ -1,136 +1,338 @@
-import React, { useState } from 'react';
-import { Row, Col, Card, Input, Select, Slider, Checkbox, Typography, Pagination, Tag, Button, Breadcrumb, Space, Divider } from 'antd';
-import { SearchOutlined, FilterOutlined } from '@ant-design/icons';
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
+import { Search, MapPin, SlidersHorizontal, Grid3X3, List, Shield, X } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Card, CardContent, CardFooter } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Separator } from '@/components/ui/separator'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
+import { cn } from '@/lib/utils'
 
-const { Title, Text } = Typography;
-const { Option } = Select;
-const { Meta } = Card;
+const bikes = [
+    { id: 1, name: 'Giant TCR Advanced Pro', price: 25000000, location: 'Hồ Chí Minh', condition: 'Như mới', category: 'Road', brand: 'Giant', image: 'https://images.unsplash.com/photo-1576435728678-68d0fbf94e91?w=400', verified: true },
+    { id: 2, name: 'Specialized Tarmac SL6', price: 35000000, location: 'Hà Nội', condition: 'Đã qua sử dụng', category: 'Road', brand: 'Specialized', image: 'https://images.unsplash.com/photo-1571333250630-f0230c320b6d?w=400', verified: false },
+    { id: 3, name: 'Trek Domane SL5', price: 28000000, location: 'Đà Nẵng', condition: 'Tốt', category: 'Road', brand: 'Trek', image: 'https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=400', verified: true },
+    { id: 4, name: 'Canyon Ultimate CF SL', price: 32000000, location: 'Hồ Chí Minh', condition: 'Như mới', category: 'Road', brand: 'Canyon', image: 'https://images.unsplash.com/photo-1507035895480-2b3156c31fc8?w=400', verified: false },
+    { id: 5, name: 'Trek Marlin 7', price: 15000000, location: 'Hà Nội', condition: 'Tốt', category: 'MTB', brand: 'Trek', image: 'https://images.unsplash.com/photo-1544191696-102dbdaeeaa0?w=400', verified: true },
+    { id: 6, name: 'Giant XTC Advanced', price: 42000000, location: 'Đà Nẵng', condition: 'Như mới', category: 'MTB', brand: 'Giant', image: 'https://images.unsplash.com/photo-1532298229144-0ec0c57515c7?w=400', verified: false },
+    { id: 7, name: 'Cannondale Topstone', price: 38000000, location: 'Hồ Chí Minh', condition: 'Đã qua sử dụng', category: 'Gravel', brand: 'Cannondale', image: 'https://images.unsplash.com/photo-1571068316344-75bc76f77890?w=400', verified: true },
+    { id: 8, name: 'Specialized Diverge', price: 29000000, location: 'Hà Nội', condition: 'Tốt', category: 'Gravel', brand: 'Specialized', image: 'https://images.unsplash.com/photo-1505705694340-019e1e335916?w=400', verified: false },
+]
 
-const BikeListingPage = () => {
-    // Mock Data
-    const bikes = Array.from({ length: 12 }).map((_, i) => ({
-        id: i + 1,
-        name: `Xe Đạp Thể Thao Sample ${i + 1}`,
-        price: `${(20 + i * 1.5).toFixed(1)}00,000 ₫`,
-        location: i % 2 === 0 ? 'Hồ Chí Minh' : 'Hà Nội',
-        condition: i % 3 === 0 ? 'Như mới' : 'Đã qua sử dụng',
-        brand: ['Giant', 'Trek', 'Specialized', 'Cannondale'][i % 4],
-        category: ['Road', 'MTB', 'Touring'][i % 3],
-        image: `https://images.unsplash.com/photo-${['1576435728678-68d0fbf94e91', '1571333250630-f0230c320b6d', '1485965120184-e220f721d03e'][i % 3]}?w=400`
-    }));
+const categories = ['Tất cả', 'Road', 'MTB', 'Gravel', 'Touring', 'City']
+const brands = ['Giant', 'Trek', 'Specialized', 'Canyon', 'Cannondale', 'Bianchi']
+const conditions = ['Như mới', 'Tốt', 'Đã qua sử dụng', 'Cần sửa chữa']
+
+function formatPrice(price: number): string {
+    return new Intl.NumberFormat('vi-VN', {
+        style: 'currency',
+        currency: 'VND',
+        maximumFractionDigits: 0
+    }).format(price)
+}
+
+interface FilterSectionProps {
+    title: string
+    children: React.ReactNode
+}
+
+function FilterSection({ title, children }: FilterSectionProps) {
+    return (
+        <div className="space-y-3">
+            <h4 className="font-medium text-foreground">{title}</h4>
+            {children}
+        </div>
+    )
+}
+
+export default function BikeListingPage() {
+    const [searchQuery, setSearchQuery] = useState('')
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+    const [selectedCategory, setSelectedCategory] = useState('Tất cả')
+    const [selectedBrands, setSelectedBrands] = useState<string[]>([])
+    const [selectedConditions, setSelectedConditions] = useState<string[]>([])
+    const [verifiedOnly, setVerifiedOnly] = useState(false)
+
+    const toggleBrand = (brand: string) => {
+        setSelectedBrands(prev =>
+            prev.includes(brand) ? prev.filter(b => b !== brand) : [...prev, brand]
+        )
+    }
+
+    const toggleCondition = (condition: string) => {
+        setSelectedConditions(prev =>
+            prev.includes(condition) ? prev.filter(c => c !== condition) : [...prev, condition]
+        )
+    }
+
+    const filteredBikes = bikes.filter(bike => {
+        if (selectedCategory !== 'Tất cả' && bike.category !== selectedCategory) return false
+        if (selectedBrands.length > 0 && !selectedBrands.includes(bike.brand)) return false
+        if (selectedConditions.length > 0 && !selectedConditions.includes(bike.condition)) return false
+        if (verifiedOnly && !bike.verified) return false
+        if (searchQuery && !bike.name.toLowerCase().includes(searchQuery.toLowerCase())) return false
+        return true
+    })
+
+    const activeFiltersCount = selectedBrands.length + selectedConditions.length + (verifiedOnly ? 1 : 0)
+
+    const FilterContent = () => (
+        <div className="space-y-6">
+            <FilterSection title="Loại xe">
+                <div className="flex flex-wrap gap-2">
+                    {categories.map(cat => (
+                        <Button
+                            key={cat}
+                            variant={selectedCategory === cat ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => setSelectedCategory(cat)}
+                        >
+                            {cat}
+                        </Button>
+                    ))}
+                </div>
+            </FilterSection>
+
+            <Separator />
+
+            <FilterSection title="Thương hiệu">
+                <div className="space-y-2">
+                    {brands.map(brand => (
+                        <label key={brand} className="flex items-center gap-2 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={selectedBrands.includes(brand)}
+                                onChange={() => toggleBrand(brand)}
+                                className="h-4 w-4 rounded border-input text-primary focus:ring-primary"
+                            />
+                            <span className="text-sm">{brand}</span>
+                        </label>
+                    ))}
+                </div>
+            </FilterSection>
+
+            <Separator />
+
+            <FilterSection title="Tình trạng">
+                <div className="space-y-2">
+                    {conditions.map(condition => (
+                        <label key={condition} className="flex items-center gap-2 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={selectedConditions.includes(condition)}
+                                onChange={() => toggleCondition(condition)}
+                                className="h-4 w-4 rounded border-input text-primary focus:ring-primary"
+                            />
+                            <span className="text-sm">{condition}</span>
+                        </label>
+                    ))}
+                </div>
+            </FilterSection>
+
+            <Separator />
+
+            <FilterSection title="Khác">
+                <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                        type="checkbox"
+                        checked={verifiedOnly}
+                        onChange={(e) => setVerifiedOnly(e.target.checked)}
+                        className="h-4 w-4 rounded border-input text-primary focus:ring-primary"
+                    />
+                    <span className="text-sm flex items-center gap-1">
+                        <Shield className="h-3.5 w-3.5 text-primary" />
+                        Chỉ xe đã kiểm định
+                    </span>
+                </label>
+            </FilterSection>
+        </div>
+    )
 
     return (
-        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px' }}>
-            <Breadcrumb style={{ marginBottom: '24px' }} items={[
-                { title: 'Trang chủ' },
-                { title: 'Mua xe' }
-            ]} />
+        <div className="min-h-screen bg-background">
+            {/* Page Header */}
+            <div className="border-b bg-muted/40">
+                <div className="container mx-auto px-4 py-8">
+                    <h1 className="text-2xl font-bold text-foreground md:text-3xl">
+                        Tất cả Xe Đạp
+                    </h1>
+                    <p className="mt-2 text-muted-foreground">
+                        Tìm thấy <span className="font-medium text-foreground">{filteredBikes.length}</span> xe đạp
+                    </p>
+                </div>
+            </div>
 
-            <Row gutter={32}>
-                {/* Filters Sidebar */}
-                <Col xs={24} md={6}>
-                    <Card title={<><FilterOutlined /> Bộ lọc</>} style={{ marginBottom: '24px' }}>
-                        <div style={{ marginBottom: '24px' }}>
-                            <Text strong>Danh mục</Text>
-                            <div style={{ marginTop: '8px' }}>
-                                <Checkbox.Group style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                    <Checkbox value="road">Road Bike</Checkbox>
-                                    <Checkbox value="mtb">Mountain Bike</Checkbox>
-                                    <Checkbox value="touring">Touring</Checkbox>
-                                    <Checkbox value="gravel">Gravel</Checkbox>
-                                </Checkbox.Group>
+            <div className="container mx-auto px-4 py-6">
+                <div className="flex gap-8">
+                    {/* Desktop Sidebar Filters */}
+                    <aside className="hidden w-64 shrink-0 lg:block">
+                        <div className="sticky top-24">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="font-semibold text-foreground">Bộ lọc</h3>
+                                {activeFiltersCount > 0 && (
+                                    <Button variant="ghost" size="sm" onClick={() => {
+                                        setSelectedBrands([])
+                                        setSelectedConditions([])
+                                        setVerifiedOnly(false)
+                                    }}>
+                                        Xóa tất cả
+                                    </Button>
+                                )}
                             </div>
+                            <FilterContent />
                         </div>
+                    </aside>
 
-                        <div style={{ marginBottom: '24px' }}>
-                            <Text strong>Khoảng giá</Text>
-                            <Slider range defaultValue={[0, 100]} tooltip={{ formatter: (value) => `${value}M` }} style={{ marginTop: '16px' }} />
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px' }}>
-                                <Text type="secondary">0đ</Text>
-                                <Text type="secondary">100tr+</Text>
+                    {/* Main Content */}
+                    <div className="flex-1">
+                        {/* Search and Controls */}
+                        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="relative flex-1 max-w-md">
+                                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                                <Input
+                                    placeholder="Tìm kiếm xe đạp..."
+                                    className="pl-10"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                />
                             </div>
-                        </div>
 
-                        <div style={{ marginBottom: '24px' }}>
-                            <Text strong>Thương hiệu</Text>
-                            <Select placeholder="Chọn thương hiệu" style={{ width: '100%', marginTop: '8px' }} mode="multiple">
-                                <Option value="giant">Giant</Option>
-                                <Option value="trek">Trek</Option>
-                                <Option value="specialized">Specialized</Option>
-                                <Option value="cannondale">Cannondale</Option>
-                            </Select>
-                        </div>
-
-                        <div style={{ marginBottom: '24px' }}>
-                            <Text strong>Tình trạng</Text>
-                            <div style={{ marginTop: '8px' }}>
-                                <Checkbox.Group style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                    <Checkbox value="new">Mới 100%</Checkbox>
-                                    <Checkbox value="like-new">Như mới</Checkbox>
-                                    <Checkbox value="used">Đã qua sử dụng</Checkbox>
-                                </Checkbox.Group>
-                            </div>
-                        </div>
-
-                        <Button type="primary" block>Áp dụng</Button>
-                    </Card>
-                </Col>
-
-                {/* Listing Content */}
-                <Col xs={24} md={18}>
-                    <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-                        <Title level={3} style={{ margin: 0 }}>Tất cả xe đạp</Title>
-
-                        <div style={{ display: 'flex', gap: '16px', flex: 1, justifyContent: 'flex-end', alignItems: 'center' }}>
-                            <Input prefix={<SearchOutlined />} placeholder="Tìm kiếm xe..." style={{ maxWidth: '300px' }} />
-                            <Select defaultValue="newest" style={{ width: 150 }}>
-                                <Option value="newest">Mới nhất</Option>
-                                <Option value="price-asc">Giá tăng dần</Option>
-                                <Option value="price-desc">Giá giảm dần</Option>
-                            </Select>
-                        </div>
-                    </div>
-
-                    <Row gutter={[24, 24]}>
-                        {bikes.map(bike => (
-                            <Col xs={24} sm={12} lg={8} key={bike.id}>
-                                <Card
-                                    hoverable
-                                    cover={
-                                        <div style={{ position: 'relative', height: '180px', overflow: 'hidden' }}>
-                                            <img alt={bike.name} src={bike.image} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                            <Tag color={bike.condition === 'Như mới' ? 'green' : 'blue'} style={{ position: 'absolute', top: 10, right: 10 }}>
-                                                {bike.condition}
-                                            </Tag>
+                            <div className="flex items-center gap-2">
+                                {/* Mobile Filter Button */}
+                                <Sheet>
+                                    <SheetTrigger asChild>
+                                        <Button variant="outline" className="lg:hidden">
+                                            <SlidersHorizontal className="mr-2 h-4 w-4" />
+                                            Bộ lọc
+                                            {activeFiltersCount > 0 && (
+                                                <Badge variant="secondary" className="ml-2">
+                                                    {activeFiltersCount}
+                                                </Badge>
+                                            )}
+                                        </Button>
+                                    </SheetTrigger>
+                                    <SheetContent side="left" className="w-[300px] overflow-y-auto">
+                                        <SheetHeader>
+                                            <SheetTitle>Bộ lọc</SheetTitle>
+                                        </SheetHeader>
+                                        <div className="mt-6">
+                                            <FilterContent />
                                         </div>
-                                    }
-                                >
-                                    <Meta
-                                        title={<div style={{ fontSize: '15px' }}>{bike.name}</div>}
-                                        description={
-                                            <div>
-                                                <div style={{ color: '#1890ff', fontSize: '16px', fontWeight: 'bold', margin: '4px 0' }}>
-                                                    {bike.price}
+                                    </SheetContent>
+                                </Sheet>
+
+                                {/* View Mode Toggle */}
+                                <div className="hidden sm:flex items-center border rounded-lg">
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className={cn("rounded-r-none", viewMode === 'grid' && "bg-muted")}
+                                        onClick={() => setViewMode('grid')}
+                                    >
+                                        <Grid3X3 className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className={cn("rounded-l-none", viewMode === 'list' && "bg-muted")}
+                                        onClick={() => setViewMode('list')}
+                                    >
+                                        <List className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Active Filters */}
+                        {activeFiltersCount > 0 && (
+                            <div className="mb-4 flex flex-wrap gap-2">
+                                {selectedBrands.map(brand => (
+                                    <Badge key={brand} variant="secondary" className="gap-1">
+                                        {brand}
+                                        <X className="h-3 w-3 cursor-pointer" onClick={() => toggleBrand(brand)} />
+                                    </Badge>
+                                ))}
+                                {selectedConditions.map(condition => (
+                                    <Badge key={condition} variant="secondary" className="gap-1">
+                                        {condition}
+                                        <X className="h-3 w-3 cursor-pointer" onClick={() => toggleCondition(condition)} />
+                                    </Badge>
+                                ))}
+                                {verifiedOnly && (
+                                    <Badge variant="secondary" className="gap-1">
+                                        Đã kiểm định
+                                        <X className="h-3 w-3 cursor-pointer" onClick={() => setVerifiedOnly(false)} />
+                                    </Badge>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Bike Grid/List */}
+                        {filteredBikes.length > 0 ? (
+                            <div className={cn(
+                                "grid gap-6",
+                                viewMode === 'grid'
+                                    ? "grid-cols-1 sm:grid-cols-2 xl:grid-cols-3"
+                                    : "grid-cols-1"
+                            )}>
+                                {filteredBikes.map((bike) => (
+                                    <Link key={bike.id} to={`/bikes/${bike.id}`}>
+                                        <Card className={cn(
+                                            "group overflow-hidden transition-all hover:shadow-lg cursor-pointer",
+                                            viewMode === 'list' && "flex"
+                                        )}>
+                                            <div className={cn(
+                                                "relative overflow-hidden",
+                                                viewMode === 'grid' ? "aspect-[4/3]" : "w-48 shrink-0"
+                                            )}>
+                                                <img
+                                                    src={bike.image}
+                                                    alt={bike.name}
+                                                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                                />
+                                                <div className="absolute left-3 top-3 flex gap-2">
+                                                    <Badge variant="success">{bike.condition}</Badge>
+                                                    {bike.verified && (
+                                                        <Badge variant="secondary" className="gap-1">
+                                                            <Shield className="h-3 w-3" />
+                                                        </Badge>
+                                                    )}
                                                 </div>
-                                                <Space direction="horizontal" split={<Divider type="vertical" />} style={{ fontSize: '12px' }}>
-                                                    <Text type="secondary">{bike.brand}</Text>
-                                                    <Text type="secondary">{bike.location}</Text>
-                                                </Space>
                                             </div>
-                                        }
-                                    />
-                                </Card>
-                            </Col>
-                        ))}
-                    </Row>
-
-                    <div style={{ marginTop: '40px', textAlign: 'center' }}>
-                        <Pagination defaultCurrent={1} total={50} />
+                                            <div className={cn(viewMode === 'list' && "flex flex-1 flex-col")}>
+                                                <CardContent className="p-4">
+                                                    <div className="text-xs text-muted-foreground mb-1">{bike.category} • {bike.brand}</div>
+                                                    <h3 className="font-semibold text-foreground line-clamp-1 group-hover:text-primary transition-colors">
+                                                        {bike.name}
+                                                    </h3>
+                                                    <p className="mt-2 text-lg font-bold text-primary">
+                                                        {formatPrice(bike.price)}
+                                                    </p>
+                                                </CardContent>
+                                                <CardFooter className={cn("border-t px-4 py-3", viewMode === 'list' && "mt-auto")}>
+                                                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                                                        <MapPin className="h-3.5 w-3.5" />
+                                                        {bike.location}
+                                                    </div>
+                                                </CardFooter>
+                                            </div>
+                                        </Card>
+                                    </Link>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="py-16 text-center">
+                                <div className="mx-auto h-24 w-24 rounded-full bg-muted flex items-center justify-center mb-4">
+                                    <Search className="h-10 w-10 text-muted-foreground" />
+                                </div>
+                                <h3 className="text-lg font-medium text-foreground">Không tìm thấy xe đạp</h3>
+                                <p className="mt-2 text-muted-foreground">Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm</p>
+                            </div>
+                        )}
                     </div>
-                </Col>
-            </Row>
+                </div>
+            </div>
         </div>
-    );
-};
-
-export default BikeListingPage;
+    )
+}

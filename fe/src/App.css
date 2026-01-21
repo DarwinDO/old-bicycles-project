@@ -1,75 +1,42 @@
-/* Page Loader */
-.page-loader {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 60vh;
-}
-
-.loader-spinner {
-  width: 48px;
-  height: 48px;
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #d97706;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-/* 404 Not Found Page */
-.not-found-page {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 70vh;
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
   padding: 2rem;
-}
-
-.not-found-content {
   text-align: center;
-  max-width: 480px;
 }
 
-.not-found-code {
-  font-size: 8rem;
-  font-weight: 800;
-  line-height: 1;
-  margin: 0;
-  background: linear-gradient(135deg, #d97706, #f59e0b);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
 }
 
-.not-found-title {
-  font-size: 1.75rem;
-  font-weight: 600;
-  color: #1f2937;
-  margin: 1rem 0 0.5rem;
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
-.not-found-description {
-  color: #6b7280;
-  font-size: 1rem;
-  margin-bottom: 2rem;
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
 }
 
-.not-found-button {
-  display: inline-block;
-  padding: 0.875rem 2rem;
-  background: linear-gradient(135deg, #d97706, #f59e0b);
-  color: white;
-  text-decoration: none;
-  border-radius: 8px;
-  font-weight: 600;
-  transition: transform 0.2s, box-shadow 0.2s;
+.card {
+  padding: 2em;
 }
 
-.not-found-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(217, 119, 6, 0.3);
+.read-the-docs {
+  color: #888;
 }

@@ -1,60 +1,129 @@
-import React from 'react';
-import { Layout, Row, Col, Typography, Space, Divider } from 'antd';
-import { RocketOutlined, FacebookOutlined, InstagramOutlined, YoutubeOutlined } from '@ant-design/icons';
+import { Link } from 'react-router-dom'
+import { Bike, Facebook, Mail, Phone, MapPin } from 'lucide-react'
+import { Separator } from '@/components/ui/separator'
+import { ROUTES } from '@/constants/routes'
 
-const { Footer } = Layout;
-const { Title, Text } = Typography;
+const footerLinks = {
+    marketplace: [
+        { name: 'Mua xe đạp', href: ROUTES.MARKET },
+        { name: 'Bán xe đạp', href: ROUTES.SELL },
+        { name: 'Xe đạp đường trường', href: ROUTES.MARKET },
+        { name: 'Xe đạp địa hình', href: ROUTES.MARKET },
+    ],
+    support: [
+        { name: 'Hướng dẫn mua bán', href: ROUTES.GUIDE },
+        { name: 'Câu hỏi thường gặp', href: ROUTES.GUIDE },
+        { name: 'Liên hệ hỗ trợ', href: ROUTES.GUIDE },
+        { name: 'Báo cáo vi phạm', href: ROUTES.GUIDE },
+    ],
+    company: [
+        { name: 'Giới thiệu', href: '/' },
+        { name: 'Điều khoản sử dụng', href: '/' },
+        { name: 'Chính sách bảo mật', href: '/' },
+        { name: 'Quy chế hoạt động', href: '/' },
+    ],
+}
 
-const AppFooter = () => {
+export default function AppFooter() {
     return (
-        <Footer style={{ background: '#001529', color: 'rgba(255, 255, 255, 0.65)', padding: '60px 0 24px' }}>
-            <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 24px' }}>
-                <Row gutter={[40, 40]}>
-                    <Col xs={24} md={6}>
-                        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '24px', color: '#fff' }}>
-                            <RocketOutlined style={{ fontSize: '24px', marginRight: '8px' }} />
-                            <span style={{ fontSize: '20px', fontWeight: 'bold' }}>BikeExchange</span>
+        <footer className="border-t bg-muted/40">
+            <div className="container mx-auto px-4 py-12">
+                <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
+                    {/* Brand */}
+                    <div className="space-y-4">
+                        <Link to={ROUTES.HOME} className="flex items-center gap-2">
+                            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
+                                <Bike className="h-5 w-5 text-primary-foreground" />
+                            </div>
+                            <span className="text-xl font-bold">BikeExchange</span>
+                        </Link>
+                        <p className="text-sm text-muted-foreground">
+                            Nền tảng mua bán xe đạp thể thao cũ uy tín hàng đầu Việt Nam.
+                            Kết nối người mua và người bán một cách an toàn, minh bạch.
+                        </p>
+                        <div className="flex gap-4">
+                            <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
+                                <Facebook className="h-5 w-5" />
+                            </a>
+                            <a href="mailto:contact@bikeexchange.vn" className="text-muted-foreground hover:text-primary transition-colors">
+                                <Mail className="h-5 w-5" />
+                            </a>
                         </div>
-                        <Text style={{ color: 'rgba(255,255,255,0.45)' }}>
-                            Nền tảng mua bán xe đạp thể thao cũ uy tín và chuyên nghiệp nhất Việt Nam
-                        </Text>
-                    </Col>
-                    <Col xs={24} md={6}>
-                        <Title level={5} style={{ color: '#fff', marginBottom: '24px' }}>Về chúng tôi</Title>
-                        <Space direction="vertical" style={{ width: '100%' }}>
-                            <Text style={{ color: 'rgba(255,255,255,0.65)', cursor: 'pointer' }}>Giới thiệu</Text>
-                            <Text style={{ color: 'rgba(255,255,255,0.65)', cursor: 'pointer' }}>Liên hệ</Text>
-                            <Text style={{ color: 'rgba(255,255,255,0.65)', cursor: 'pointer' }}>Tuyển dụng</Text>
-                        </Space>
-                    </Col>
-                    <Col xs={24} md={6}>
-                        <Title level={5} style={{ color: '#fff', marginBottom: '24px' }}>Hỗ trợ</Title>
-                        <Space direction="vertical" style={{ width: '100%' }}>
-                            <Text style={{ color: 'rgba(255,255,255,0.65)', cursor: 'pointer' }}>Hướng dẫn mua bán</Text>
-                            <Text style={{ color: 'rgba(255,255,255,0.65)', cursor: 'pointer' }}>Chính sách bảo mật</Text>
-                            <Text style={{ color: 'rgba(255,255,255,0.65)', cursor: 'pointer' }}>Điều khoản sử dụng</Text>
-                        </Space>
-                    </Col>
-                    <Col xs={24} md={6}>
-                        <Title level={5} style={{ color: '#fff', marginBottom: '24px' }}>Liên hệ</Title>
-                        <Space direction="vertical" style={{ width: '100%' }}>
-                            <Text style={{ color: 'rgba(255,255,255,0.65)' }}>Email: support@bikeexchange.vn</Text>
-                            <Text style={{ color: 'rgba(255,255,255,0.65)' }}>Hotline: 1900 xxxx</Text>
-                            <Space size="large" style={{ marginTop: '16px' }}>
-                                <FacebookOutlined style={{ fontSize: '24px', color: 'rgba(255,255,255,0.65)', cursor: 'pointer' }} />
-                                <InstagramOutlined style={{ fontSize: '24px', color: 'rgba(255,255,255,0.65)', cursor: 'pointer' }} />
-                                <YoutubeOutlined style={{ fontSize: '24px', color: 'rgba(255,255,255,0.65)', cursor: 'pointer' }} />
-                            </Space>
-                        </Space>
-                    </Col>
-                </Row>
-                <Divider style={{ borderColor: 'rgba(255,255,255,0.15)' }} />
-                <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.45)' }}>
-                    BikeExchange ©2026 Created by Antigravity
+                    </div>
+
+                    {/* Marketplace */}
+                    <div>
+                        <h3 className="font-semibold text-foreground mb-4">Sàn giao dịch</h3>
+                        <ul className="space-y-3">
+                            {footerLinks.marketplace.map((link) => (
+                                <li key={link.name}>
+                                    <Link
+                                        to={link.href}
+                                        className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                                    >
+                                        {link.name}
+                                    </Link>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+
+                    {/* Support */}
+                    <div>
+                        <h3 className="font-semibold text-foreground mb-4">Hỗ trợ</h3>
+                        <ul className="space-y-3">
+                            {footerLinks.support.map((link) => (
+                                <li key={link.name}>
+                                    <Link
+                                        to={link.href}
+                                        className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                                    >
+                                        {link.name}
+                                    </Link>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+
+                    {/* Contact */}
+                    <div>
+                        <h3 className="font-semibold text-foreground mb-4">Liên hệ</h3>
+                        <ul className="space-y-3 text-sm text-muted-foreground">
+                            <li className="flex items-start gap-2">
+                                <MapPin className="h-4 w-4 mt-0.5 shrink-0" />
+                                <span>123 Nguyễn Huệ, Quận 1, TP. Hồ Chí Minh</span>
+                            </li>
+                            <li className="flex items-center gap-2">
+                                <Phone className="h-4 w-4 shrink-0" />
+                                <span>1900 1234</span>
+                            </li>
+                            <li className="flex items-center gap-2">
+                                <Mail className="h-4 w-4 shrink-0" />
+                                <span>contact@bikeexchange.vn</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <Separator className="my-8" />
+
+                <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
+                    <p className="text-sm text-muted-foreground">
+                        © 2026 BikeExchange. Tất cả quyền được bảo lưu.
+                    </p>
+                    <div className="flex gap-6">
+                        {footerLinks.company.map((link) => (
+                            <Link
+                                key={link.name}
+                                to={link.href}
+                                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                            >
+                                {link.name}
+                            </Link>
+                        ))}
+                    </div>
                 </div>
             </div>
-        </Footer>
-    );
-};
-
-export default AppFooter;
+        </footer>
+    )
+}

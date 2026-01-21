@@ -1,21 +1,15 @@
-import React from 'react';
-import { Layout } from 'antd';
-import { Outlet } from 'react-router-dom';
-import AppHeader from './AppHeader';
-import AppFooter from './AppFooter';
+import { Outlet } from 'react-router-dom'
+import AppHeader from './AppHeader'
+import AppFooter from './AppFooter'
 
-const { Content } = Layout;
-
-const MainLayout = () => {
+export default function MainLayout() {
     return (
-        <Layout className="layout" style={{ minHeight: '100vh', background: '#f0f2f5' }}>
+        <div className="flex min-h-screen flex-col">
             <AppHeader />
-            <Content>
+            <main className="flex-1">
                 <Outlet />
-            </Content>
+            </main>
             <AppFooter />
-        </Layout>
-    );
-};
-
-export default MainLayout;
+        </div>
+    )
+}

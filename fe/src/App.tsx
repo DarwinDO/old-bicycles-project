@@ -1,8 +1,13 @@
+import { ThemeProvider } from '@/components/theme-provider'
 import AppRouter from './router'
-import './App.css'
+import './index.css'
 
 function App() {
-  return <AppRouter />
+  return (
+    <ThemeProvider defaultTheme="light" storageKey="bike-exchange-theme">
+      <AppRouter />
+    </ThemeProvider>
+  )
 }
 
 export default App

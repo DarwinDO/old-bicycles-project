@@ -1,71 +1,69 @@
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+@import "tailwindcss";
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+@theme {
+  /* Colors - based on green/orange sports theme */
+  --color-background: oklch(100% 0 0);
+  --color-foreground: oklch(14.8% 0.01 285);
+  --color-card: oklch(100% 0 0);
+  --color-card-foreground: oklch(14.8% 0.01 285);
+  --color-popover: oklch(100% 0 0);
+  --color-popover-foreground: oklch(14.8% 0.01 285);
+  --color-primary: oklch(55% 0.17 145);
+  /* Green */
+  --color-primary-foreground: oklch(100% 0 0);
+  --color-secondary: oklch(65% 0.2 45);
+  /* Orange */
+  --color-secondary-foreground: oklch(100% 0 0);
+  --color-muted: oklch(96.5% 0.003 285);
+  --color-muted-foreground: oklch(55% 0.01 285);
+  --color-accent: oklch(55% 0.17 145);
+  --color-accent-foreground: oklch(100% 0 0);
+  --color-destructive: oklch(55% 0.2 25);
+  --color-destructive-foreground: oklch(100% 0 0);
+  --color-border: oklch(90% 0.005 285);
+  --color-input: oklch(90% 0.005 285);
+  --color-ring: oklch(55% 0.17 145);
+  --radius: 0.75rem;
 
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  /* Typography */
+  --font-sans: "Inter", system-ui, sans-serif;
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
+/* Dark mode */
+.dark {
+  --color-background: oklch(14.8% 0.01 285);
+  --color-foreground: oklch(98% 0 0);
+  --color-card: oklch(14.8% 0.01 285);
+  --color-card-foreground: oklch(98% 0 0);
+  --color-popover: oklch(14.8% 0.01 285);
+  --color-popover-foreground: oklch(98% 0 0);
+  --color-primary: oklch(62% 0.17 145);
+  --color-primary-foreground: oklch(100% 0 0);
+  --color-secondary: oklch(65% 0.2 45);
+  --color-secondary-foreground: oklch(100% 0 0);
+  --color-muted: oklch(22% 0.01 285);
+  --color-muted-foreground: oklch(65% 0.01 285);
+  --color-accent: oklch(62% 0.17 145);
+  --color-accent-foreground: oklch(100% 0 0);
+  --color-destructive: oklch(45% 0.15 25);
+  --color-destructive-foreground: oklch(98% 0 0);
+  --color-border: oklch(22% 0.01 285);
+  --color-input: oklch(22% 0.01 285);
+  --color-ring: oklch(62% 0.17 145);
 }
 
-a:hover {
-  color: #535bf2;
+/* Google Font */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* Base styles */
+* {
+  border-color: var(--color-border);
 }
 
 body {
-  margin: 0;
-  min-width: 320px;
-  min-height: 100vh;
-}
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-
-button:hover {
-  border-color: #646cff;
-}
-
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-
-  a:hover {
-    color: #747bff;
-  }
-
-  button {
-    background-color: #f9f9f9;
-  }
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }

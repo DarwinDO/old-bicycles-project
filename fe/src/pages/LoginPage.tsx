@@ -1,125 +1,139 @@
-import { Card, Form, Input, Button, Divider, Typography, Space, Checkbox, message } from 'antd';
-import { UserOutlined, LockOutlined, GoogleOutlined, FacebookOutlined } from '@ant-design/icons';
-import { Link, useNavigate } from 'react-router-dom';
-import { ROUTES } from '../constants/routes';
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { Bike, Mail, Lock, Eye, EyeOff } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { Separator } from '@/components/ui/separator'
+import { ROUTES } from '@/constants/routes'
 
-const { Title, Text } = Typography;
+export default function LoginPage() {
+    const [email, setEmail] = useState('')
+    const [password, setPassword] = useState('')
+    const [showPassword, setShowPassword] = useState(false)
+    const [isLoading, setIsLoading] = useState(false)
+    const navigate = useNavigate()
 
-const LoginPage = () => {
-    const navigate = useNavigate();
-    const [form] = Form.useForm();
-
-    const handleLogin = async () => {
-        message.loading('Đang đăng nhập...', 1);
-        // Simulate API call
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault()
+        setIsLoading(true)
+        // Simulate login
         setTimeout(() => {
-            message.success('Đăng nhập thành công!');
-            navigate(ROUTES.HOME);
-        }, 1000);
-    };
-
-    const handleSocialLogin = (provider: string) => {
-        message.info(`Đăng nhập bằng ${provider} sẽ sớm được hỗ trợ`);
-    };
+            setIsLoading(false)
+            navigate(ROUTES.HOME)
+        }, 1000)
+    }
 
     return (
-        <div style={{
-            minHeight: 'calc(100vh - 200px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '40px 24px',
-            background: 'linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%)'
-        }}>
-            <Card
-                style={{
-                    width: '100%',
-                    maxWidth: '420px',
-                    boxShadow: '0 10px 40px rgba(0,0,0,0.1)',
-                    borderRadius: '12px'
-                }}
-                bordered={false}
-            >
-                <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-                    <Title level={2} style={{ marginBottom: '8px' }}>Đăng nhập</Title>
-                    <Text type="secondary">Chào mừng bạn trở lại BikeExchange</Text>
-                </div>
-
-                <Form
-                    form={form}
-                    layout="vertical"
-                    onFinish={handleLogin}
-                    size="large"
-                >
-                    <Form.Item
-                        name="email"
-                        rules={[
-                            { required: true, message: 'Vui lòng nhập email' },
-                            { type: 'email', message: 'Email không hợp lệ' }
-                        ]}
-                    >
-                        <Input
-                            prefix={<UserOutlined style={{ color: '#bfbfbf' }} />}
-                            placeholder="Email"
-                        />
-                    </Form.Item>
-
-                    <Form.Item
-                        name="password"
-                        rules={[{ required: true, message: 'Vui lòng nhập mật khẩu' }]}
-                    >
-                        <Input.Password
-                            prefix={<LockOutlined style={{ color: '#bfbfbf' }} />}
-                            placeholder="Mật khẩu"
-                        />
-                    </Form.Item>
-
-                    <Form.Item>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <Form.Item name="remember" valuePropName="checked" noStyle>
-                                <Checkbox>Ghi nhớ đăng nhập</Checkbox>
-                            </Form.Item>
-                            <Link to="#" style={{ color: '#1890ff' }}>Quên mật khẩu?</Link>
+        <div className="min-h-screen flex items-center justify-center bg-muted/40 px-4 py-12">
+            <div className="w-full max-w-md">
+                {/* Logo */}
+                <div className="mb-8 text-center">
+                    <Link to={ROUTES.HOME} className="inline-flex items-center gap-2">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
+                            <Bike className="h-6 w-6 text-primary-foreground" />
                         </div>
-                    </Form.Item>
-
-                    <Form.Item>
-                        <Button type="primary" htmlType="submit" block style={{ height: '48px', fontSize: '16px' }}>
-                            Đăng nhập
-                        </Button>
-                    </Form.Item>
-                </Form>
-
-                <Divider plain>
-                    <Text type="secondary">hoặc đăng nhập bằng</Text>
-                </Divider>
-
-                <Space direction="vertical" style={{ width: '100%' }} size="middle">
-                    <Button
-                        block
-                        icon={<GoogleOutlined />}
-                        onClick={() => handleSocialLogin('Google')}
-                        style={{ height: '44px' }}
-                    >
-                        Đăng nhập bằng Google
-                    </Button>
-                    <Button
-                        block
-                        icon={<FacebookOutlined />}
-                        onClick={() => handleSocialLogin('Facebook')}
-                        style={{ height: '44px', background: '#1877F2', color: '#fff', border: 'none' }}
-                    >
-                        Đăng nhập bằng Facebook
-                    </Button>
-                </Space>
-
-                <div style={{ textAlign: 'center', marginTop: '24px' }}>
-                    <Text type="secondary">Chưa có tài khoản? </Text>
-                    <Link to={ROUTES.REGISTER} style={{ fontWeight: 500 }}>Đăng ký ngay</Link>
+                        <span className="text-2xl font-bold text-foreground">BikeExchange</span>
+                    </Link>
                 </div>
-            </Card>
-        </div>
-    );
-};
 
-export default LoginPage;
+                <Card>
+                    <CardHeader className="text-center">
+                        <CardTitle className="text-2xl">Đăng nhập</CardTitle>
+                        <CardDescription>
+                            Đăng nhập để mua bán xe đạp
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <div className="space-y-2">
+                                <label htmlFor="email" className="text-sm font-medium">
+                                    Email hoặc số điện thoại
+                                </label>
+                                <div className="relative">
+                                    <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                                    <Input
+                                        id="email"
+                                        type="text"
+                                        placeholder="example@email.com"
+                                        className="pl-10"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <label htmlFor="password" className="text-sm font-medium">
+                                        Mật khẩu
+                                    </label>
+                                    <Link to="/forgot-password" className="text-sm text-primary hover:underline">
+                                        Quên mật khẩu?
+                                    </Link>
+                                </div>
+                                <div className="relative">
+                                    <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                                    <Input
+                                        id="password"
+                                        type={showPassword ? 'text' : 'password'}
+                                        placeholder="••••••••"
+                                        className="pl-10 pr-10"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        required
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                    >
+                                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                    </button>
+                                </div>
+                            </div>
+
+                            <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
+                                {isLoading ? 'Đang đăng nhập...' : 'Đăng nhập'}
+                            </Button>
+                        </form>
+
+                        <div className="relative my-6">
+                            <Separator />
+                            <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">
+                                hoặc
+                            </span>
+                        </div>
+
+                        <div className="space-y-3">
+                            <Button variant="outline" className="w-full" type="button">
+                                <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
+                                    <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                                    <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                                    <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                                    <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                                </svg>
+                                Đăng nhập với Google
+                            </Button>
+                            <Button variant="outline" className="w-full" type="button">
+                                <svg className="mr-2 h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                                </svg>
+                                Đăng nhập với Facebook
+                            </Button>
+                        </div>
+                    </CardContent>
+                    <CardFooter className="justify-center">
+                        <p className="text-sm text-muted-foreground">
+                            Chưa có tài khoản?{' '}
+                            <Link to={ROUTES.REGISTER} className="text-primary font-medium hover:underline">
+                                Đăng ký ngay
+                            </Link>
+                        </p>
+                    </CardFooter>
+                </Card>
+            </div>
+        </div>
+    )
+}

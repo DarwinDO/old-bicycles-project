@@ -31,18 +31,14 @@ const InspectionRequestsPage = lazy(() => import('../pages/inspector/InspectionR
 const InspectionFormPage = lazy(() => import('../pages/inspector/InspectionFormPage'));
 const InspectionHistoryPage = lazy(() => import('../pages/inspector/InspectionHistoryPage'));
 
+import BikeLoader from '../components/common/BikeLoader';
+
 // Loading fallback component
-function PageLoader() {
-    return (
-        <div className="page-loader">
-            <div className="loader-spinner"></div>
-        </div>
-    );
-}
+
 
 export default function AppRouter() {
     return (
-        <Suspense fallback={<PageLoader />}>
+        <Suspense fallback={<BikeLoader />}>
             <Routes>
                 {/* Main layout routes */}
                 <Route element={<MainLayout />}>

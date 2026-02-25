@@ -11,6 +11,8 @@ import {
     History,
     ChevronLeft,
     ChevronRight,
+    Package,
+    ShoppingBag,
 } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -106,4 +108,11 @@ export const inspectorNavItems: NavItem[] = [
     { icon: LayoutDashboard, label: 'Tổng quan', href: '/inspector' },
     { icon: ClipboardCheck, label: 'Yêu cầu kiểm định', href: '/inspector/requests' },
     { icon: History, label: 'Lịch sử', href: '/inspector/history' },
+];
+
+// Pre-configured seller navigation items
+export const sellerNavItems: NavItem[] = [
+    { icon: LayoutDashboard, label: 'Tổng quan', href: '/seller' },
+    { icon: Package, label: 'Quản lý tin đăng', href: '/seller/listings' },
+    { icon: ShoppingBag, label: 'Quản lý đơn cọc', href: '/seller/orders' },
 ];

@@ -18,6 +18,9 @@ import {
 } from './lazyPages';
 import NotFoundPage from '../pages/NotFoundPage';
 
+// Messages pages (lazy loaded)
+const MessagesPage = lazy(() => import('../pages/messages/MessagesPage'));
+
 // Admin pages (lazy loaded)
 const AdminDashboardPage = lazy(() => import('../pages/admin/AdminDashboardPage'));
 const AdminUsersPage = lazy(() => import('../pages/admin/AdminUsersPage'));
@@ -74,6 +77,14 @@ export default function AppRouter() {
                         element={
                             <ProtectedRoute>
                                 <ProfilePage />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path={ROUTES.MESSAGES}
+                        element={
+                            <ProtectedRoute>
+                                <MessagesPage />
                             </ProtectedRoute>
                         }
                     />

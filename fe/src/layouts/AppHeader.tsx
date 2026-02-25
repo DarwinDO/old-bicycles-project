@@ -11,6 +11,7 @@ const navigation = [
     { name: 'Trang chủ', href: ROUTES.HOME },
     { name: 'Mua xe', href: ROUTES.MARKET },
     { name: 'Bán xe', href: ROUTES.SELL },
+    { name: 'Tin nhắn', href: ROUTES.MESSAGES },
     { name: 'Hướng dẫn', href: ROUTES.GUIDE },
 ]
 

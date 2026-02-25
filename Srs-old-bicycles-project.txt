@@ -19,57 +19,57 @@
 | 1.0 | 2026-01-21 | Dev Team | Initial draft |
 | 2.0 | 2026-01-21 | Dev Team | Added Business Rules, Guest actor, detailed Use Cases, updated DB schema |
 
-# 1\. Introduction
+# 1. Introduction
 
 ## 1.1 Purpose
 
-Tài liệu Đặc tả Yêu cầu Phần mềm (SRS) này mô tả các yêu cầu chức năng và phi chức năng cho hệ thống **Old Bicycles Marketplace** - một nền tảng mua bán xe đạp cũ trực tuyến. Tài liệu này dành cho:
+This Software Requirements Specification (SRS) document describes the functional and non-functional requirements for the **Old Bicycles Marketplace** system - an online platform for buying and selling used bicycles. This document is intended for:
 
-- Đội ngũ phát triển (Frontend, Backend, Mobile)
-- Đội ngũ QA/Testing
-- Product Owner và Stakeholders
+- Development Team (Frontend, Backend, Mobile)
+- QA/Testing Team
+- Product Owner and Stakeholders
 - System Architects
-- Đội ngũ vận hành và hỗ trợ
+- Operations and Support Team
 
 ## 1.2 Scope
 
 ### 1.2.1 Product Name
 
-**Old Bicycles Marketplace** (Sàn Xe Đạp Cũ)
+**Old Bicycles Marketplace**
 
 ### 1.2.2 Product Description
 
-Nền tảng thương mại điện tử chuyên về mua bán xe đạp cũ, kết nối người bán (Seller), người mua (Buyer), đơn vị kiểm định (Inspector), và quản trị viên (Admin). Hệ thống hỗ trợ đăng tin, tìm kiếm, chat, đặt cọc, kiểm định xe và quản lý giao dịch.
+An e-commerce platform specializing in buying and selling used bicycles, connecting Sellers, Buyers, Inspectors, and Administrators. The system supports listing, searching, chatting, deposits, bike inspections, and transaction management.
 
 ### 1.2.3 Objectives
 
-- Tạo nền tảng an toàn, minh bạch cho việc mua bán xe đạp cũ
-- Tăng tính tin cậy thông qua hệ thống kiểm định và đánh giá
-- Đơn giản hóa quy trình giao dịch với chat, đặt cọc tích hợp
-- Cung cấp công cụ quản lý hiệu quả cho admin
+- Create a safe and transparent platform for trading used bicycles.
+- Increase trust through an inspection and rating system.
+- Simplify the transaction process with integrated chat and deposit features.
+- Provide effective management tools for admins.
 
 ### 1.2.4 Benefits
 
-- **Người bán**: Tiếp cận nhiều khách hàng, quản lý tin đăng dễ dàng
-- **Người mua**: Tìm kiếm xe phù hợp, an tâm với xe đã kiểm định
-- **Nền tảng**: Thu phí dịch vụ, xây dựng cộng đồng xe đạp
+- **Seller**: Reach more customers, easily manage listings.
+- **Buyer**: Find suitable bikes, peace of mind with inspected bikes.
+- **Platform**: Collect service fees, build a bicycle community.
 
 ## 1.3 Definitions, Acronyms, and Abbreviations
 
 | **Term** | **Definition** |
 | --- | --- |
-| **Guest** | Người dùng chưa đăng nhập, chỉ xem thông tin cơ bản |
-| **Buyer** | Người dùng mua xe đạp trên hệ thống |
-| **Seller** | Người dùng đăng bán xe đạp trên hệ thống |
-| **Inspector** | Đơn vị/cá nhân kiểm định tình trạng xe |
-| **Admin** | Quản trị viên hệ thống |
-| **Listing/Product** | Tin đăng bán xe |
-| **Deposit** | Đặt cọc giữ chỗ xe |
-| **Escrow** | Cơ chế giữ tiền trung gian |
-| **Wishlist** | Danh sách xe yêu thích |
-| **Verified Badge** | Nhãn xe đã kiểm định |
-| **Groupset** | Bộ truyền động xe đạp |
-| **Frame Size** | Kích thước khung xe |
+| **Guest** | Unauthenticated user, can only view basic information |
+| **Buyer** | User who buys bicycles on the system |
+| **Seller** | User who lists bicycles for sale on the system |
+| **Inspector** | Entity/individual who inspects bike condition |
+| **Admin** | System administrator |
+| **Listing/Product** | Bike sale advertisement |
+| **Deposit** | Money placed to reserve a bike |
+| **Escrow** | Intermediate money holding mechanism |
+| **Wishlist** | List of favorite bikes |
+| **Verified Badge** | Label for inspected bikes |
+| **Groupset** | Bicycle drivetrain components |
+| **Frame Size** | Size of the bicycle frame |
 | **SRS** | Software Requirements Specification |
 | **FR** | Functional Requirement |
 | **NFR** | Non-Functional Requirement |
@@ -85,15 +85,15 @@ Nền tảng thương mại điện tử chuyên về mua bán xe đạp cũ, k�
 
 ## 1.5 Overview
 
-Tài liệu được tổ chức như sau:
+The document is organized as follows:
 
-- **Section 1**: Giới thiệu và tổng quan
-- **Section 2**: Mô tả tổng thể sản phẩm
-- **Section 3**: Yêu cầu chi tiết (chức năng và phi chức năng)
+- **Section 1**: Introduction and Overview
+- **Section 2**: Overall Description
+- **Section 3**: Specific Requirements (Functional and Non-Functional)
 - **Section 4**: Business Rules
 - **Appendices**: Glossary, Models, Traceability Matrix
 
-# 2\. Overall Description
+# 2. Overall Description
 
 ## 2.1 Product Perspective
 
@@ -120,31 +120,31 @@ Tài liệu được tổ chức như sau:
 
 | **Interface** | **System** | **Description** | **Protocol** |
 | --- | --- | --- | --- |
-| INT-001 | Payment Gateway | Xử lý thanh toán online đặt cọc/mua xe | REST API / HTTPS |
-| INT-002 | Logistics API | Kết nối đơn vị vận chuyển | REST API |
-| INT-003 | Notification Service | Gửi email, SMS, push notification | WebSocket / REST |
-| INT-004 | Chatbot AI | Hỗ trợ chăm sóc khách hàng tự động | REST API |
-| INT-005 | Image Storage | Lưu trữ ảnh, video xe | Cloud Storage API |
+| INT-001 | Payment Gateway | Process online payments for deposits/purchases | REST API / HTTPS |
+| INT-002 | Logistics API | Connect with shipping providers | REST API |
+| INT-003 | Notification Service | Send email, SMS, push notifications | WebSocket / REST |
+| INT-004 | Chatbot AI | Automated customer support | REST API |
+| INT-005 | Image Storage | Store bike images and videos | Cloud Storage API |
 
 ### 2.1.3 User Interfaces
 
-- **Responsive Web Application**: Hỗ trợ Desktop, Tablet, Mobile
-- **Screen resolution**: Minimum 320px (mobile) đến 1920px+ (desktop)
+- **Responsive Web Application**: Supports Desktop, Tablet, Mobile
+- **Screen resolution**: Minimum 320px (mobile) to 1920px+ (desktop)
 - **Supported browsers**: Chrome 90+, Firefox 85+, Safari 14+, Edge 90+
 - **Accessibility**: WCAG 2.1 Level AA compliant
 - **Language**: Vietnamese (primary), English (future)
 
 ### 2.1.4 Hardware Interfaces
 
-Không yêu cầu hardware interface đặc biệt. Hệ thống hoạt động trên trình duyệt web chuẩn.
+No special hardware interfaces required. The system operates on standard web browsers.
 
 ### 2.1.5 Software Interfaces
 
 | **Interface** | **Software** | **Version** | **Purpose** |
 | --- | --- | --- | --- |
 | SW-001 | PostgreSQL | 15+ | Primary database |
-| SW-002 | Redis | 7+  | Caching & session |
-| SW-003 | Elasticsearch | 8+  | Search engine |
+| SW-002 | Redis | 7+ | Caching & session |
+| SW-003 | Elasticsearch | 8+ | Search engine |
 | SW-004 | AWS S3 / Cloudinary | Latest | Media storage |
 
 ### 2.1.6 Communications Interfaces
@@ -159,22 +159,22 @@ Không yêu cầu hardware interface đặc biệt. Hệ thống hoạt động 
 
 | **Feature ID** | **Feature Name** | **Description** | **Priority** |
 | --- | --- | --- | --- |
-| F-001 | User Authentication | Đăng ký, đăng nhập, quản lý tài khoản | Must |
-| F-002 | Bike Listing | Đăng tin bán xe với ảnh, video, mô tả | Must |
-| F-003 | Search & Filter | Tìm kiếm và lọc xe theo nhiều tiêu chí | Must |
-| F-004 | Advanced Filter | Lọc theo thông số kỹ thuật (size, groupset, phanh) | Must |
-| F-005 | Bike Detail View | Xem chi tiết xe, ảnh, lịch sử | Must |
-| F-006 | Messaging System | Chat real-time giữa buyer và seller | Must |
-| F-007 | Wishlist | Lưu xe yêu thích | Should |
-| F-008 | Deposit & Order | Đặt cọc và quản lý đơn hàng | Must |
-| F-009 | Seller Rating | Đánh giá uy tín người bán | Must |
-| F-010 | Inspection System | Kiểm định và gắn nhãn xe | Should |
-| F-011 | Admin Dashboard | Quản lý toàn bộ hệ thống | Must |
-| F-012 | Report System | Báo cáo tin đăng/user vi phạm | Must |
-| F-013 | Notification System | Thông báo real-time | Must |
-| F-014 | Chatbot Support | Hỗ trợ khách hàng tự động | Could |
-| F-015 | Logistics Integration | Kết nối vận chuyển | Could |
-| F-016 | Online Payment | Thanh toán trực tuyến | Could |
+| F-001 | User Authentication | Register, login, manage account | Must |
+| F-002 | Bike Listing | Post bike ads with images, videos, descriptions | Must |
+| F-003 | Search & Filter | Search and filter bikes by various criteria | Must |
+| F-004 | Advanced Filter | Filter by technical specs (size, groupset, brakes) | Must |
+| F-005 | Bike Detail View | View bike details, photos, history | Must |
+| F-006 | Messaging System | Real-time chat between buyer and seller | Must |
+| F-007 | Wishlist | Save favorite bikes | Should |
+| F-008 | Deposit & Order | Deposit and order management | Must |
+| F-009 | Seller Rating | Rate seller reputation | Must |
+| F-010 | Inspection System | Inspect and badge bikes | Should |
+| F-011 | Admin Dashboard | Manage the entire system | Must |
+| F-012 | Report System | Report violating listings/users | Must |
+| F-013 | Notification System | Real-time notifications | Must |
+| F-014 | Chatbot Support | Automated customer support | Could |
+| F-015 | Logistics Integration | Shipping connection | Could |
+| F-016 | Online Payment | Online payment | Could |
 
 ## 2.3 User Characteristics
 
@@ -182,54 +182,54 @@ Không yêu cầu hardware interface đặc biệt. Hệ thống hoạt động 
 
 | **User Class** | **Description** | **Technical Level** | **Frequency** |
 | --- | --- | --- | --- |
-| **Guest** | Người dùng chưa đăng nhập, chỉ xem thông tin cơ bản | Basic | Casual |
-| **Buyer** | Người tìm mua xe đạp cũ, đa dạng độ tuổi 18-55 | Basic - Intermediate | Daily/Weekly |
-| **Seller** | Cá nhân hoặc cửa hàng bán xe đạp | Basic - Intermediate | Daily |
-| **Inspector** | Chuyên gia kiểm định xe đạp | Intermediate | On-demand |
-| **Admin** | Nhân viên quản trị hệ thống | Advanced | Daily |
+| **Guest** | Unauthenticated user, can only view basic info | Basic | Casual |
+| **Buyer** | User looking to buy used bikes, diverse age 18-55 | Basic - Intermediate | Daily/Weekly |
+| **Seller** | Individual or shop selling bicycles | Basic - Intermediate | Daily |
+| **Inspector** | Bicycle inspection expert | Intermediate | On-demand |
+| **Admin** | System administrator staff | Advanced | Daily |
 
 ### 2.3.2 User Personas
 
 **Persona 1: Minh - The Buyer**
 
-- **Role**: Nhân viên văn phòng, 28 tuổi
-- **Goals**: Tìm xe đạp thể thao giá tốt để đi làm
-- **Pain Points**: Lo ngại mua phải xe kém chất lượng, bị lừa
-- **Technical Skills**: Sử dụng smartphone thành thạo
+- **Role**: Office worker, 28 years old
+- **Goals**: Find a sports bike at a good price for commuting
+- **Pain Points**: Worried about buying poor quality bikes, being scammed
+- **Technical Skills**: Proficient with smartphones
 
-**Persona 2: Anh Tuấn - The Seller**
+**Persona 2: Anh Tuan - The Seller**
 
-- **Role**: Chủ cửa hàng xe đạp nhỏ, 40 tuổi
-- **Goals**: Mở rộng kênh bán hàng, quản lý tin đăng hiệu quả
-- **Pain Points**: Mất thời gian trả lời tin nhắn, quản lý đơn hàng
-- **Technical Skills**: Cơ bản, cần giao diện đơn giản
+- **Role**: Small bicycle shop owner, 40 years old
+- **Goals**: Expand sales channels, manage listings effectively
+- **Pain Points**: Wasting time answering messages, managing orders
+- **Technical Skills**: Basic, needs a simple interface
 
-**Persona 3: Thảo - The Inspector**
+**Persona 3: Thao - The Inspector**
 
-- **Role**: Kỹ thuật viên xe đạp, 35 tuổi
-- **Goals**: Cung cấp dịch vụ kiểm định, xây dựng uy tín
-- **Pain Points**: Cần công cụ upload báo cáo chuyên nghiệp
-- **Technical Skills**: Trung bình
+- **Role**: Bicycle technician, 35 years old
+- **Goals**: Provide inspection services, build reputation
+- **Pain Points**: Needs professional reporting tools
+- **Technical Skills**: Average
 
 ## 2.4 Constraints
 
 ### 2.4.1 Regulatory Requirements
 
-- Tuân thủ Luật Thương mại điện tử Việt Nam
-- Bảo vệ dữ liệu cá nhân theo PDPD (Personal Data Protection Decree)
-- Chính sách thanh toán theo quy định Ngân hàng Nhà nước
+- Comply with Vietnam E-commerce Law
+- Personal Data Protection Decree (PDPD) compliance
+- Payment policies per State Bank regulations
 
 ### 2.4.2 Technical Constraints
 
-- Web-first approach (không phát triển mobile app trong phase 1)
-- Response time < 3 giây cho mọi operations
-- Hỗ trợ upload ảnh tối đa 10MB/file, video 100MB/file
-- Tối đa 20 ảnh và 2 video mỗi tin đăng
+- Web-first approach (no mobile app in phase 1)
+- Response time < 3 seconds for all operations
+- Support image upload max 10MB/file, video 100MB/file
+- Max 20 images and 2 videos per listing
 
 ### 2.4.3 Business Constraints
 
-- **Timeline**: Phase 1 hoàn thành trong 4 tháng
-- **Budget**: Theo ngân sách được phê duyệt
+- **Timeline**: Phase 1 completion in 4 months
+- **Budget**: Within approved budget
 - **Team**: 3 Frontend, 2 Backend, 1 DevOps, 1 QA
 
 ## 2.5 Assumptions and Dependencies
@@ -238,10 +238,10 @@ Không yêu cầu hardware interface đặc biệt. Hệ thống hoạt động 
 
 | **ID** | **Assumption** | **Impact if False** |
 | --- | --- | --- |
-| A-001 | Người dùng có kết nối internet ổn định | Cần offline mode |
-| A-002 | Người dùng sử dụng trình duyệt hiện đại | Cần polyfills |
-| A-003 | Payment gateway sẵn sàng tích hợp | Delay phase thanh toán |
-| A-004 | Có đủ Inspector đăng ký sử dụng | Tính năng kiểm định không hiệu quả |
+| A-001 | Users have stable internet connection | Need offline mode |
+| A-002 | Users use modern browsers | Need polyfills |
+| A-003 | Payment gateway ready for integration | Delay payment phase |
+| A-004 | Enough Inspectors sign up | Inspection feature ineffective |
 
 ### Dependencies
 
@@ -252,65 +252,65 @@ Không yêu cầu hardware interface đặc biệt. Hệ thống hoạt động 
 | D-003 | Email/SMS Provider | External | Block notifications |
 | D-004 | Logistics API | External | Block shipping feature |
 
-# 3\. Specific Requirements
+# 3. Specific Requirements
 
 ## 3.1 Use Cases by Actor
 
-### 3.1.1 Guest (Khách vãng lai - Chưa đăng nhập)
+### 3.1.1 Guest (Unauthenticated User)
 
 | **UC ID** | **Use Case** | **Description** |
 | --- | --- | --- |
-| UC01 | Đăng ký tài khoản | Người dùng chọn role Buyer hoặc Seller |
-| UC02 | Đăng nhập / Quên mật khẩu | Xác thực và khôi phục tài khoản |
-| UC03 | Tìm kiếm xe (Search basic) | Tìm kiếm theo từ khóa |
-| UC04 | Xem danh sách xe | Filter & Sort cơ bản |
-| UC05 | Xem chi tiết tin đăng | Xem thông tin xe, không xem liên hệ seller |
+| UC01 | Register Account | User selects Buyer or Seller role |
+| UC02 | Login / Forgot Password | Authenticate and recover account |
+| UC03 | Search Bike (Basic) | Keyword search |
+| UC04 | Browse Listings | Basic Filter & Sort |
+| UC05 | View Listing Detail | View bike info, cannot view seller contact |
 
-### 3.1.2 Buyer (Người mua)
+### 3.1.2 Buyer
 
-_Bao gồm tất cả chức năng của Guest_
-
-| **UC ID** | **Use Case** | **Description** |
-| --- | --- | --- |
-| UC06 | Quản lý hồ sơ cá nhân | Cập nhật profile, avatar, địa chỉ |
-| UC07 | Lọc nâng cao | Filter: size khung, groupset, loại phanh, chất liệu |
-| UC08 | Chat/Nhắn tin với người bán | Real-time messaging |
-| UC09 | Tạo đơn đặt mua / Đặt cọc | Booking/Deposit |
-| UC10 | Quản lý danh sách yêu thích | Wishlist management |
-| UC11 | Đánh giá người bán | Rating & Review sau giao dịch |
-| UC12 | Báo cáo tin đăng vi phạm | Report Ad |
-
-### 3.1.3 Seller (Người bán)
-
-_Bao gồm tất cả chức năng của Guest_
+_Includes all Guest functions_
 
 | **UC ID** | **Use Case** | **Description** |
 | --- | --- | --- |
-| UC13 | Đăng tin bán xe | Post Ad với đầy đủ thông tin kỹ thuật |
-| UC14 | Quản lý tin đăng | Sửa, Ẩn, Xóa, Đánh dấu đã bán |
-| UC15 | Yêu cầu kiểm định xe | Gửi request tới Inspector |
-| UC16 | Quản lý đơn hàng | Chấp nhận/Từ chối yêu cầu mua/cọc |
-| UC17 | Phản hồi đánh giá | Reply Review từ buyer |
+| UC06 | Manage Profile | Update profile, avatar, address |
+| UC07 | Advanced Filter | Filter: frame size, groupset, brake type, material |
+| UC08 | Chat with Seller | Real-time messaging |
+| UC09 | Place Order / Deposit | Booking/Deposit |
+| UC10 | Manage Wishlist | Wishlist management |
+| UC11 | Rate Seller | Rating & Review after transaction |
+| UC12 | Report Listing | Report Advertisement |
 
-### 3.1.4 Inspector (Người kiểm định)
+### 3.1.3 Seller
 
-| **UC ID** | **Use Case** | **Description** |
-| --- | --- | --- |
-| UC18 | Tiếp nhận yêu cầu kiểm định | Nhận và xác nhận request |
-| UC19 | Cập nhật Checklist kiểm tra | Khung, phuộc, truyền động, phanh, bánh |
-| UC20 | Upload báo cáo kiểm định | Báo cáo + Hình ảnh thực tế |
-| UC21 | Gắn nhãn "Verified" | Xác nhận xe đã kiểm định |
-| UC22 | Tham gia giải quyết tranh chấp | Cung cấp bằng chứng kỹ thuật |
-
-### 3.1.5 Admin (Quản trị viên)
+_Includes all Guest functions_
 
 | **UC ID** | **Use Case** | **Description** |
 | --- | --- | --- |
-| UC23 | Quản lý người dùng | Khóa/Mở khóa tài khoản |
-| UC24 | Duyệt tin đăng | Approve/Reject Ads |
-| UC25 | Quản lý danh mục kỹ thuật | Hãng xe, loại groupset, size chart |
-| UC26 | Giải quyết khiếu nại/Tranh chấp | Dựa trên báo cáo Inspector |
-| UC27 | Xem báo cáo thống kê | Doanh thu, user, traffic |
+| UC13 | Post Bike Listing | Post Ad with full technical capabilities |
+| UC14 | Manage Listings | Edit, Hide, Delete, Mark as Sold |
+| UC15 | Request Inspection | Send request to Inspector |
+| UC16 | Manage Orders | Accept/Reject buy/deposit requests |
+| UC17 | Reply to Review | Reply to Buyer's review |
+
+### 3.1.4 Inspector
+
+| **UC ID** | **Use Case** | **Description** |
+| --- | --- | --- |
+| UC18 | Receive Inspection Request | Receive and confirm request |
+| UC19 | Update Inspection Checklist | Frame, fork, drivetrain, brakes, wheels |
+| UC20 | Upload Inspection Report | Report + Real images |
+| UC21 | Apply "Verified" Badge | Confirm bike inspected |
+| UC22 | Dispute Support | Provide technical evidence |
+
+### 3.1.5 Admin
+
+| **UC ID** | **Use Case** | **Description** |
+| --- | --- | --- |
+| UC23 | User Management | Lock/Unlock accounts |
+| UC24 | Moderate Listings | Approve/Reject Ads |
+| UC25 | Technical Category Management | Brands, groupset types, size charts |
+| UC26 | Resolve Disputes | Based on Inspector report |
+| UC27 | View Analytics Report | Revenue, users, traffic |
 
 ## 3.2 External Interface Requirements
 
@@ -318,37 +318,37 @@ _Bao gồm tất cả chức năng của Guest_
 
 | **UI-ID** | **Screen/Component** | **Description** |
 | --- | --- | --- |
-| UI-001 | Homepage | Landing page với featured bikes, search |
-| UI-002 | Bike Listing Page | Danh sách xe với filters, pagination |
-| UI-003 | Bike Detail Page | Chi tiết xe, gallery, seller info, báo cáo kiểm định |
+| UI-001 | Homepage | Landing page with featured bikes, search |
+| UI-002 | Bike Listing Page | List of bikes with filters, pagination |
+| UI-003 | Bike Detail Page | Bike details, gallery, seller info, inspection report |
 | UI-004 | Login/Register | Authentication forms |
-| UI-005 | Seller Dashboard | Quản lý tin đăng, đơn hàng, tin nhắn |
-| UI-006 | Create Listing | Form đăng tin với upload media |
+| UI-005 | Seller Dashboard | Manage listings, orders, messages |
+| UI-006 | Create Listing | Listing form with media upload |
 | UI-007 | Chat Interface | Real-time messaging |
-| UI-008 | Profile Page | Thông tin cá nhân, đánh giá, wishlist |
-| UI-009 | Inspector Dashboard | Quản lý kiểm định |
-| UI-010 | Admin Dashboard | Quản trị toàn hệ thống |
-| UI-011 | Report Form | Form báo cáo vi phạm |
-| UI-012 | Notification Center | Trung tâm thông báo |
+| UI-008 | Profile Page | Personal info, reviews, wishlist |
+| UI-009 | Inspector Dashboard | Inspection management |
+| UI-010 | Admin Dashboard | System administration |
+| UI-011 | Report Form | Violation report form |
+| UI-012 | Notification Center | Notification hub |
 
 ### 3.2.2 API Interfaces
 
 | **API-ID** | **Endpoint Group** | **Description** |
 | --- | --- | --- |
-| API-001 | /auth/\* | Authentication endpoints |
-| API-002 | /products/\* | Bike CRUD operations |
-| API-003 | /users/\* | User management |
-| API-004 | /conversations/\* | Messaging system |
-| API-005 | /messages/\* | Individual messages |
-| API-006 | /orders/\* | Order/deposit management |
-| API-007 | /transactions/\* | Transaction logs |
-| API-008 | /inspections/\* | Inspection management |
-| API-009 | /admin/\* | Admin operations |
-| API-010 | /reviews/\* | Rating & reviews |
-| API-011 | /reports/\* | Report system |
-| API-012 | /notifications/\* | Notification system |
-| API-013 | /brands/\* | Brand management |
-| API-014 | /categories/\* | Category management |
+| API-001 | /auth/* | Authentication endpoints |
+| API-002 | /products/* | Bike CRUD operations |
+| API-003 | /users/* | User management |
+| API-004 | /conversations/* | Messaging system |
+| API-005 | /messages/* | Individual messages |
+| API-006 | /orders/* | Order/deposit management |
+| API-007 | /transactions/* | Transaction logs |
+| API-008 | /inspections/* | Inspection management |
+| API-009 | /admin/* | Admin operations |
+| API-010 | /reviews/* | Rating & reviews |
+| API-011 | /reports/* | Report system |
+| API-012 | /notifications/* | Notification system |
+| API-013 | /brands/* | Brand management |
+| API-014 | /categories/* | Category management |
 
 ## 3.3 Functional Requirements
 
@@ -359,39 +359,35 @@ _Bao gồm tất cả chức năng của Guest_
 | **Attribute** | **Value** |
 | --- | --- |
 | **ID** | FR-AUTH-001 |
-| **Description** | Hệ thống shall cho phép người dùng đăng ký tài khoản mới với email hoặc số điện thoại, chọn role Buyer hoặc Seller |
+| **Description** | The system shall allow users to register a new account with email or phone number, selecting Buyer or Seller role |
 | **Priority** | Must |
 
 **Inputs:**
 
-- Email hoặc số điện thoại
-- Mật khẩu (min 8 ký tự, có chữ hoa, số)
-- Họ tên
+- Email or phone number
+- Password (min 8 chars, uppercase, number)
+- Full name
 - Role (Buyer/Seller)
 
 **Processing:**
 
-1\. Validate input format
-
-2\. Kiểm tra email/phone chưa tồn tại
-
-3\. Hash password với bcrypt
-
-4\. Gửi OTP verification
-
-5\. Tạo user record với status pending
+1. Validate input format
+2. Check email/phone uniqueness
+3. Hash password with bcrypt
+4. Send OTP verification
+5. Create user record with pending status
 
 **Outputs:**
 
-- Success: Redirect đến verification page
-- Error: Hiển thị lỗi cụ thể
+- Success: Redirect to verification page
+- Error: Show specific error
 
 #### FR-AUTH-002: User Login
 
 | **Attribute** | **Value** |
 | --- | --- |
 | **ID** | FR-AUTH-002 |
-| **Description** | Hệ thống shall cho phép người dùng đăng nhập bằng email/SĐT và mật khẩu |
+| **Description** | The system shall allow users to login with email/phone and password |
 | **Priority** | Must |
 
 #### FR-AUTH-003: Social Login
@@ -399,7 +395,7 @@ _Bao gồm tất cả chức năng của Guest_
 | **Attribute** | **Value** |
 | --- | --- |
 | **ID** | FR-AUTH-003 |
-| **Description** | Hệ thống shall hỗ trợ đăng nhập qua Google và Facebook |
+| **Description** | The system shall support login via Google and Facebook |
 | **Priority** | Should |
 
 #### FR-AUTH-004: Password Reset
@@ -407,7 +403,7 @@ _Bao gồm tất cả chức năng của Guest_
 | **Attribute** | **Value** |
 | --- | --- |
 | **ID** | FR-AUTH-004 |
-| **Description** | Hệ thống shall cho phép reset mật khẩu qua email/SMS OTP |
+| **Description** | The system shall allow password reset via email/SMS OTP |
 | **Priority** | Must |
 
 #### FR-AUTH-005: Profile Management
@@ -415,7 +411,7 @@ _Bao gồm tất cả chức năng của Guest_
 | **Attribute** | **Value** |
 | --- | --- |
 | **ID** | FR-AUTH-005 |
-| **Description** | User shall có thể cập nhật thông tin cá nhân: họ tên, avatar, địa chỉ mặc định, số điện thoại |
+| **Description** | Users shall be able to update personal info: name, avatar, default address, phone number |
 | **Priority** | Must |
 
 ### 3.3.2 Bike Listing Management (Seller)
@@ -425,65 +421,60 @@ _Bao gồm tất cả chức năng của Guest_
 | **Attribute** | **Value** |
 | --- | --- |
 | **ID** | FR-SELL-001 |
-| **Description** | Seller shall có thể đăng tin bán xe với đầy đủ thông tin kỹ thuật |
+| **Description** | Sellers shall be able to post bike listings with full technical details |
 | **Priority** | Must |
 
-**Inputs (Bắt buộc theo BR01):**
+**Inputs (Required per BR01):**
 
-- Tiêu đề tin đăng
-- Loại xe (Road, Mountain, City, Touring, BMX)
-- Thương hiệu (Brand)
-- **Kích thước khung** (S/M/L hoặc cm) ⭐
-- **Kích thước bánh** (26, 27.5, 29, 700c) ⭐
-- **Loại phanh** (Đĩa/V-brake) ⭐
-- **Chất liệu khung** (Nhôm/Carbon/Thép) ⭐
-- Bộ truyền động (Groupset - VD: Shimano 105)
-- Tình trạng (Mới 90%, Đã qua sử dụng, Cần sửa chữa)
-- Giá bán, Giá gốc (optional)
-- Mô tả chi tiết
-- Địa chỉ bán (Tỉnh/Thành, Quận/Huyện)
+- Title
+- Bike Type (Road, Mountain, City, Touring, BMX)
+- Brand
+- **Frame Size** (S/M/L or cm) ⭐
+- **Wheel Size** (26, 27.5, 29, 700c) ⭐
+- **Brake Type** (Disc/V-brake) ⭐
+- **Frame Material** (Aluminum/Carbon/Steel) ⭐
+- Drivetrain/Groupset (e.g., Shimano 105)
+- Condition (New 90%, Used, Needs Repair)
+- Price, Original Price (optional)
+- Detailed Description
+- Selling Address (Province/City, District)
 
-**Ảnh bắt buộc (theo BR02):**
+**Required Images (per BR02):**
 
-- Ảnh toàn thân xe ⭐
-- Ảnh bộ truyền động (groupset) ⭐
-- Ảnh số khung (serial number) ⭐
-- Ảnh bổ sung (tối đa 17 ảnh)
+- Full bike image ⭐
+- Groupset image ⭐
+- Serial number image ⭐
+- Additional images (max 17)
 - Video (0-2, max 100MB)
 
 **Processing:**
 
-1\. Validate all required fields
-
-2\. Validate image types
-
-3\. Upload và compress media
-
-4\. Tạo listing với status "Pending"
-
-5\. Notify admin để duyệt
-
-6\. Set expires_at = created_at + 30 ngày
+1. Validate all required fields
+2. Validate image types
+3. Upload and compress media
+4. Create listing with status "Pending"
+5. Notify admin for approval
+6. Set expires_at = created_at + 30 days
 
 #### FR-SELL-002: Edit Bike Listing
 
 | **Attribute** | **Value** |
 | --- | --- |
 | **ID** | FR-SELL-002 |
-| **Description** | Seller shall có thể chỉnh sửa tin đăng đã tạo |
+| **Description** | Sellers shall be able to edit created listings |
 | **Priority** | Must |
 
 **Constraints:**
 
-- Sau khi sửa, tin cần được duyệt lại (status = Pending)
-- Không thể sửa tin đang trong giao dịch
+- After editing, listing must be re-approved (status = Pending)
+- Cannot edit listings currently in a transaction
 
 #### FR-SELL-003: Hide/Show Listing
 
 | **Attribute** | **Value** |
 | --- | --- |
 | **ID** | FR-SELL-003 |
-| **Description** | Seller shall có thể ẩn tạm thời hoặc hiện lại tin đăng |
+| **Description** | Sellers shall be able to temporarily hide or unhide listings |
 | **Priority** | Must |
 
 #### FR-SELL-004: Delete Listing
@@ -491,19 +482,19 @@ _Bao gồm tất cả chức năng của Guest_
 | **Attribute** | **Value** |
 | --- | --- |
 | **ID** | FR-SELL-004 |
-| **Description** | Seller shall có thể xóa tin đăng (soft delete) |
+| **Description** | Sellers shall be able to delete listings (soft delete) |
 | **Priority** | Must |
 
 **Constraints:**
 
-- Không thể xóa tin đang có đặt cọc active
+- Cannot delete listings with active deposits
 
 #### FR-SELL-005: Mark as Sold
 
 | **Attribute** | **Value** |
 | --- | --- |
 | **ID** | FR-SELL-005 |
-| **Description** | Seller shall có thể đánh dấu xe đã bán |
+| **Description** | Sellers shall be able to mark bikes as sold |
 | **Priority** | Must |
 
 #### FR-SELL-006: Request Inspection
@@ -511,7 +502,7 @@ _Bao gồm tất cả chức năng của Guest_
 | **Attribute** | **Value** |
 | --- | --- |
 | **ID** | FR-SELL-006 |
-| **Description** | Seller shall có thể gửi yêu cầu kiểm định xe tới Inspector |
+| **Description** | Sellers shall be able to send inspection requests to Inspectors |
 | **Priority** | Should |
 
 #### FR-SELL-007: Reply to Review
@@ -519,7 +510,7 @@ _Bao gồm tất cả chức năng của Guest_
 | **Attribute** | **Value** |
 | --- | --- |
 | **ID** | FR-SELL-007 |
-| **Description** | Seller shall có thể phản hồi đánh giá từ Buyer |
+| **Description** | Sellers shall be able to reply to reviews from Buyers |
 | **Priority** | Should |
 
 ### 3.3.3 Search & Browse (Buyer)
@@ -529,7 +520,7 @@ _Bao gồm tất cả chức năng của Guest_
 | **Attribute** | **Value** |
 | --- | --- |
 | **ID** | FR-BUY-001 |
-| **Description** | User shall có thể tìm kiếm xe theo từ khóa |
+| **Description** | Users shall be able to search bikes by keyword |
 | **Priority** | Must |
 
 #### FR-BUY-002: Basic Filter
@@ -537,59 +528,59 @@ _Bao gồm tất cả chức năng của Guest_
 | **Attribute** | **Value** |
 | --- | --- |
 | **ID** | FR-BUY-002 |
-| **Description** | User shall có thể lọc xe theo tiêu chí cơ bản |
+| **Description** | Users shall be able to filter bikes by basic criteria |
 | **Priority** | Must |
 
 **Filter Options:**
 
-- Loại xe (Road/MTB/City...)
-- Thương hiệu
-- Khoảng giá
-- Địa điểm (Province/City)
-- Tình trạng
+- Bike Type (Road/MTB/City...)
+- Brand
+- Price Range
+- Location (Province/City)
+- Condition
 
 #### FR-BUY-003: Advanced Filter (NEW)
 
 | **Attribute** | **Value** |
 | --- | --- |
 | **ID** | FR-BUY-003 |
-| **Description** | User shall có thể lọc xe theo thông số kỹ thuật chi tiết |
+| **Description** | Users shall be able to filter bikes by detailed technical specs |
 | **Priority** | Must |
 
 **Advanced Filter Options:**
 
-- Kích thước khung (S/M/L hoặc range cm)
-- Kích thước bánh (26, 27.5, 29, 700c)
-- Loại phanh (Đĩa/V-brake)
-- Chất liệu khung (Nhôm/Carbon/Thép)
+- Frame Size (S/M/L or cm range)
+- Wheel Size (26, 27.5, 29, 700c)
+- Brake Type (Disc/V-brake)
+- Frame Material (Aluminum/Carbon/Steel)
 - Groupset (Shimano, SRAM, Campagnolo)
-- Có kiểm định (Verified/All)
-- Có video (Yes/No)
+- Verified (Verified/All)
+- Has Video (Yes/No)
 
 #### FR-BUY-004: View Bike Detail
 
 | **Attribute** | **Value** |
 | --- | --- |
 | **ID** | FR-BUY-004 |
-| **Description** | User shall có thể xem chi tiết xe bao gồm ảnh, mô tả, thông số, báo cáo kiểm định |
+| **Description** | Users shall be able to view bike details including images, description, specs, inspection report |
 | **Priority** | Must |
 
 **Display Information:**
 
-- Image gallery với zoom
-- Video player (nếu có)
-- Chi tiết specs (tất cả thông số kỹ thuật)
-- Seller profile và rating
-- Báo cáo kiểm định công khai (nếu có) - theo BR07
-- Nút liên hệ/chat (chỉ hiện khi đã đăng nhập)
-- Nút đặt cọc
+- Image gallery with zoom
+- Video player (if any)
+- Detailed specs (all technical parameters)
+- Seller profile and rating
+- Public inspection report (if any) - per BR07
+- Contact/Chat button (only visible when logged in)
+- Deposit button
 
 #### FR-BUY-005: Add to Wishlist
 
 | **Attribute** | **Value** |
 | --- | --- |
 | **ID** | FR-BUY-005 |
-| **Description** | Buyer shall có thể lưu xe vào danh sách yêu thích |
+| **Description** | Buyers shall be able to save bikes to their wishlist |
 | **Priority** | Should |
 
 #### FR-BUY-006: Place Deposit
@@ -597,40 +588,40 @@ _Bao gồm tất cả chức năng của Guest_
 | **Attribute** | **Value** |
 | --- | --- |
 | **ID** | FR-BUY-006 |
-| **Description** | Buyer shall có thể đặt cọc giữ xe với cơ chế Escrow |
+| **Description** | Buyers shall be able to place a deposit to reserve a bike using Escrow |
 | **Priority** | Must |
 
 **Business Rules (BR08):**
 
-- Tiền cọc giữ trên hệ thống trung gian
-- Nếu Seller giao đúng: tiền chuyển cho Seller (trừ phí)
-- Nếu Seller hủy/xe sai mô tả: hoàn tiền Buyer
+- Deposit held in intermediate system
+- If Seller delivers correctly: funds transferred to Seller (minus fees)
+- If Seller cancels/wrong description: Buyer refunded
 
 #### FR-BUY-007: Rate Seller
 
 | **Attribute** | **Value** |
 | --- | --- |
 | **ID** | FR-BUY-007 |
-| **Description** | Buyer shall có thể đánh giá seller CHỈ sau khi đơn hàng "Hoàn tất" |
+| **Description** | Buyers shall be able to rate sellers ONLY after order is "Completed" |
 | **Priority** | Must |
 
 **Constraint (BR10):**
 
-- Đánh giá chỉ được phép khi order.status = "Completed"
+- Review allowed only when order.status = "Completed"
 
 #### FR-BUY-008: Report Listing (NEW)
 
 | **Attribute** | **Value** |
 | --- | --- |
 | **ID** | FR-BUY-008 |
-| **Description** | User shall có thể báo cáo tin đăng vi phạm |
+| **Description** | Users shall be able to report violating listings |
 | **Priority** | Must |
 
 **Inputs:**
 
-- Loại vi phạm (Lừa đảo, Hàng giả, Sai mô tả, Spam)
-- Mô tả chi tiết
-- Bằng chứng (ảnh chụp - optional)
+- Violation Type (Scam, Counterfeit, Wrong Description, Spam)
+- Detailed Description
+- Evidence (images - optional)
 
 ### 3.3.4 Messaging System
 
@@ -639,7 +630,7 @@ _Bao gồm tất cả chức năng của Guest_
 | **Attribute** | **Value** |
 | --- | --- |
 | **ID** | FR-MSG-001 |
-| **Description** | User shall có thể bắt đầu cuộc hội thoại với user khác về một sản phẩm cụ thể |
+| **Description** | Users shall be able to start a conversation with another user regarding a specific product |
 | **Priority** | Must |
 
 #### FR-MSG-002: Real-time Messaging
@@ -647,16 +638,16 @@ _Bao gồm tất cả chức năng của Guest_
 | **Attribute** | **Value** |
 | --- | --- |
 | **ID** | FR-MSG-002 |
-| **Description** | Hệ thống shall hỗ trợ chat real-time qua WebSocket |
+| **Description** | The system shall support real-time chat via WebSocket |
 | **Priority** | Must |
 
 **Features:**
 
-- Gửi/nhận tin nhắn text
-- Gửi ảnh
+- Send/receive text messages
+- Send images
 - Typing indicator
 - Message status (sent/delivered/read)
-- Push notification khi có tin mới
+- Push notification for new messages
 
 ### 3.3.5 Inspection System (Inspector)
 
@@ -665,7 +656,7 @@ _Bao gồm tất cả chức năng của Guest_
 | **Attribute** | **Value** |
 | --- | --- |
 | **ID** | FR-INS-001 |
-| **Description** | Inspector shall có thể tiếp nhận yêu cầu kiểm định |
+| **Description** | Inspectors shall be able to receive inspection requests |
 | **Priority** | Should |
 
 #### FR-INS-002: Submit Inspection Report
@@ -673,46 +664,46 @@ _Bao gồm tất cả chức năng của Guest_
 | **Attribute** | **Value** |
 | --- | --- |
 | **ID** | FR-INS-002 |
-| **Description** | Inspector shall có thể điền checklist và upload báo cáo kiểm định |
+| **Description** | Inspectors shall be able to fill checklist and upload inspection report |
 | **Priority** | Should |
 
 **Checklist Items:**
 
-- Tình trạng khung (Frame) - Score 1-5
-- Tình trạng phuộc (Fork) - Score 1-5
-- Hệ thống phanh (Brakes) - Score 1-5
-- Hệ thống truyền động (Drivetrain) - Score 1-5
-- Bánh xe (Wheels) - Score 1-5
-- % mòn xích líp
-- Điểm tổng thể
+- Frame Condition - Score 1-5
+- Fork Condition - Score 1-5
+- Brake System - Score 1-5
+- Drivetrain System - Score 1-5
+- Wheels - Score 1-5
+- Chain/Cassette wear %
+- Overall Score
 - Passed/Failed
-- Ghi chú chuyên gia
-- Ảnh minh chứng
-- File báo cáo PDF
+- Expert Notes
+- Proof Images
+- PDF Report File
 
 #### FR-INS-003: Apply Verified Badge
 
 | **Attribute** | **Value** |
 | --- | --- |
 | **ID** | FR-INS-003 |
-| **Description** | Hệ thống shall tự động gắn nhãn "Verified" khi Inspector approve |
+| **Description** | The system shall automatically apply "Verified" badge when Inspector approves |
 | **Priority** | Should |
 
 **Constraint (BR05):**
 
-- CHỈ Inspector được phép gắn nhãn, Seller không thể tự gắn
+- ONLY Inspectors can apply badge, Sellers cannot apply it themselves
 
 **Constraint (BR06):**
 
-- Nhãn có hiệu lực 7 ngày hoặc cho đến khi xe được bán
-- Nếu xe thay đổi linh kiện, nhãn bị hủy
+- Badge valid for 7 days or until bike is sold
+- If components changed, badge is void
 
 #### FR-INS-004: Dispute Support
 
 | **Attribute** | **Value** |
 | --- | --- |
 | **ID** | FR-INS-004 |
-| **Description** | Inspector shall có thể cung cấp bằng chứng kỹ thuật để hỗ trợ giải quyết tranh chấp |
+| **Description** | Inspectors shall be able to provide technical evidence to support dispute resolution |
 | **Priority** | Should |
 
 ### 3.3.6 Order & Transaction Management
@@ -722,14 +713,14 @@ _Bao gồm tất cả chức năng của Guest_
 | **Attribute** | **Value** |
 | --- | --- |
 | **ID** | FR-ORD-001 |
-| **Description** | Hệ thống shall tạo đơn hàng khi Buyer đặt cọc |
+| **Description** | The system shall create an order when Buyer places a deposit |
 | **Priority** | Must |
 
 **Order Data:**
 
 - buyer_id, product_id
 - total_amount, deposit_amount
-- service_fee (theo BR09)
+- service_fee (per BR09)
 - payment_method
 - status: Pending → Deposited → Completed → Cancelled
 
@@ -738,7 +729,7 @@ _Bao gồm tất cả chức năng của Guest_
 | **Attribute** | **Value** |
 | --- | --- |
 | **ID** | FR-ORD-002 |
-| **Description** | Seller shall có thể chấp nhận hoặc từ chối đơn đặt cọc |
+| **Description** | Sellers shall be able to accept or reject deposit orders |
 | **Priority** | Must |
 
 #### FR-ORD-003: Complete Transaction
@@ -746,7 +737,7 @@ _Bao gồm tất cả chức năng của Guest_
 | **Attribute** | **Value** |
 | --- | --- |
 | **ID** | FR-ORD-003 |
-| **Description** | Hệ thống shall ghi nhận giao dịch hoàn tất và xử lý tiền cọc |
+| **Description** | The system shall record transaction completion and process the deposit |
 | **Priority** | Must |
 
 #### FR-ORD-004: Transaction Logging
@@ -754,7 +745,7 @@ _Bao gồm tất cả chức năng của Guest_
 | **Attribute** | **Value** |
 | --- | --- |
 | **ID** | FR-ORD-004 |
-| **Description** | Hệ thống shall ghi log chi tiết từng lần tiền vào/ra |
+| **Description** | The system shall log details of every money inflow/outflow |
 | **Priority** | Must |
 
 ### 3.3.7 Notification System (NEW)
@@ -764,23 +755,23 @@ _Bao gồm tất cả chức năng của Guest_
 | **Attribute** | **Value** |
 | --- | --- |
 | **ID** | FR-NOTIF-001 |
-| **Description** | Hệ thống shall gửi thông báo khi có sự kiện quan trọng |
+| **Description** | The system shall send notifications for important events |
 | **Priority** | Must |
 
 **Notification Types:**
 
-- Tin nhắn mới
-- Trạng thái đơn hàng thay đổi
-- Tin đăng được duyệt/từ chối
-- Xe đã được kiểm định xong
-- Có đánh giá mới
+- New message
+- Order status change
+- Listing approved/rejected
+- Bike inspection completed
+- New review
 
 #### FR-NOTIF-002: Notification Center
 
 | **Attribute** | **Value** |
 | --- | --- |
 | **ID** | FR-NOTIF-002 |
-| **Description** | User shall có thể xem tất cả thông báo và đánh dấu đã đọc |
+| **Description** | Users shall be able to view all notifications and mark as read |
 | **Priority** | Must |
 
 ### 3.3.8 Admin Management
@@ -790,7 +781,7 @@ _Bao gồm tất cả chức năng của Guest_
 | **Attribute** | **Value** |
 | --- | --- |
 | **ID** | FR-ADM-001 |
-| **Description** | Admin shall có thể quản lý tất cả user accounts |
+| **Description** | Admins shall be able to manage all user accounts |
 | **Priority** | Must |
 
 **Functions:**
@@ -805,7 +796,7 @@ _Bao gồm tất cả chức năng của Guest_
 | **Attribute** | **Value** |
 | --- | --- |
 | **ID** | FR-ADM-002 |
-| **Description** | Admin shall có thể duyệt hoặc từ chối tin đăng (theo BR04) |
+| **Description** | Admins shall be able to approve or reject listings (per BR04) |
 | **Priority** | Must |
 
 #### FR-ADM-003: Report Management
@@ -813,7 +804,7 @@ _Bao gồm tất cả chức năng của Guest_
 | **Attribute** | **Value** |
 | --- | --- |
 | **ID** | FR-ADM-003 |
-| **Description** | Admin shall có thể xử lý báo cáo vi phạm |
+| **Description** | Admins shall be able to handle violation reports |
 | **Priority** | Must |
 
 #### FR-ADM-004: Category & Brand Management
@@ -821,7 +812,7 @@ _Bao gồm tất cả chức năng của Guest_
 | **Attribute** | **Value** |
 | --- | --- |
 | **ID** | FR-ADM-004 |
-| **Description** | Admin shall có thể quản lý danh mục, thương hiệu, groupset, size chart |
+| **Description** | Admins shall be able to manage categories, brands, groupsets, size charts |
 | **Priority** | Must |
 
 #### FR-ADM-005: Dispute Resolution
@@ -829,7 +820,7 @@ _Bao gồm tất cả chức năng của Guest_
 | **Attribute** | **Value** |
 | --- | --- |
 | **ID** | FR-ADM-005 |
-| **Description** | Admin shall có thể giải quyết tranh chấp dựa trên báo cáo Inspector (BR11) |
+| **Description** | Admins shall be able to resolve disputes based on Inspector reports (BR11) |
 | **Priority** | Must |
 
 #### FR-ADM-006: Analytics Dashboard
@@ -837,7 +828,7 @@ _Bao gồm tất cả chức năng của Guest_
 | **Attribute** | **Value** |
 | --- | --- |
 | **ID** | FR-ADM-006 |
-| **Description** | Admin shall có thể xem thống kê và báo cáo hệ thống |
+| **Description** | Admins shall be able to view system statistics and reports |
 | **Priority** | Must |
 
 **Reports:**
@@ -853,9 +844,9 @@ _Bao gồm tất cả chức năng của Guest_
 
 | **ID** | **Description** | **Target** |
 | --- | --- | --- |
-| NFR-PERF-001 | Page Load Time | < 3 giây (TTI) |
+| NFR-PERF-001 | Page Load Time | < 3 seconds (TTI) |
 | NFR-PERF-002 | API Response Time | < 500ms (read), < 1000ms (write) |
-| NFR-PERF-003 | Search Performance | < 1 giây cho 100K listings |
+| NFR-PERF-003 | Search Performance | < 1 second for 100K listings |
 | NFR-PERF-004 | Concurrent Users | 5,000 users |
 
 ### 3.4.2 Security Requirements
@@ -884,53 +875,53 @@ _Bao gồm tất cả chức năng của Guest_
 | NFR-USA-002 | Accessibility | WCAG 2.1 Level AA |
 | NFR-USA-003 | Navigation | 90% task completion without help |
 
-# 4\. Business Rules
+# 4. Business Rules
 
-## 4.1 Listing Rules (Quy tắc Tin đăng)
-
-| **BR ID** | **Rule** | **Description** |
-| --- | --- | --- |
-| **BR01** | Tiêu chuẩn thông tin kỹ thuật | Khi đăng tin, Seller PHẢI nhập: Size khung, Kích thước bánh, Loại phanh, Chất liệu khung |
-| **BR02** | Hình ảnh thực tế | Tối thiểu 3 ảnh: Ảnh toàn thân, ảnh groupset, ảnh số khung (serial) |
-| **BR03** | Thời hạn tin đăng | Tin có hiệu lực 30 ngày, sau đó phải gia hạn |
-| **BR04** | Trạng thái tin mới | Tin mới = "Pending", cần Admin duyệt trước khi hiển thị |
-
-## 4.2 Inspection Rules (Quy tắc Kiểm định)
+## 4.1 Listing Rules
 
 | **BR ID** | **Rule** | **Description** |
 | --- | --- | --- |
-| **BR05** | Quy trình gắn nhãn | Nhãn "Verified" CHỈ được cấp bởi Inspector, Seller không thể tự gắn |
-| **BR06** | Hiệu lực kiểm định | Báo cáo có giá trị 7 ngày hoặc đến khi bán. Thay đổi linh kiện = hủy nhãn |
-| **BR07** | Minh bạch báo cáo | Báo cáo kiểm định PHẢI công khai trên trang chi tiết sản phẩm |
+| **BR01** | Technical Data Standards | When posting, Seller MUST enter: Frame Size, Wheel Size, Brake Type, Frame Material |
+| **BR02** | Real Images | Minimum 3 images: Full bike, Groupset, Serial number |
+| **BR03** | Listing Duration | Listing valid for 30 days, then must be renewed |
+| **BR04** | New Listing Status | New Listing = "Pending", requires Admin approval to display |
 
-## 4.3 Transaction Rules (Quy tắc Giao dịch)
-
-| **BR ID** | **Rule** | **Description** |
-| --- | --- | --- |
-| **BR08** | Cơ chế Escrow | Tiền cọc giữ trung gian. Giao đúng = chuyển Seller. Hủy/sai = hoàn Buyer |
-| **BR09** | Phí dịch vụ | Thu phí x% khi giao dịch thành công hoặc phí kiểm định |
-
-## 4.4 Trust & Safety Rules (Quy tắc Tin cậy)
+## 4.2 Inspection Rules
 
 | **BR ID** | **Rule** | **Description** |
 | --- | --- | --- |
-| **BR10** | Điều kiện đánh giá | Buyer CHỈ được đánh giá sau khi đơn hàng "Hoàn tất" |
-| **BR11** | Xử lý tranh chấp | Kết quả từ Inspector là căn cứ ưu tiên để Admin quyết định hoàn tiền |
+| **BR05** | Badging Process | "Verified" Badge ONLY issued by Inspector, Seller cannot self-apply |
+| **BR06** | Inspection Validity | Report valid for 7 days or until sold. Component change = badge void |
+| **BR07** | Report Transparency | Inspection report MUST be public on product detail page |
+
+## 4.3 Transaction Rules
+
+| **BR ID** | **Rule** | **Description** |
+| --- | --- | --- |
+| **BR08** | Escrow Mechanism | Deposit held by intermediary. Correct Delivery = transfer to Seller. Cancellation/Wrong Description = refund Buyer |
+| **BR09** | Service Fee | Collect x% fee on successful transaction or inspection fee |
+
+## 4.4 Trust & Safety Rules
+
+| **BR ID** | **Rule** | **Description** |
+| --- | --- | --- |
+| **BR10** | Rating Condition | Buyer can ONLY rate after order is "Completed" |
+| **BR11** | Dispute Resolution | Inspector's result is priority basis for Admin refund decision |
 
 # Appendix A: Glossary
 
 | **Term** | **Definition** |
 | --- | --- |
-| **Listing/Product** | Tin đăng bán xe trên hệ thống |
-| **Deposit** | Khoản tiền đặt cọc để giữ xe |
-| **Escrow** | Cơ chế giữ tiền trung gian giữa buyer và seller |
-| **Inspection** | Quá trình kiểm định tình trạng xe bởi Inspector |
-| **Verified Badge** | Nhãn hiển thị xe đã được kiểm định |
-| **Wishlist** | Danh sách xe yêu thích của Buyer |
-| **Rating** | Điểm đánh giá uy tín (1-5 sao) |
-| **Moderation** | Quá trình Admin duyệt/từ chối nội dung |
-| **Groupset** | Bộ truyền động xe đạp (líp, đùi đĩa, tay đề...) |
-| **Frame Size** | Kích thước khung xe (S/M/L/XL hoặc cm) |
+| **Listing/Product** | Bike sale advertisement on the system |
+| **Deposit** | Money placed to reserve a bike |
+| **Escrow** | Intermediate money holding mechanism between buyer and seller |
+| **Inspection** | Process of checking bike condition by an Inspector |
+| **Verified Badge** | Label indicating bike has been inspected |
+| **Wishlist** | Buyer's list of favorite bikes |
+| **Rating** | Reputation score (1-5 stars) |
+| **Moderation** | Process of Admin approving/rejecting content |
+| **Groupset** | Bicycle drivetrain components (cassette, crankset, shifters...) |
+| **Frame Size** | Bicycle frame size (S/M/L/XL or cm) |
 
 # Appendix B: Database Schema
 
@@ -1089,7 +1080,7 @@ reviews
 ├── reported_id (UUID)  
 ├── reason (ENUM: fraud, fake, wrong_description, spam, other)  
 ├── description (TEXT)  
-├── evidence_urls (TEXT\[\])  
+├── evidence_urls (TEXT[])  
 ├── status (ENUM: pending, reviewed, resolved)  
 ├── admin_note (TEXT, nullable)  
 ├── resolved_by (UUID, FK → users, nullable)  

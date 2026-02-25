@@ -20,6 +20,10 @@ export const ROUTES = {
   INSPECTOR_REQUESTS: '/inspector/requests',
   INSPECTOR_FORM: '/inspector/inspect/:id',
   INSPECTOR_HISTORY: '/inspector/history',
+  // Seller routes
+  SELLER: '/seller',
+  SELLER_LISTINGS: '/seller/listings',
+  SELLER_ORDERS: '/seller/orders',
 } as const;
 
 // Helper function to build dynamic routes

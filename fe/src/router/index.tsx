@@ -5,6 +5,7 @@ import MainLayout from '../layouts/MainLayout';
 import AdminLayout from '../layouts/AdminLayout';
 import InspectorLayout from '../layouts/InspectorLayout';
 import ProtectedRoute from './ProtectedRoute';
+import SellerLayout from '../layouts/SellerLayout';
 import {
     HomePage,
     BikeListingPage,
@@ -24,6 +25,11 @@ const AdminListingsPage = lazy(() => import('../pages/admin/AdminListingsPage'))
 const AdminReportsPage = lazy(() => import('../pages/admin/AdminReportsPage'));
 const AdminCategoriesPage = lazy(() => import('../pages/admin/AdminCategoriesPage'));
 const AdminDisputesPage = lazy(() => import('../pages/admin/AdminDisputesPage'));
+
+// Seller pages (lazy loaded)
+const SellerDashboardPage = lazy(() => import('../pages/seller/SellerDashboardPage'));
+const SellerListingsPage = lazy(() => import('../pages/seller/SellerListingsPage'));
+const SellerOrdersPage = lazy(() => import('../pages/seller/SellerOrdersPage'));
 
 // Inspector pages (lazy loaded)
 const InspectorDashboardPage = lazy(() => import('../pages/inspector/InspectorDashboardPage'));
@@ -81,6 +87,13 @@ export default function AppRouter() {
                     <Route path={ROUTES.ADMIN_REPORTS} element={<AdminReportsPage />} />
                     <Route path={ROUTES.ADMIN_CATEGORIES} element={<AdminCategoriesPage />} />
                     <Route path={ROUTES.ADMIN_DISPUTES} element={<AdminDisputesPage />} />
+                </Route>
+
+                {/* Seller layout routes (Protected) */}
+                <Route element={<ProtectedRoute><SellerLayout /></ProtectedRoute>}>
+                    <Route path={ROUTES.SELLER} element={<SellerDashboardPage />} />
+                    <Route path={ROUTES.SELLER_LISTINGS} element={<SellerListingsPage />} />
+                    <Route path={ROUTES.SELLER_ORDERS} element={<SellerOrdersPage />} />
                 </Route>
 
                 {/* Inspector layout routes */}

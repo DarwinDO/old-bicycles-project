@@ -1,10 +1,10 @@
 import { cn } from '@/lib/utils';
-import type { LucideIcon } from 'lucide-react';
 
 interface StatCardProps {
     title: string;
     value: string | number;
-    icon: LucideIcon;
+    icon: React.ReactNode;
+    description?: string;
     trend?: {
         value: number;
         isPositive: boolean;
@@ -12,7 +12,7 @@ interface StatCardProps {
     className?: string;
 }
 
-export function StatCard({ title, value, icon: Icon, trend, className }: StatCardProps) {
+export function StatCard({ title, value, icon, description, trend, className }: StatCardProps) {
     return (
         <div
             className={cn(
@@ -24,6 +24,9 @@ export function StatCard({ title, value, icon: Icon, trend, className }: StatCar
                 <div className="space-y-2">
                     <p className="text-sm text-muted-foreground">{title}</p>
                     <p className="text-2xl font-bold text-foreground">{value}</p>
+                    {description && (
+                        <p className="text-xs text-muted-foreground">{description}</p>
+                    )}
                     {trend && (
                         <p
                             className={cn(
@@ -32,12 +35,12 @@ export function StatCard({ title, value, icon: Icon, trend, className }: StatCar
                             )}
                         >
                             {trend.isPositive ? '↑' : '↓'} {Math.abs(trend.value)}%
-                            <span className="text-muted-foreground ml-1">so với tuần trước</span>
+                            <span className="text-muted-foreground ml-1">so với tháng trước</span>
                         </p>
                     )}
                 </div>
-                <div className="p-3 bg-primary/10 rounded-lg">
-                    <Icon className="h-5 w-5 text-primary" />
+                <div className="p-3 bg-primary/10 rounded-lg text-primary">
+                    {icon}
                 </div>
             </div>
         </div>

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { User, Mail, Phone, MapPin, Camera, Settings, LogOut, Heart, Package, Star, Shield } from 'lucide-react'
+import { User, Mail, Phone, MapPin, Camera, Settings, LogOut, Heart, Package, Star, Shield, ShoppingBag } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { ROUTES } from '@/constants/routes'
 import { cn } from '@/lib/utils'
+import { BuyerOrdersView } from '@/components/profile/BuyerOrdersView'
 
 const userData = {
     name: 'Nguyễn Văn A',
@@ -24,6 +25,7 @@ const userData = {
 
 const tabs = [
     { id: 'profile', label: 'Thông tin', icon: User },
+    { id: 'orders', label: 'Đơn mua', icon: ShoppingBag },
     { id: 'listings', label: 'Tin đăng', icon: Package },
     { id: 'wishlist', label: 'Yêu thích', icon: Heart },
     { id: 'reviews', label: 'Đánh giá', icon: Star },
@@ -162,6 +164,10 @@ export default function ProfilePage() {
                                     </div>
                                 </CardContent>
                             </Card>
+                        )}
+
+                        {activeTab === 'orders' && (
+                            <BuyerOrdersView />
                         )}
 
                         {activeTab === 'listings' && (

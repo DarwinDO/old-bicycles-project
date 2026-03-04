@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 interface StatCardProps {
     title: string;
     value: string | number;
-    icon: React.ReactNode;
+    icon: React.ElementType;
     description?: string;
     trend?: {
         value: number;
@@ -12,7 +12,7 @@ interface StatCardProps {
     className?: string;
 }
 
-export function StatCard({ title, value, icon, description, trend, className }: StatCardProps) {
+export function StatCard({ title, value, icon: Icon, description, trend, className }: StatCardProps) {
     return (
         <div
             className={cn(
@@ -40,7 +40,7 @@ export function StatCard({ title, value, icon, description, trend, className }: 
                     )}
                 </div>
                 <div className="p-3 bg-primary/10 rounded-lg text-primary">
-                    {icon}
+                    <Icon className="h-5 w-5" />
                 </div>
             </div>
         </div>

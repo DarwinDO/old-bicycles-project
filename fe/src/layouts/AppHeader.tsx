@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Menu, Bike, Plus, LogIn, LogOut, User, ChevronDown } from 'lucide-react'
+import { Menu, Bike, Plus, LogIn, LogOut, User, ChevronDown, Bell } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -17,6 +17,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { LayoutDashboard } from 'lucide-react'
 
 const navigation = [
     { name: 'Trang chủ', href: ROUTES.HOME },
@@ -80,6 +81,10 @@ export default function AppHeader() {
                                 <Plus className="mr-2 h-4 w-4" />
                                 Đăng tin
                             </Button>
+                            <Button variant="ghost" size="icon" className="relative" onClick={() => navigate('/notifications')}>
+                                <Bell className="h-5 w-5 text-muted-foreground hover:text-foreground" />
+                                {/* Optional: Unread indicator can be added here once integrated globally */}
+                            </Button>
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <button className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-muted transition-colors">
@@ -98,11 +103,30 @@ export default function AppHeader() {
                                             <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
                                         </div>
                                     </DropdownMenuLabel>
-                                    <DropdownMenuSeparator />
                                     <DropdownMenuItem onClick={() => navigate(ROUTES.PROFILE)}>
                                         <User className="mr-2 h-4 w-4" />
                                         Trang cá nhân
                                     </DropdownMenuItem>
+                                    
+                                    {/* Role-specific dashboards */}
+                                    {user.role === 'admin' && (
+                                        <DropdownMenuItem onClick={() => navigate(ROUTES.ADMIN)}>
+                                            <LayoutDashboard className="mr-2 h-4 w-4" />
+                                            Trang Quản Trị
+                                        </DropdownMenuItem>
+                                    )}
+                                    {user.role === 'inspector' && (
+                                        <DropdownMenuItem onClick={() => navigate(ROUTES.INSPECTOR)}>
+                                            <LayoutDashboard className="mr-2 h-4 w-4" />
+                                            Trang Kiểm Định
+                                        </DropdownMenuItem>
+                                    )}
+                                    {user.role === 'seller' && (
+                                        <DropdownMenuItem onClick={() => navigate(ROUTES.SELLER)}>
+                                            <LayoutDashboard className="mr-2 h-4 w-4" />
+                                            Trang Bán Hàng
+                                        </DropdownMenuItem>
+                                    )}
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={handleLogout}>
                                         <LogOut className="mr-2 h-4 w-4" />
@@ -146,15 +170,20 @@ export default function AppHeader() {
                             </SheetHeader>
                             <div className="mt-6 flex flex-col gap-2">
                                 {isAuthenticated && user && (
-                                    <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-muted mb-2">
-                                        <Avatar className="h-9 w-9">
-                                            <AvatarImage src={user.avatar ?? undefined} />
-                                            <AvatarFallback>{(user.firstName || user.email)?.[0]?.toUpperCase()}</AvatarFallback>
-                                        </Avatar>
-                                        <div className="flex flex-col">
-                                            <span className="text-sm font-medium">{user.name || user.email}</span>
-                                            <span className="text-xs text-muted-foreground truncate max-w-[180px]">{user.email}</span>
+                                    <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-muted mb-2">
+                                        <div className="flex items-center gap-3">
+                                            <Avatar className="h-9 w-9">
+                                                <AvatarImage src={user.avatar ?? undefined} />
+                                                <AvatarFallback>{(user.firstName || user.email)?.[0]?.toUpperCase()}</AvatarFallback>
+                                            </Avatar>
+                                            <div className="flex flex-col">
+                                                <span className="text-sm font-medium">{user.name || user.email}</span>
+                                                <span className="text-xs text-muted-foreground truncate max-w-[150px]">{user.email}</span>
+                                            </div>
                                         </div>
+                                        <Button variant="ghost" size="icon" onClick={() => { navigate('/notifications'); setMobileMenuOpen(false); }}>
+                                            <Bell className="h-5 w-5" />
+                                        </Button>
                                     </div>
                                 )}
                                 {navigation.map((item) => (
@@ -183,6 +212,38 @@ export default function AppHeader() {
                                             <User className="mr-2 h-4 w-4" />
                                             Trang cá nhân
                                         </Button>
+                                        
+                                        {/* Mobile role-specific dashboards */}
+                                        {user?.role === 'admin' && (
+                                            <Button
+                                                variant="outline"
+                                                className="justify-start"
+                                                onClick={() => { navigate(ROUTES.ADMIN); setMobileMenuOpen(false) }}
+                                            >
+                                                <LayoutDashboard className="mr-2 h-4 w-4" />
+                                                Trang Quản Trị
+                                            </Button>
+                                        )}
+                                        {user?.role === 'inspector' && (
+                                            <Button
+                                                variant="outline"
+                                                className="justify-start"
+                                                onClick={() => { navigate(ROUTES.INSPECTOR); setMobileMenuOpen(false) }}
+                                            >
+                                                <LayoutDashboard className="mr-2 h-4 w-4" />
+                                                Trang Kiểm Định
+                                            </Button>
+                                        )}
+                                        {user?.role === 'seller' && (
+                                            <Button
+                                                variant="outline"
+                                                className="justify-start"
+                                                onClick={() => { navigate(ROUTES.SELLER); setMobileMenuOpen(false) }}
+                                            >
+                                                <LayoutDashboard className="mr-2 h-4 w-4" />
+                                                Trang Bán Hàng
+                                            </Button>
+                                        )}
                                         <Button
                                             variant="destructive"
                                             className="justify-start"

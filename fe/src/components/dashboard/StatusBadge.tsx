@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 
-type StatusVariant = 'pending' | 'active' | 'banned' | 'sold' | 'verified' | 'rejected' | 'completed';
+type StatusVariant = 'pending' | 'active' | 'banned' | 'sold' | 'verified' | 'rejected' | 'completed' | 'reviewed' | 'resolved' | 'unactive';
 
 interface StatusBadgeProps {
     status: StatusVariant;
@@ -15,7 +15,7 @@ const statusConfig: Record<StatusVariant, { label: string; className: string }> 
     },
     active: {
         label: 'Hoạt động',
-        className: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
+        className: 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800',
     },
     banned: {
         label: 'Bị khóa',
@@ -35,12 +35,24 @@ const statusConfig: Record<StatusVariant, { label: string; className: string }> 
     },
     completed: {
         label: 'Hoàn tất',
-        className: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
+        className: 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800',
+    },
+    reviewed: {
+        label: 'Đã xem xét',
+        className: 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800',
+    },
+    resolved: {
+        label: 'Đã giải quyết',
+        className: 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800',
+    },
+    unactive: {
+        label: 'Chưa kích hoạt',
+        className: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
     },
 };
 
 export function StatusBadge({ status, className }: StatusBadgeProps) {
-    const config = statusConfig[status];
+    const config = statusConfig[status] ?? { label: status, className: 'bg-gray-100 text-gray-600' };
 
     return (
         <Badge variant="secondary" className={cn(config.className, className)}>

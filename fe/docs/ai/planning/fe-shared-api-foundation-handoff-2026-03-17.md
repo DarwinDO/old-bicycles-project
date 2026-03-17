@@ -1,6 +1,30 @@
 # FE Shared API Foundation Handoff - 2026-03-17
 
-## Mục tiêu
+## Cập nhật - Admin Listings Không Còn Là Mock
+
+Tranche Dev 1 đã nối thật:
+
+- `src/pages/admin/AdminListingsPage.tsx`
+- `src/api/admin-products.api.ts`
+- `src/components/dashboard/StatusBadge.tsx`
+- `src/components/dashboard/ConfirmDialog.tsx`
+- `src/components/dashboard/DataTable.tsx`
+
+Trang này hiện đã:
+
+- gọi `GET /api/admin/products`
+- lọc theo `keyword` và `status`
+- duyệt listing qua `PATCH /api/admin/products/{id}/approve`
+- ẩn listing qua `PATCH /api/admin/products/{id}/hide`
+- mở trang chi tiết xe public qua route `/bikes/:id`
+- dùng server pagination (`page`, `size`) thay vì mock array cục bộ
+
+Regression đã thêm:
+
+- `src/pages/admin/AdminListingsPage.test.tsx`
+- `src/components/dashboard/StatusBadge.test.tsx`
+
+## Mục Tiêu
 
 Dựng một lớp nền FE dùng chung cho cả 3 người để:
 
@@ -9,7 +33,7 @@ Dựng một lớp nền FE dùng chung cho cả 3 người để:
 - role guard, auth session, refresh token, WebSocket chat dùng cùng một chuẩn
 - giảm merge conflict khi bắt đầu gắn API vào từng page
 
-## Những gì đã được dựng
+## Những Gì Đã Được Dựng
 
 ### 1. Shared auth/session spine
 
@@ -34,7 +58,7 @@ Dựng một lớp nền FE dùng chung cho cả 3 người để:
   - context auth dùng chung
   - có `user`, `isAuthenticated`, `isLoading`, `login`, `logout`, `refreshUser`, `hasRole`
 - `src/router/ProtectedRoute.tsx`
-  - support `allowedRoles`
+  - hỗ trợ `allowedRoles`
 - `src/router/index.tsx`
   - admin route guard
   - seller route guard
@@ -123,7 +147,7 @@ Nguyên tắc:
   - chưa pass toàn repo
   - hiện còn lỗi legacy ở một số file cũ, không nằm trong shared API foundation mới
 
-## Những file shared hiện do lead quản lý
+## Những File Shared Hiện Do Lead Quản Lý
 
 Các file dưới đây xem như **shared foundation**. Dev 2 và Dev 3 không nên tự refactor nếu chưa trao đổi:
 
@@ -143,7 +167,7 @@ Nguyên tắc:
 - nếu chỉ cần dùng API: import module có sẵn
 - không mở PR kiểu “tiện tay sửa luôn shared layer” khi đang làm task page riêng
 
-## Phân công chạm file cho 3 dev
+## Phân Công Chạm File Cho 3 Dev
 
 ## Dev 1
 
@@ -255,7 +279,7 @@ Không nên tự sửa:
 - `payments.api.ts`
 - `chat.api.ts`
 
-## Các seam dễ đụng nhau nhất
+## Các Seam Dễ Đụng Nhau Nhất
 
 ### 1. `BikeDetailPage`
 
@@ -311,7 +335,7 @@ Nếu cần thêm route:
 - thêm route theo tranche
 - tránh sửa cùng lúc nhiều layout
 
-## Các lưu ý kỹ thuật quan trọng
+## Các Lưu Ý Kỹ Thuật Quan Trọng
 
 ### 1. FE không xử lý webhook SePay
 
@@ -366,13 +390,13 @@ Nhưng page không cần tự chạm `.data.result` nữa.
 Ví dụ:
 
 ```ts
-const orders = await ordersApi.getMine()
+const orders = await ordersApi.getMine();
 ```
 
 chứ không tự:
 
 ```ts
-axios.get(...).then((res) => res.data.result)
+axios.get(...).then((res) => res.data.result);
 ```
 
 ### 5. Pagination dùng `PageResult<T>`
@@ -400,7 +424,7 @@ Dùng:
 
 vì module này đã build `FormData` đúng format backend cần.
 
-## Trạng thái validation hiện tại
+## Trạng Thái Validation Hiện Tại
 
 ### Đã ổn
 
@@ -428,7 +452,7 @@ Khuyến nghị:
 - không mở task cleanup lint toàn repo trong cùng PR tích hợp API
 - chỉ sửa khi file đó đúng là file bạn đang phụ trách
 
-## Cách làm việc an toàn cho cả nhóm
+## Cách Làm Việc An Toàn Cho Cả Nhóm
 
 1. Mỗi người chỉ chạm page/component trong tranche của mình.
 2. Dùng lại `src/api/**` và `src/types/**`, không viết lại bản riêng.
@@ -441,7 +465,7 @@ Khuyến nghị:
    - test request/response thật
    - không refactor lan sang phần của người khác
 
-## Kết luận
+## Kết Luận
 
 Hiện FE đã có một lớp foundation đủ để cả 3 dev bắt đầu gắn API thật mà không phải dựng lại từ đầu.
 

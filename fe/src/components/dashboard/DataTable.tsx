@@ -1,29 +1,31 @@
 'use client';
 
+import { useState } from 'react';
 import {
-    type ColumnDef,
     flexRender,
     getCoreRowModel,
-    useReactTable,
-    getSortedRowModel,
-    type SortingState,
     getPaginationRowModel,
+    getSortedRowModel,
+    type ColumnDef,
+    type SortingState,
+    useReactTable,
 } from '@tanstack/react-table';
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, ChevronsUpDown } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 interface DataTableProps<TData, TValue> {
     columns: ColumnDef<TData, TValue>[];
     data: TData[];
     pageSize?: number;
+    showPagination?: boolean;
 }
 
 export function DataTable<TData, TValue>({
     columns,
     data,
     pageSize = 10,
+    showPagination = true,
 }: DataTableProps<TData, TValue>) {
     const [sorting, setSorting] = useState<SortingState>([]);
 
@@ -46,7 +48,7 @@ export function DataTable<TData, TValue>({
 
     return (
         <div className="space-y-4">
-            <div className="rounded-lg border border-border overflow-hidden">
+            <div className="overflow-hidden rounded-lg border border-border">
                 <table className="w-full">
                     <thead className="bg-muted/50">
                         {table.getHeaderGroups().map((headerGroup) => (
@@ -60,7 +62,7 @@ export function DataTable<TData, TValue>({
                                             <div
                                                 className={cn(
                                                     'flex items-center gap-2',
-                                                    header.column.getCanSort() && 'cursor-pointer select-none'
+                                                    header.column.getCanSort() && 'cursor-pointer select-none',
                                                 )}
                                                 onClick={header.column.getToggleSortingHandler()}
                                             >
@@ -76,11 +78,11 @@ export function DataTable<TData, TValue>({
                         ))}
                     </thead>
                     <tbody>
-                        {table.getRowModel().rows?.length ? (
+                        {table.getRowModel().rows.length ? (
                             table.getRowModel().rows.map((row) => (
                                 <tr
                                     key={row.id}
-                                    className="border-t border-border hover:bg-muted/30 transition-colors"
+                                    className="border-t border-border transition-colors hover:bg-muted/30"
                                 >
                                     {row.getVisibleCells().map((cell) => (
                                         <td key={cell.id} className="px-4 py-3 text-sm">
@@ -91,10 +93,7 @@ export function DataTable<TData, TValue>({
                             ))
                         ) : (
                             <tr>
-                                <td
-                                    colSpan={columns.length}
-                                    className="h-24 text-center text-muted-foreground"
-                                >
+                                <td colSpan={columns.length} className="h-24 text-center text-muted-foreground">
                                     Không có dữ liệu
                                 </td>
                             </tr>
@@ -103,30 +102,31 @@ export function DataTable<TData, TValue>({
                 </table>
             </div>
 
-            {/* Pagination */}
-            <div className="flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">
-                    Trang {table.getState().pagination.pageIndex + 1} / {table.getPageCount()}
-                </p>
-                <div className="flex items-center gap-2">
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => table.previousPage()}
-                        disabled={!table.getCanPreviousPage()}
-                    >
-                        <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => table.nextPage()}
-                        disabled={!table.getCanNextPage()}
-                    >
-                        <ChevronRight className="h-4 w-4" />
-                    </Button>
+            {showPagination && (
+                <div className="flex items-center justify-between">
+                    <p className="text-sm text-muted-foreground">
+                        Trang {table.getState().pagination.pageIndex + 1} / {table.getPageCount()}
+                    </p>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => table.previousPage()}
+                            disabled={!table.getCanPreviousPage()}
+                        >
+                            <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => table.nextPage()}
+                            disabled={!table.getCanNextPage()}
+                        >
+                            <ChevronRight className="h-4 w-4" />
+                        </Button>
+                    </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 }

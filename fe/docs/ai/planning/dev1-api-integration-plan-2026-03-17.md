@@ -6,6 +6,36 @@ description: File-level backlog and execution order for FE Dev 1 API integration
 
 # FE Dev 1 API Integration Plan - 2026-03-17
 
+## Progress Update - 2026-03-17
+
+Đã xong shared foundation và tranche đầu tiên của Dev 1:
+
+- shared `src/types/**`
+- shared `src/api/**`
+- shared `src/lib/http.ts`
+- shared `src/lib/auth-storage.ts`
+- shared auth/session wiring (`AuthContext`, `ProtectedRoute`, router role guard)
+- `src/pages/admin/AdminListingsPage.tsx` đã nối API thật
+
+Admin listings hiện đã:
+
+- bỏ `mockListings`
+- load danh sách thật từ `GET /api/admin/products`
+- lọc theo `keyword` và `status`
+- approve/hide listing thật
+- có loading/error/pagination state
+
+Validation mới nhất:
+
+- `npm run test:run -- src/components/dashboard/StatusBadge.test.tsx src/pages/admin/AdminListingsPage.test.tsx`
+- `npm run build`
+
+Trạng thái execution:
+
+- Phase 1: done
+- Phase 2: done cho nhóm shared + admin product domain
+- Phase 3: in progress, phần admin listings đã xong
+
 ## Goal
 
 Hoàn thành phần tích hợp API khó nhất của FE Dev 1 cho 3 cụm:
@@ -30,19 +60,14 @@ Hoàn thành phần tích hợp API khó nhất của FE Dev 1 cho 3 cụm:
 
 ### What is still missing
 
-- Chưa có `src/api/`
-- Chưa có `src/types/`
-- Chưa có auth store / session layer thật
-- Chưa có HTTP client unwrap `ApiResponse<T>`
-- Chưa có refresh-token flow
-- Chưa có WebSocket/STOMP client
-- Hầu hết màn Dev 1 đang dùng mock data hoặc optimistic state local
+- Hầu hết màn Dev 1 ngoài admin listings vẫn đang dùng mock data hoặc state cục bộ
+- chat realtime mới có foundation, chưa gắn vào UI thật
+- order/payment/refund chưa nối API ở seller/buyer flow
 
 ## Files That Prove Dev 1 Scope Is Still Mock
 
 - `src/pages/admin/AdminListingsPage.tsx`
-  - dùng `mockListings`
-  - action hiện chỉ `console.log`
+  - đã không còn mock, đây là tranche đầu tiên đã hoàn thành
 - `src/pages/seller/SellerOrdersPage.tsx`
   - dùng `FAKE_ORDERS`
   - chưa gọi BE
@@ -56,46 +81,42 @@ Hoàn thành phần tích hợp API khó nhất của FE Dev 1 cho 3 cụm:
 - `src/components/messages/ChatWindow.tsx`
   - dùng `getMessagesForChat`
   - gửi message kiểu fake local
-- `src/router/ProtectedRoute.tsx`
-  - chỉ check `localStorage.getItem('authToken')`
 
 ## Dependency Order
 
 Dev 1 không nên đi thẳng vào từng page. Thứ tự đúng là:
 
-1. dựng integration spine dùng chung
-2. nối admin moderation
-3. nối order / payment / refund
-4. nối chat REST
-5. nối chat realtime
-6. polish loading / error / empty states
+1. shared foundation
+2. admin moderation
+3. order / payment / refund
+4. chat REST
+5. chat realtime
+6. loading / error / empty states
 
 ## Task Breakdown
 
 ### Phase 1 - Integration Spine
 
-- [ ] Tạo `src/types/api.ts`
+- [x] Tạo `src/types/api.ts`
   - Verify: có type chung cho `ApiResponse<T>` và `PageResponse<T>`
-- [ ] Tạo `src/lib/http.ts`
+- [x] Tạo `src/lib/http.ts`
   - Verify: có base URL từ `import.meta.env`, auto parse JSON, unwrap `result`
-- [ ] Tạo `src/lib/auth-storage.ts`
+- [x] Tạo `src/lib/auth-storage.ts`
   - Verify: có helper đọc/ghi `accessToken`, `refreshToken`, `user`
-- [ ] Tạo `src/lib/http-auth.ts`
-  - Verify: request protected tự gắn `Authorization: Bearer <token>`
-- [ ] Chuẩn hóa `ProtectedRoute`
+- [x] Chuẩn hóa `ProtectedRoute`
   - Verify: không còn hardcode `localStorage.getItem('authToken')`
 
 ### Phase 2 - Shared Dev 1 Types & API Modules
 
-- [ ] Tạo `src/types/product.ts`
+- [x] Tạo `src/types/product.ts`
   - Verify: chứa `ProductStatus`, `ProductResponse`
-- [ ] Tạo `src/types/order.ts`
+- [x] Tạo `src/types/order.ts`
   - Verify: chứa `OrderResponse`, `PaymentOption`, `OrderStatus`
-- [ ] Tạo `src/types/payment.ts`
+- [x] Tạo `src/types/payment.ts`
   - Verify: chứa `PaymentRequestResponse`, `PaymentResponse`, `Refund*`
-- [ ] Tạo `src/types/chat.ts`
+- [x] Tạo `src/types/chat.ts`
   - Verify: chứa `ConversationResponse`, `MessageResponse`, `ChatSendMessageRequest`
-- [ ] Tạo API modules:
+- [x] Tạo API modules:
   - `src/api/admin-products.api.ts`
   - `src/api/orders.api.ts`
   - `src/api/payments.api.ts`
@@ -105,13 +126,13 @@ Dev 1 không nên đi thẳng vào từng page. Thứ tự đúng là:
 
 ### Phase 3 - Admin Product Moderation
 
-- [ ] Nối `src/pages/admin/AdminListingsPage.tsx` vào `GET /api/admin/products`
+- [x] Nối `src/pages/admin/AdminListingsPage.tsx` vào `GET /api/admin/products`
   - Verify: table render data thật từ backend
-- [ ] Thêm state filter `status`, `keyword`, `sellerId?`
+- [x] Thêm state filter `status`, `keyword`
   - Verify: query string map đúng BE
-- [ ] Nối actions `approve`, `hide`, `status`
+- [x] Nối actions `approve`, `hide`
   - Verify: sau action thì row state cập nhật đúng
-- [ ] Bổ sung loading, empty, optimistic error handling
+- [x] Bổ sung loading, empty, error handling
   - Verify: page không còn mock/console.log
 
 ### Phase 4 - Seller Orders / Payment / Refund
@@ -150,11 +171,11 @@ Dev 1 không nên đi thẳng vào từng page. Thứ tự đúng là:
 
 ### Phase 6 - Chat Realtime
 
-- [ ] Cài package WebSocket/STOMP
-  - Đề xuất: `@stomp/stompjs` + `sockjs-client`
+- [x] Cài package WebSocket/STOMP
+  - `@stomp/stompjs` + `sockjs-client`
   - Verify: package xuất hiện trong `package.json`
-- [ ] Tạo `src/sockets/chat.stomp.ts`
-  - Verify: connect được tới `/ws`, gửi JWT ở frame `CONNECT`
+- [x] Tạo `src/sockets/chat.stomp.ts`
+  - Verify: có nền để connect tới `/ws`, gửi JWT ở frame `CONNECT`
 - [ ] Subscribe:
   - `/topic/conversation/{conversationId}`
   - `/user/queue/messages`
@@ -193,7 +214,6 @@ src/
     chat.ts
   lib/
     http.ts
-    http-auth.ts
     auth-storage.ts
 ```
 
@@ -250,15 +270,11 @@ Important:
 
 ## Risks
 
-### 1. No shared auth/session architecture yet
+### 1. Không nên tách riêng một auth/session layer cục bộ cho Dev 1
 
-Nếu Dev 1 tự dựng auth handling cục bộ trong page của mình, sau này rất dễ chồng với Dev 2/3.
+Shared foundation đã có. Nếu Dev 1 tự dựng auth handling riêng trong page của mình, sau này rất dễ chồng với Dev 2/3.
 
-Mitigation:
-
-- chốt shared auth storage + HTTP auth helper trước
-
-### 2. No React Query / TanStack Query
+### 2. Chưa dùng React Query / TanStack Query
 
 Repo hiện chưa cài query library. Nếu vẫn giữ stack hiện tại:
 
@@ -270,28 +286,24 @@ Nếu nhóm muốn scale tốt hơn:
 - cân nhắc cài `@tanstack/react-query`
 - nhưng phải thống nhất cả nhóm trước
 
-### 3. WebSocket lib is missing
+### 3. Chat realtime vẫn chưa được gắn hết vào UI
 
-Repo chưa có STOMP client. Chat realtime không thể hoàn thành nếu chưa thêm lib.
+Nền STOMP đã có nhưng phần connect/subscription/send thật trong page/component vẫn là việc còn lại của Dev 1.
 
-### 4. FE files have mojibake in many Vietnamese strings
+### 4. Một số file FE cũ đang có lỗi mojibake
 
-Một số file trên disk đã có dấu hiệu lỗi encoding. Nếu sửa trực tiếp mà không cẩn thận:
+Khi sửa các file cũ, nên:
 
-- có thể làm text vỡ thêm
-- gây diff rất ồn
-
-Mitigation:
-
-- tập trung ưu tiên logic/API trước
-- nếu chỉnh text, giữ file ở UTF-8 và sửa theo block rõ ràng
+- ưu tiên block đang chạm
+- giữ file ở UTF-8
+- không trộn text đã hỏng với text mới nếu có thể rewrite sạch
 
 ## Done When
 
-- [ ] Admin listings page dùng data thật và moderation action thật
+- [x] Admin listings page dùng data thật và moderation action thật
 - [ ] Seller/buyer order flow không còn fake data
 - [ ] Payment request render QR/instructions từ backend thật
 - [ ] Refund create/review flow chạy được
 - [ ] Messages page dùng REST + WebSocket thật
-- [ ] ProtectedRoute không còn hardcode auth check kiểu placeholder
+- [x] ProtectedRoute không còn hardcode auth check kiểu placeholder
 - [ ] Không còn `FAKE_*` hoặc `console.log` trong các file Dev 1 đang sở hữu

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { User, Mail, Phone, MapPin, Camera, Settings, LogOut, Heart, Package, Star, Shield, ShoppingBag, Lock, AlertCircle, Check } from 'lucide-react'
+import { User, Mail, Phone, MapPin, Camera, Settings, LogOut, Heart, Package, Star, Shield, ShoppingBag, Lock, AlertCircle, Check, Eye, EyeOff, Pencil, Trash2, Loader2, PlusCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -12,20 +12,17 @@ import { cn } from '@/lib/utils'
 import { BuyerOrdersView } from '@/components/profile/BuyerOrdersView'
 import { useAuth } from '@/contexts/AuthContext'
 import { authService } from '@/services/authService'
+import { wishlistApi } from '@/api/wishlist.api'
+import { productsApi } from '@/api/products.api'
+import type { WishlistItem } from '@/types/wishlist'
+import type { Product } from '@/types/product'
+import { buildRoute } from '@/constants/routes'
 
 function formatPrice(price: number): string {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(price)
 }
 
-const myListings = [
-    { id: 1, name: 'Giant TCR Advanced Pro', price: 25000000, status: 'active', views: 234, image: 'https://images.unsplash.com/photo-1576435728678-68d0fbf94e91?w=200' },
-    { id: 2, name: 'Trek Domane SL5', price: 28000000, status: 'sold', views: 156, image: 'https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=200' },
-]
 
-const wishlistItems = [
-    { id: 3, name: 'Specialized Tarmac SL6', price: 35000000, location: 'Hà Nội', image: 'https://images.unsplash.com/photo-1571333250630-f0230c320b6d?w=200' },
-    { id: 4, name: 'Canyon Ultimate CF SL', price: 32000000, location: 'Đà Nẵng', image: 'https://images.unsplash.com/photo-1507035895480-2b3156c31fc8?w=200' },
-]
 
 const tabs = [
     { id: 'profile', label: 'Thông tin', icon: User },
@@ -45,6 +42,16 @@ export default function ProfilePage() {
     const [profileError, setProfileError] = useState<string | null>(null)
     const [profileSuccess, setProfileSuccess] = useState(false)
 
+    // Wishlist state
+    const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([])
+    const [wishlistLoading, setWishlistLoading] = useState(false)
+    const [removingWishlistId, setRemovingWishlistId] = useState<string | null>(null)
+
+    // Listings state
+    const [listings, setListings] = useState<Product[]>([])
+    const [listingsLoading, setListingsLoading] = useState(false)
+    const [togglingId, setTogglingId] = useState<string | null>(null)
+
     const [formData, setFormData] = useState({
         firstName: user?.firstName || '',
         lastName: user?.lastName || '',
@@ -63,6 +70,65 @@ export default function ProfilePage() {
             })
         }
     }, [user])
+
+    // Load wishlist when tab is opened
+    useEffect(() => {
+        if (activeTab !== 'wishlist') return
+        setWishlistLoading(true)
+        wishlistApi.getMine()
+            .then(setWishlistItems)
+            .catch(() => {})
+            .finally(() => setWishlistLoading(false))
+    }, [activeTab])
+
+    const handleRemoveWishlist = async (productId: string) => {
+        setRemovingWishlistId(productId)
+        try {
+            await wishlistApi.remove(productId)
+            setWishlistItems((prev) => prev.filter((item) => item.productId !== productId))
+        } catch {
+            // silent
+        } finally {
+            setRemovingWishlistId(null)
+        }
+    }
+
+    // Load listings when tab opened
+    useEffect(() => {
+        if (activeTab !== 'listings') return
+        setListingsLoading(true)
+        productsApi.getMine(0, 20)
+            .then((res) => setListings(res.content))
+            .catch(() => {})
+            .finally(() => setListingsLoading(false))
+    }, [activeTab])
+
+    const handleToggleVisibility = async (item: Product) => {
+        setTogglingId(item.id)
+        try {
+            if (item.status === 'active') {
+                await productsApi.hide(item.id)
+                setListings(prev => prev.map(p => p.id === item.id ? { ...p, status: 'hidden' as const } : p))
+            } else {
+                await productsApi.show(item.id)
+                setListings(prev => prev.map(p => p.id === item.id ? { ...p, status: 'pending' as const } : p))
+            }
+        } catch {
+            // silent
+        } finally {
+            setTogglingId(null)
+        }
+    }
+
+    const handleDeleteListing = async (id: string) => {
+        if (!window.confirm('Xóa tin này? Bạn không thể hoàn tác sau khi xóa.')) return
+        try {
+            await productsApi.delete(id)
+            setListings(prev => prev.filter(p => p.id !== id))
+        } catch {
+            // silent
+        }
+    }
 
     // Change password state
     const [pwData, setPwData] = useState({ currentPassword: '', newPassword: '', confirmNewPassword: '' })
@@ -328,27 +394,95 @@ export default function ProfilePage() {
                                 <CardHeader className="flex flex-row items-center justify-between">
                                     <CardTitle>Tin đăng của tôi</CardTitle>
                                     <Button size="sm" asChild>
-                                        <Link to={ROUTES.SELL}>Đăng tin mới</Link>
+                                        <Link to={ROUTES.SELL}>
+                                            <PlusCircle className="mr-2 h-4 w-4" />
+                                            Đăng tin mới
+                                        </Link>
                                     </Button>
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="space-y-4">
-                                        {myListings.map((item) => (
-                                            <div key={item.id} className="flex gap-4 p-4 rounded-lg border">
-                                                <img src={item.image} alt={item.name} className="w-24 h-24 object-cover rounded-lg" />
-                                                <div className="flex-1">
-                                                    <h3 className="font-semibold">{item.name}</h3>
-                                                    <p className="text-primary font-bold">{formatPrice(item.price)}</p>
-                                                    <div className="mt-2 flex items-center gap-4 text-sm text-muted-foreground">
-                                                        <Badge variant={item.status === 'active' ? 'default' : 'secondary'}>
-                                                            {item.status === 'active' ? 'Đang hiển thị' : 'Đã bán'}
-                                                        </Badge>
-                                                        <span>{item.views} lượt xem</span>
+                                    {listingsLoading ? (
+                                        <div className="py-8 text-center">
+                                            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground mx-auto" />
+                                        </div>
+                                    ) : listings.length === 0 ? (
+                                        <div className="py-8 text-center">
+                                            <Package className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+                                            <p className="text-muted-foreground">Chưa có tin đăng nào.</p>
+                                            <Button asChild variant="outline" className="mt-4" size="sm">
+                                                <Link to={ROUTES.SELL}>Đăng tin đầu tiên</Link>
+                                            </Button>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-3">
+                                            {listings.map((item) => {
+                                                const thumb = item.images?.find(i => i.isPrimary)?.url ?? item.images?.[0]?.url
+                                                const isActive = item.status === 'active'
+                                                const isToggling = togglingId === item.id
+                                                return (
+                                                    <div key={item.id} className="flex gap-4 p-4 rounded-lg border hover:border-primary/30 transition-colors">
+                                                        {/* Thumbnail */}
+                                                        <Link to={buildRoute.bikeDetail(item.id)} className="shrink-0">
+                                                            {thumb ? (
+                                                                <img src={thumb} alt={item.title} className="w-20 h-20 object-cover rounded-lg" />
+                                                            ) : (
+                                                                <div className="w-20 h-20 rounded-lg bg-muted flex items-center justify-center">
+                                                                    <Package className="h-6 w-6 text-muted-foreground" />
+                                                                </div>
+                                                            )}
+                                                        </Link>
+                                                        {/* Info */}
+                                                        <div className="flex-1 min-w-0">
+                                                            <Link to={buildRoute.bikeDetail(item.id)}>
+                                                                <h3 className="font-semibold hover:text-primary line-clamp-1">{item.title}</h3>
+                                                            </Link>
+                                                            <p className="text-primary font-bold mt-0.5">{formatPrice(item.price)}</p>
+                                                            <div className="mt-1.5 flex items-center gap-2 flex-wrap">
+                                                                <Badge variant={isActive ? 'default' : 'secondary'} className="text-xs">
+                                                                    {isActive ? 'Đang hiển thị' : item.status === 'hidden' ? 'Đã ẩn' : item.status === 'sold' ? 'Đã bán' : item.status === 'pending' ? 'Chờ duyệt' : item.status}
+                                                                </Badge>
+                                                            </div>
+                                                        </div>
+                                                        {/* Actions */}
+                                                        <div className="flex flex-col gap-1.5 shrink-0">
+                                                            <Button
+                                                                asChild
+                                                                variant="outline"
+                                                                size="sm"
+                                                                className="h-8 px-2 text-xs"
+                                                            >
+                                                                <Link to={buildRoute.sellerEditProduct(item.id)}>
+                                                                    <Pencil className="h-3.5 w-3.5 mr-1" />
+                                                                    Sửa
+                                                                </Link>
+                                                            </Button>
+                                                            {item.status !== 'sold' && (
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    className="h-8 px-2 text-xs"
+                                                                    onClick={() => handleToggleVisibility(item)}
+                                                                    disabled={isToggling}
+                                                                >
+                                                                    {isToggling ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : isActive ? <EyeOff className="h-3.5 w-3.5 mr-1" /> : <Eye className="h-3.5 w-3.5 mr-1" />}
+                                                                    {isActive ? 'Ẩn' : 'Hiện'}
+                                                                </Button>
+                                                            )}
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                className="h-8 px-2 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                                onClick={() => handleDeleteListing(item.id)}
+                                                            >
+                                                                <Trash2 className="h-3.5 w-3.5 mr-1" />
+                                                                Xóa
+                                                            </Button>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                    )}
                                 </CardContent>
                             </Card>
                         )}
@@ -359,20 +493,46 @@ export default function ProfilePage() {
                                     <CardTitle>Xe yêu thích</CardTitle>
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="grid gap-4 sm:grid-cols-2">
-                                        {wishlistItems.map((item) => (
-                                            <Link key={item.id} to={`/bikes/${item.id}`} className="flex gap-4 p-4 rounded-lg border hover:border-primary/50 transition-colors">
-                                                <img src={item.image} alt={item.name} className="w-20 h-20 object-cover rounded-lg" />
-                                                <div>
-                                                    <h3 className="font-semibold hover:text-primary">{item.name}</h3>
-                                                    <p className="text-primary font-bold">{formatPrice(item.price)}</p>
-                                                    <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
-                                                        <MapPin className="h-3 w-3" /> {item.location}
-                                                    </p>
+                                    {wishlistLoading ? (
+                                        <div className="py-8 text-center text-muted-foreground">Đang tải...</div>
+                                    ) : wishlistItems.length === 0 ? (
+                                        <div className="py-8 text-center">
+                                            <Heart className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+                                            <p className="text-muted-foreground">Chưa có xe nào được lưu.</p>
+                                            <Button asChild variant="outline" className="mt-4" size="sm">
+                                                <Link to="/market">Xem xe đạp</Link>
+                                            </Button>
+                                        </div>
+                                    ) : (
+                                        <div className="grid gap-4 sm:grid-cols-2">
+                                            {wishlistItems.map((item) => (
+                                                <div key={item.productId} className="flex gap-4 p-4 rounded-lg border hover:border-primary/50 transition-colors">
+                                                    <Link to={`/bikes/${item.productId}`} className="shrink-0">
+                                                        {item.primaryImageUrl ? (
+                                                            <img src={item.primaryImageUrl} alt={item.title} className="w-20 h-20 object-cover rounded-lg" />
+                                                        ) : (
+                                                            <div className="w-20 h-20 rounded-lg bg-muted flex items-center justify-center">
+                                                                <Heart className="h-6 w-6 text-muted-foreground" />
+                                                            </div>
+                                                        )}
+                                                    </Link>
+                                                    <div className="flex-1 min-w-0">
+                                                        <Link to={`/bikes/${item.productId}`}>
+                                                            <h3 className="font-semibold hover:text-primary line-clamp-2 leading-tight">{item.title}</h3>
+                                                        </Link>
+                                                        <p className="text-primary font-bold mt-1">{formatPrice(item.price)}</p>
+                                                        <button
+                                                            className="mt-2 text-xs text-muted-foreground hover:text-destructive transition-colors"
+                                                            onClick={() => handleRemoveWishlist(item.productId)}
+                                                            disabled={removingWishlistId === item.productId}
+                                                        >
+                                                            {removingWishlistId === item.productId ? 'Đang xóa...' : '✕ Bỏ lưu'}
+                                                        </button>
+                                                    </div>
                                                 </div>
-                                            </Link>
-                                        ))}
-                                    </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </CardContent>
                             </Card>
                         )}

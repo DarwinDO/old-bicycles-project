@@ -1,0 +1,25 @@
+{
+  "version": "0.16.0",
+  "environments": [
+    "cursor",
+    "codex",
+    "antigravity"
+  ],
+  "phases": [
+    "requirements",
+    "design",
+    "planning",
+    "implementation",
+    "testing",
+    "deployment",
+    "monitoring"
+  ],
+  "createdAt": "2026-03-17T01:19:14.066Z",
+  "updatedAt": "2026-03-17T01:23:31.181Z",
+  "skills": [
+    {
+      "registry": "codeaholicguy/ai-devkit",
+      "name": "dev-lifecycle"
+    }
+  ]
+}

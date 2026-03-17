@@ -2,6 +2,47 @@
 trigger: always_on
 ---
 
+# AGENTS.md - Frontend Codex Adapter
+
+This file is the Codex-facing adapter for the frontend repository.
+
+## Codex-Specific Additions
+
+- The canonical upstream rulebook is `.agent/rules/GEMINI.md`.
+- The Codex-readable mirror lives under `.agents/`.
+- When using Codex in this FE repo, prefer these project-local paths:
+  - `.agents/agents/`
+  - `.agents/skills/`
+  - `.agents/workflows/`
+  - `.agents/rules/GEMINI.md`
+  - `.agents/ARCHITECTURE.md`
+- Keep `.agent/` and `.agents/` synchronized. `.agent/` is the upstream authoring tree, `.agents/` is the Codex-readable mirror.
+- Auto-use `.agents/skills/dev-lifecycle/` for end-to-end FE work, and pair it with the nearest workflow chain from `.agents/workflows/`.
+- The current FE stack is:
+  - React 19
+  - Vite 7
+  - TypeScript 5.9
+  - React Router 7
+  - Vitest + Testing Library
+  - Ant Design 6
+  - Radix UI primitives
+  - Tailwind CSS 4
+- Keep recommendations anchored to that real stack. Do not default to Next.js, React Native, or backend-only patterns unless the task explicitly changes scope.
+- If the task spans both backend and frontend, read this file and `../../BE_old_bicycle_project/old_bicycle_project/AGENTS.md` before doing substantial work.
+- Ignore any `AGENTS.md` inside `node_modules/`.
+- To preserve file validity, the frontmatter at the top of this file stands in for the original GEMINI frontmatter. The original GEMINI content is pasted intact below.
+
+## FE Default Routing For Codex
+
+- UI, pages, routing, layout, responsive behavior, component architecture: `frontend-specialist`
+- Tests, regression protection, Vitest, Testing Library: `test-engineer`
+- Root-cause investigation: `debugger`
+- Performance, rendering, bundle analysis, Web Vitals: `performance-optimizer`
+- Cross-domain FE work or BE/FE coordination: `orchestrator`
+- Documentation only when explicitly requested: `documentation-writer`
+
+---
+
 # GEMINI.md - Antigravity Kit
 
 > This file defines how the AI behaves in this workspace.

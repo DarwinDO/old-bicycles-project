@@ -6,9 +6,41 @@ description: File-level backlog and execution order for FE Dev 1 API integration
 
 # FE Dev 1 API Integration Plan - 2026-03-17
 
+## Cập Nhật Mới Nhất - 2026-03-17
+
+Dev 1 hiện đã nối xong 3 tranche lớn:
+
+- shared foundation (`src/types`, `src/api`, `src/lib/http`, auth/session guard)
+- admin product moderation
+- seller order / buyer payment / refund cơ bản
+- chat page theo hướng `REST + STOMP`
+
+Trạng thái mới:
+
+- `src/pages/messages/MessagesPage.tsx` không còn giữ mock state cứng
+- `src/components/messages/ConversationList.tsx` dùng `GET /api/conversations/me`
+- `src/components/messages/ChatWindow.tsx` dùng:
+  - `GET /api/conversations/{id}/messages`
+  - `PUT /api/conversations/{id}/read`
+  - WebSocket STOMP `/app/chat.sendMessage`
+  - subscribe `/topic/conversation/{conversationId}`
+- `src/lib/chat-display.ts` đã gom helper map/format chat để giảm logic rải trong component
+
+Validation mới nhất:
+
+- `npm run test:run -- src/lib/order-display.test.ts`
+- `npm run test:run -- src/lib/chat-display.test.ts`
+- `npm run build`
+
+Những gì còn lại của Dev 1:
+
+- start chat từ `BikeDetailPage` vẫn chờ Dev 2 vì page chi tiết xe còn đang mock dữ liệu sản phẩm
+- unread badge toàn cục qua `/user/queue/messages`
+- reconnect/resubscribe nâng cao cho chat
+
 ## Progress Update - 2026-03-17
 
-Đã xong shared foundation và tranche đầu tiên của Dev 1:
+Đã xong shared foundation và 2 tranche đầu tiên của Dev 1:
 
 - shared `src/types/**`
 - shared `src/api/**`
@@ -16,6 +48,10 @@ description: File-level backlog and execution order for FE Dev 1 API integration
 - shared `src/lib/auth-storage.ts`
 - shared auth/session wiring (`AuthContext`, `ProtectedRoute`, router role guard)
 - `src/pages/admin/AdminListingsPage.tsx` đã nối API thật
+- `src/pages/seller/SellerOrdersPage.tsx` đã nối API thật
+- `src/components/profile/BuyerOrdersView.tsx` đã nối API thật
+- `src/components/profile/DisputeModal.tsx` đã gửi refund request thật
+- `src/lib/order-display.ts` đã gom business rule hiển thị order
 
 Admin listings hiện đã:
 
@@ -28,13 +64,15 @@ Admin listings hiện đã:
 Validation mới nhất:
 
 - `npm run test:run -- src/components/dashboard/StatusBadge.test.tsx src/pages/admin/AdminListingsPage.test.tsx`
+- `npm run test:run -- src/lib/order-display.test.ts`
 - `npm run build`
 
 Trạng thái execution:
 
 - Phase 1: done
 - Phase 2: done cho nhóm shared + admin product domain
-- Phase 3: in progress, phần admin listings đã xong
+- Phase 3: done
+- Phase 4: in progress, phần seller order / buyer payment / refund cơ bản đã xong
 
 ## Goal
 
@@ -137,9 +175,9 @@ Dev 1 không nên đi thẳng vào từng page. Thứ tự đúng là:
 
 ### Phase 4 - Seller Orders / Payment / Refund
 
-- [ ] Thay `FAKE_ORDERS` trong `src/pages/seller/SellerOrdersPage.tsx`
+- [x] Thay `FAKE_ORDERS` trong `src/pages/seller/SellerOrdersPage.tsx`
   - Verify: dùng `GET /api/orders/me`
-- [ ] Thêm phân loại order theo vai trò seller
+- [x] Thêm phân loại order theo vai trò seller
   - Verify: chỉ render các order seller liên quan
 - [ ] Gắn actions:
   - `PATCH /api/orders/{id}/accept`
@@ -147,16 +185,16 @@ Dev 1 không nên đi thẳng vào từng page. Thứ tự đúng là:
   - `PATCH /api/orders/{id}/complete`
   - `PATCH /api/orders/{id}/cancel`
   - Verify: transition đúng theo response mới nhất
-- [ ] Nối `BuyerOrdersView` vào data thật
+- [x] Nối `BuyerOrdersView` vào data thật
   - Verify: buyer xem được order thật và mở refund flow
-- [ ] Nối `DisputeModal` vào `POST /api/orders/{id}/refunds`
+- [x] Nối `DisputeModal` vào `POST /api/orders/{id}/refunds`
   - Verify: submit modal tạo refund thành công
 - [ ] Thêm admin refund review flow nếu FE Dev 1 phụ trách cùng page tranh chấp
   - Verify: `PATCH /api/admin/refunds/{refundId}/review` hoạt động
-- [ ] Tạo payment request UI
+- [x] Tạo payment request UI
   - Verify: `POST /api/payments/orders/{orderId}/request` trả QR/instructions và render được
-- [ ] Thêm polling order/payment state
-  - Verify: FE refresh được `GET /api/payments/orders/{orderId}` và cập nhật timeline
+- [x] Thêm polling order/payment state ở mức order list
+  - Verify: FE refresh được `GET /api/orders/me` theo chu kỳ và cập nhật timeline cơ bản
 
 ### Phase 5 - Chat REST First
 
@@ -289,6 +327,21 @@ Nếu nhóm muốn scale tốt hơn:
 ### 3. Chat realtime vẫn chưa được gắn hết vào UI
 
 Nền STOMP đã có nhưng phần connect/subscription/send thật trong page/component vẫn là việc còn lại của Dev 1.
+
+### 4. Buyer không có API "xác nhận đã nhận xe"
+
+Backend hiện chỉ cho:
+
+- seller/admin `complete` order
+- buyer tạo `refund request`
+
+Nên FE buyer flow phải bám đúng backend:
+
+- thanh toán
+- theo dõi trạng thái
+- yêu cầu hoàn tiền khi cần
+
+không dựng nút giả kiểu buyer tự complete đơn.
 
 ### 4. Một số file FE cũ đang có lỗi mojibake
 

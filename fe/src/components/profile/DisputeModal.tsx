@@ -1,84 +1,143 @@
-import { Button } from '@/components/ui/button';
+import { useEffect, useState } from 'react'
+import { AlertTriangle } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { UploadCloud } from 'lucide-react';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
+import { formatOrderCurrency } from '@/lib/order-display'
 
-interface DisputeModalProps {
-    isOpen: boolean;
-    onClose: () => void;
-    onSubmit: () => void;
-    orderId: string;
+export interface RefundFormValues {
+  reason: string
+  evidenceNote?: string
 }
 
-export function DisputeModal({ isOpen, onClose, onSubmit, orderId }: DisputeModalProps) {
-    return (
-        <Dialog open={isOpen} onOpenChange={(open: boolean) => !open && onClose()}>
-            <DialogContent className="sm:max-w-[500px]">
-                <DialogHeader>
-                    <DialogTitle className="text-xl text-red-600 dark:text-red-400 flex items-center gap-2">
-                        Báo cáo sự cố / Khiếu nại
-                    </DialogTitle>
-                    <DialogDescription>
-                        Tiền của bạn đang được hệ thống bảo vệ an toàn. Hãy cung cấp lý do và bằng chứng để quản trị viên xử lý cho đơn hàng <span className="font-semibold text-foreground">{orderId}</span>.
-                    </DialogDescription>
-                </DialogHeader>
+interface DisputeModalProps {
+  isOpen: boolean
+  onClose: () => void
+  onSubmit: (values: RefundFormValues) => Promise<void> | void
+  orderId: string
+  refundAmount: number
+  isSubmitting?: boolean
+  error?: string | null
+}
 
-                <div className="grid gap-4 py-4">
-                    <div className="grid gap-2">
-                        <Label htmlFor="reason">Lý do khiếu nại <span className="text-red-500">*</span></Label>
-                        <Select defaultValue="not-described">
-                            <SelectTrigger id="reason">
-                                <SelectValue placeholder="Chọn lý do" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="not-described">Xe không giống mô tả</SelectItem>
-                                <SelectItem value="damaged">Hàng bị hỏng hóc/trầy xước</SelectItem>
-                                <SelectItem value="missing-parts">Thiếu phụ kiện kèm theo</SelectItem>
-                                <SelectItem value="fake-papers">Nghi ngờ giấy tờ giả</SelectItem>
-                                <SelectItem value="not-received">Chưa nhận được hàng nhưng báo đã giao</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
+const reasonOptions = [
+  'Xe không giống mô tả',
+  'Hàng bị hỏng hoặc trầy xước',
+  'Thiếu phụ kiện đi kèm',
+  'Nghi ngờ giấy tờ giả',
+  'Chưa nhận được hàng nhưng đã báo giao',
+]
 
-                    <div className="grid gap-2">
-                        <Label htmlFor="description">Mô tả chi tiết <span className="text-red-500">*</span></Label>
-                        <Textarea
-                            id="description"
-                            placeholder="Mô tả cụ thể vấn đề bạn gặp phải để Inspector dễ dàng xác minh..."
-                            className="h-24 resize-none"
-                        />
-                    </div>
+export function DisputeModal({
+  isOpen,
+  onClose,
+  onSubmit,
+  orderId,
+  refundAmount,
+  isSubmitting = false,
+  error = null,
+}: DisputeModalProps) {
+  const [reason, setReason] = useState('')
+  const [evidenceNote, setEvidenceNote] = useState('')
 
-                    <div className="grid gap-2">
-                        <Label>Hình ảnh / Video bằng chứng <span className="text-red-500">*</span></Label>
-                        <div className="border-2 border-dashed border-border rounded-lg p-6 flex flex-col items-center justify-center text-center hover:bg-muted/50 transition-colors cursor-pointer">
-                            <UploadCloud className="h-8 w-8 text-muted-foreground mb-2" />
-                            <p className="text-sm font-medium">Nhấn để tải lên hoặc kéo thả file</p>
-                            <p className="text-xs text-muted-foreground mt-1">Hỗ trợ JPG, PNG, MP4 (Tối đa 50MB)</p>
-                            <Input type="file" className="hidden" />
-                        </div>
-                    </div>
-                </div>
+  useEffect(() => {
+    if (!isOpen) {
+      setReason('')
+      setEvidenceNote('')
+    }
+  }, [isOpen])
 
-                <DialogFooter className="gap-2 sm:gap-0">
-                    <Button variant="outline" onClick={onClose}>
-                        Hủy
-                    </Button>
-                    <Button variant="destructive" onClick={onSubmit}>
-                        Gửi khiếu nại
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-    );
+  async function handleSubmit() {
+    if (!reason) {
+      return
+    }
+
+    await onSubmit({
+      reason,
+      evidenceNote: evidenceNote.trim() || undefined,
+    })
+  }
+
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-[520px]">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-xl text-red-600 dark:text-red-400">
+            <AlertTriangle className="h-5 w-5" />
+            Yêu cầu hoàn tiền
+          </DialogTitle>
+          <DialogDescription>
+            Đơn hàng <span className="font-semibold text-foreground">{orderId}</span> đang ở trạng thái đã đặt cọc.
+            Hãy chọn lý do và ghi chú rõ ràng để admin xem xét yêu cầu hoàn tiền.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="rounded-lg border border-border/80 bg-muted/30 p-4 text-sm">
+          <p className="font-medium text-foreground">Số tiền hệ thống sẽ yêu cầu hoàn</p>
+          <p className="mt-1 text-lg font-bold text-primary">{formatOrderCurrency(refundAmount)}</p>
+          <p className="mt-2 text-muted-foreground">
+            Backend hiện chỉ cho tạo yêu cầu hoàn đúng bằng số tiền đã thanh toán, nên FE không cho sửa số tiền này.
+          </p>
+        </div>
+
+        <div className="grid gap-4 py-2">
+          <div className="grid gap-2">
+            <Label htmlFor="refund-reason">
+              Lý do hoàn tiền <span className="text-red-500">*</span>
+            </Label>
+            <Select value={reason} onValueChange={setReason}>
+              <SelectTrigger id="refund-reason">
+                <SelectValue placeholder="Chọn lý do phù hợp" />
+              </SelectTrigger>
+              <SelectContent>
+                {reasonOptions.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="refund-evidence">Ghi chú và bằng chứng mô tả</Label>
+            <Textarea
+              id="refund-evidence"
+              value={evidenceNote}
+              onChange={(event) => setEvidenceNote(event.target.value)}
+              placeholder="Ví dụ: Xe bị trầy sâu ở khung, thiếu pedal như bài đăng và tôi có ảnh chụp khi mở hàng."
+              className="min-h-[120px] resize-none"
+            />
+            <p className="text-xs text-muted-foreground">
+              FE hiện mới gửi ghi chú mô tả qua API `evidenceNote`. Chưa có API upload file riêng cho phần khiếu nại.
+            </p>
+          </div>
+
+          {error && (
+            <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+              {error}
+            </div>
+          )}
+        </div>
+
+        <DialogFooter className="gap-2 sm:gap-0">
+          <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
+            Hủy
+          </Button>
+          <Button variant="destructive" onClick={() => void handleSubmit()} disabled={isSubmitting || !reason}>
+            {isSubmitting ? 'Đang gửi yêu cầu...' : 'Gửi yêu cầu hoàn tiền'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
 }

@@ -1,5 +1,41 @@
 # FE Shared API Foundation Handoff - 2026-03-17
 
+## Cập Nhật - Order / Payment / Refund Và Chat Của Dev 1 Đã Có Nền Thật
+
+Ngoài foundation chung và admin listings, FE hiện đã có thêm 2 cụm Dev 1 chạy trên API thật:
+
+- `src/pages/seller/SellerOrdersPage.tsx`
+- `src/components/profile/BuyerOrdersView.tsx`
+- `src/components/profile/DisputeModal.tsx`
+- `src/pages/messages/MessagesPage.tsx`
+- `src/components/messages/ConversationList.tsx`
+- `src/components/messages/ChatWindow.tsx`
+
+Các phần này hiện dùng:
+
+- order:
+  - `GET /api/orders/me`
+  - `PATCH /api/orders/{id}/accept`
+  - `PATCH /api/orders/{id}/confirm-deposit`
+  - `PATCH /api/orders/{id}/complete`
+  - `PATCH /api/orders/{id}/cancel`
+- payment/refund:
+  - `POST /api/payments/orders/{orderId}/request`
+  - `POST /api/orders/{orderId}/refunds`
+- chat:
+  - `GET /api/conversations/me`
+  - `GET /api/conversations/{id}/messages`
+  - `PUT /api/conversations/{id}/read`
+  - STOMP `/app/chat.sendMessage`
+  - topic `/topic/conversation/{conversationId}`
+
+Lưu ý hiện tại:
+
+- chat page đã không còn dùng `FAKE_CONVERSATIONS` và `getMessagesForChat`
+- refund modal không fake upload file nữa; hiện chỉ gửi `reason` + `evidenceNote`
+- buyer chưa có API `complete order`; đó là business rule của BE, không phải thiếu FE
+- unread badge toàn cục cho chat vẫn chưa chốt xong vì BE chưa trả `unreadCount` trong REST conversation list
+
 ## Cập nhật - Admin Listings Không Còn Là Mock
 
 Tranche Dev 1 đã nối thật:

@@ -2,7 +2,12 @@ export type PaymentOption = 'partial' | 'full'
 
 export type PaymentMethod = 'transfer' | 'cash' | 'online'
 
-export type OrderStatus = 'pending' | 'deposited' | 'completed' | 'cancelled'
+export type OrderStatus =
+  | 'pending'
+  | 'deposited'
+  | 'awaiting_buyer_confirmation'
+  | 'completed'
+  | 'cancelled'
 
 export type OrderFundingStatus =
   | 'unpaid'

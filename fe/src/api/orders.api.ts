@@ -22,6 +22,10 @@ export const ordersApi = {
     return patchResult<Order>(`/api/orders/${orderId}/complete`)
   },
 
+  confirmReceived(orderId: string) {
+    return patchResult<Order>(`/api/orders/${orderId}/confirm-received`)
+  },
+
   cancel(orderId: string) {
     return patchResult<Order>(`/api/orders/${orderId}/cancel`)
   },

@@ -1,5 +1,7 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { ROUTES } from '../constants/routes';
+import { useAuth } from '../contexts/AuthContext';
+import BikeLoader from '../components/common/BikeLoader';
 
 interface ProtectedRouteProps {
     children: React.ReactNode;
@@ -11,12 +13,13 @@ interface ProtectedRouteProps {
  */
 export default function ProtectedRoute({ children }: ProtectedRouteProps) {
     const location = useLocation();
+    const { isAuthenticated, isLoading } = useAuth();
 
-    // TODO: Replace with actual auth check from your auth context/store
-    const isAuthenticated = Boolean(localStorage.getItem('authToken'));
+    if (isLoading) {
+        return <BikeLoader />;
+    }
 
     if (!isAuthenticated) {
-        // Redirect to login, but save the attempted URL
         return <Navigate to={ROUTES.LOGIN} state={{ from: location }} replace />;
     }
 

@@ -1,6 +1,6 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import { User, Mail, Phone, MapPin, Camera, Settings, LogOut, Heart, Package, Star, Shield, ShoppingBag } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { User, Mail, Phone, MapPin, Camera, Settings, LogOut, Heart, Package, Star, Shield, ShoppingBag, Lock, AlertCircle, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -10,26 +10,12 @@ import { Separator } from '@/components/ui/separator'
 import { ROUTES } from '@/constants/routes'
 import { cn } from '@/lib/utils'
 import { BuyerOrdersView } from '@/components/profile/BuyerOrdersView'
+import { useAuth } from '@/contexts/AuthContext'
+import { authService } from '@/services/authService'
 
-const userData = {
-    name: 'Nguyễn Văn A',
-    email: 'nguyenvana@email.com',
-    phone: '0901234567',
-    address: 'Quận 1, Hồ Chí Minh',
-    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200',
-    memberSince: 'Tháng 3, 2024',
-    rating: 4.8,
-    reviewCount: 23,
-    verified: true,
+function formatPrice(price: number): string {
+    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(price)
 }
-
-const tabs = [
-    { id: 'profile', label: 'Thông tin', icon: User },
-    { id: 'orders', label: 'Đơn mua', icon: ShoppingBag },
-    { id: 'listings', label: 'Tin đăng', icon: Package },
-    { id: 'wishlist', label: 'Yêu thích', icon: Heart },
-    { id: 'reviews', label: 'Đánh giá', icon: Star },
-]
 
 const myListings = [
     { id: 1, name: 'Giant TCR Advanced Pro', price: 25000000, status: 'active', views: 234, image: 'https://images.unsplash.com/photo-1576435728678-68d0fbf94e91?w=200' },
@@ -41,18 +27,106 @@ const wishlistItems = [
     { id: 4, name: 'Canyon Ultimate CF SL', price: 32000000, location: 'Đà Nẵng', image: 'https://images.unsplash.com/photo-1507035895480-2b3156c31fc8?w=200' },
 ]
 
-function formatPrice(price: number): string {
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(price)
-}
+const tabs = [
+    { id: 'profile', label: 'Thông tin', icon: User },
+    { id: 'orders', label: 'Đơn mua', icon: ShoppingBag },
+    { id: 'listings', label: 'Tin đăng', icon: Package },
+    { id: 'wishlist', label: 'Yêu thích', icon: Heart },
+    { id: 'reviews', label: 'Đánh giá', icon: Star },
+    { id: 'security', label: 'Bảo mật', icon: Lock },
+]
 
 export default function ProfilePage() {
+    const { user, logout, setUser } = useAuth()
+    const navigate = useNavigate()
     const [activeTab, setActiveTab] = useState('profile')
     const [isEditing, setIsEditing] = useState(false)
+    const [profileLoading, setProfileLoading] = useState(false)
+    const [profileError, setProfileError] = useState<string | null>(null)
+    const [profileSuccess, setProfileSuccess] = useState(false)
+
     const [formData, setFormData] = useState({
-        name: userData.name,
-        phone: userData.phone,
-        address: userData.address,
+        firstName: user?.firstName || '',
+        lastName: user?.lastName || '',
+        phone: user?.phone || '',
+        address: user?.address || '',
     })
+
+    // Sync form when user loads
+    useEffect(() => {
+        if (user) {
+            setFormData({
+                firstName: user.firstName || '',
+                lastName: user.lastName || '',
+                phone: user.phone || '',
+                address: user.address || '',
+            })
+        }
+    }, [user])
+
+    // Change password state
+    const [pwData, setPwData] = useState({ currentPassword: '', newPassword: '', confirmNewPassword: '' })
+    const [pwLoading, setPwLoading] = useState(false)
+    const [pwError, setPwError] = useState<string | null>(null)
+    const [pwSuccess, setPwSuccess] = useState(false)
+
+    const handleSaveProfile = async () => {
+        setProfileError(null)
+        setProfileSuccess(false)
+        setProfileLoading(true)
+        try {
+            const updated = await authService.updateProfile({
+                firstName: formData.firstName,
+                lastName: formData.lastName,
+                phone: formData.phone,
+                defaultAddress: formData.address,
+            })
+            setUser({ ...user!, ...updated })
+            setIsEditing(false)
+            setProfileSuccess(true)
+            setTimeout(() => setProfileSuccess(false), 3000)
+        } catch (err: unknown) {
+            const message =
+                (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+                'Cập nhật thất bại. Vui lòng thử lại.'
+            setProfileError(message)
+        } finally {
+            setProfileLoading(false)
+        }
+    }
+
+    const handleLogout = async () => {
+        await logout()
+        navigate(ROUTES.HOME)
+    }
+
+    const handleChangePassword = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (pwData.newPassword !== pwData.confirmNewPassword) {
+            setPwError('Mật khẩu mới xác nhận không khớp.')
+            return
+        }
+        setPwError(null)
+        setPwSuccess(false)
+        setPwLoading(true)
+        try {
+            await authService.changePassword({
+                currentPassword: pwData.currentPassword,
+                newPassword: pwData.newPassword,
+            })
+            setPwSuccess(true)
+            setPwData({ currentPassword: '', newPassword: '', confirmNewPassword: '' })
+        } catch (err: unknown) {
+            const message =
+                (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+                'Đổi mật khẩu thất bại. Vui lòng thử lại.'
+            setPwError(message)
+        } finally {
+            setPwLoading(false)
+        }
+    }
+
+    if (!user) return null
 
     return (
         <div className="min-h-screen bg-background">
@@ -62,8 +136,8 @@ export default function ProfilePage() {
                     <div className="flex flex-col items-center gap-4 md:flex-row md:gap-6">
                         <div className="relative">
                             <Avatar className="h-24 w-24 border-4 border-white">
-                                <AvatarImage src={userData.avatar} />
-                                <AvatarFallback className="text-2xl">{userData.name[0]}</AvatarFallback>
+                                <AvatarImage src={user.avatar} />
+                                <AvatarFallback className="text-2xl">{(user.firstName || user.email)?.[0]?.toUpperCase()}</AvatarFallback>
                             </Avatar>
                             <button className="absolute bottom-0 right-0 h-8 w-8 rounded-full bg-background flex items-center justify-center border shadow-sm">
                                 <Camera className="h-4 w-4" />
@@ -71,19 +145,14 @@ export default function ProfilePage() {
                         </div>
                         <div className="text-center md:text-left">
                             <div className="flex items-center gap-2 justify-center md:justify-start">
-                                <h1 className="text-2xl font-bold text-white">{userData.name}</h1>
-                                {userData.verified && (
+                                <h1 className="text-2xl font-bold text-white">{user.name || user.email}</h1>
+                                {user.verified && (
                                     <Badge variant="secondary" className="gap-1">
                                         <Shield className="h-3 w-3" /> Đã xác thực
                                     </Badge>
                                 )}
                             </div>
-                            <div className="mt-1 flex items-center gap-2 text-white/90 justify-center md:justify-start">
-                                <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                                <span className="font-medium">{userData.rating}</span>
-                                <span className="text-white/70">({userData.reviewCount} đánh giá)</span>
-                            </div>
-                            <p className="mt-1 text-sm text-white/70">Thành viên từ {userData.memberSince}</p>
+                            <p className="mt-1 text-sm text-white/80">{user.email}</p>
                         </div>
                     </div>
                 </div>
@@ -116,7 +185,10 @@ export default function ProfilePage() {
                                         <Settings className="h-4 w-4" />
                                         Cài đặt
                                     </button>
-                                    <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors">
+                                    <button
+                                        onClick={handleLogout}
+                                        className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
+                                    >
                                         <LogOut className="h-4 w-4" />
                                         Đăng xuất
                                     </button>
@@ -131,23 +203,52 @@ export default function ProfilePage() {
                             <Card>
                                 <CardHeader className="flex flex-row items-center justify-between">
                                     <CardTitle>Thông tin cá nhân</CardTitle>
-                                    <Button variant={isEditing ? "default" : "outline"} size="sm" onClick={() => setIsEditing(!isEditing)}>
-                                        {isEditing ? 'Lưu' : 'Chỉnh sửa'}
-                                    </Button>
+                                    {!isEditing ? (
+                                        <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                                            Chỉnh sửa
+                                        </Button>
+                                    ) : (
+                                        <div className="flex gap-2">
+                                            <Button variant="ghost" size="sm" onClick={() => { setIsEditing(false); setProfileError(null) }}>
+                                                Hủy
+                                            </Button>
+                                            <Button size="sm" onClick={handleSaveProfile} disabled={profileLoading}>
+                                                {profileLoading ? 'Đang lưu...' : 'Lưu'}
+                                            </Button>
+                                        </div>
+                                    )}
                                 </CardHeader>
                                 <CardContent className="space-y-6">
+                                    {profileError && (
+                                        <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                                            <AlertCircle className="h-4 w-4 shrink-0" />
+                                            {profileError}
+                                        </div>
+                                    )}
+                                    {profileSuccess && (
+                                        <div className="flex items-center gap-2 rounded-lg bg-green-50 dark:bg-green-950/20 px-4 py-3 text-sm text-green-600">
+                                            <Check className="h-4 w-4 shrink-0" />
+                                            Cập nhật thông tin thành công!
+                                        </div>
+                                    )}
                                     <div className="grid gap-6 md:grid-cols-2">
                                         <div className="space-y-2">
                                             <label className="text-sm font-medium flex items-center gap-2">
-                                                <User className="h-4 w-4 text-muted-foreground" /> Họ và tên
+                                                <User className="h-4 w-4 text-muted-foreground" /> Họ
                                             </label>
-                                            <Input value={formData.name} onChange={(e) => setFormData(p => ({ ...p, name: e.target.value }))} disabled={!isEditing} />
+                                            <Input value={formData.firstName} onChange={(e) => setFormData(p => ({ ...p, firstName: e.target.value }))} disabled={!isEditing} placeholder="Nguyễn" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-medium flex items-center gap-2">
+                                                <User className="h-4 w-4 text-muted-foreground" /> Tên
+                                            </label>
+                                            <Input value={formData.lastName} onChange={(e) => setFormData(p => ({ ...p, lastName: e.target.value }))} disabled={!isEditing} placeholder="Văn A" />
                                         </div>
                                         <div className="space-y-2">
                                             <label className="text-sm font-medium flex items-center gap-2">
                                                 <Mail className="h-4 w-4 text-muted-foreground" /> Email
                                             </label>
-                                            <Input value={userData.email} disabled />
+                                            <Input value={user.email} disabled />
                                         </div>
                                         <div className="space-y-2">
                                             <label className="text-sm font-medium flex items-center gap-2">
@@ -166,9 +267,61 @@ export default function ProfilePage() {
                             </Card>
                         )}
 
-                        {activeTab === 'orders' && (
-                            <BuyerOrdersView />
+                        {activeTab === 'security' && (
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Đổi mật khẩu</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <form onSubmit={handleChangePassword} className="space-y-4 max-w-md">
+                                        {pwError && (
+                                            <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                                                <AlertCircle className="h-4 w-4 shrink-0" />
+                                                {pwError}
+                                            </div>
+                                        )}
+                                        {pwSuccess && (
+                                            <div className="flex items-center gap-2 rounded-lg bg-green-50 dark:bg-green-950/20 px-4 py-3 text-sm text-green-600">
+                                                <Check className="h-4 w-4 shrink-0" />
+                                                Đổi mật khẩu thành công!
+                                            </div>
+                                        )}
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-medium">Mật khẩu hiện tại</label>
+                                            <Input
+                                                type="password"
+                                                value={pwData.currentPassword}
+                                                onChange={(e) => setPwData(p => ({ ...p, currentPassword: e.target.value }))}
+                                                required
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-medium">Mật khẩu mới</label>
+                                            <Input
+                                                type="password"
+                                                value={pwData.newPassword}
+                                                onChange={(e) => setPwData(p => ({ ...p, newPassword: e.target.value }))}
+                                                required
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-medium">Xác nhận mật khẩu mới</label>
+                                            <Input
+                                                type="password"
+                                                value={pwData.confirmNewPassword}
+                                                onChange={(e) => setPwData(p => ({ ...p, confirmNewPassword: e.target.value }))}
+                                                required
+                                            />
+                                        </div>
+                                        <Button type="submit" disabled={pwLoading}>
+                                            {pwLoading ? 'Đang đổi...' : 'Đổi mật khẩu'}
+                                        </Button>
+                                    </form>
+                                </CardContent>
+                            </Card>
                         )}
+
+                        {activeTab === 'orders' && <BuyerOrdersView />}
 
                         {activeTab === 'listings' && (
                             <Card>

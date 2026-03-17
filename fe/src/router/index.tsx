@@ -5,6 +5,10 @@ import MainLayout from '../layouts/MainLayout';
 import AdminLayout from '../layouts/AdminLayout';
 import InspectorLayout from '../layouts/InspectorLayout';
 import ProtectedRoute from './ProtectedRoute';
+
+// Auth pages (lazy loaded)
+const ForgotPasswordPage = lazy(() => import('../pages/ForgotPasswordPage'));
+const ResetPasswordPage = lazy(() => import('../pages/ResetPasswordPage'));
 import SellerLayout from '../layouts/SellerLayout';
 import {
     HomePage,
@@ -58,6 +62,8 @@ export default function AppRouter() {
                     <Route path={ROUTES.GUIDE} element={<GuidePage />} />
                     <Route path={ROUTES.LOGIN} element={<LoginPage />} />
                     <Route path={ROUTES.REGISTER} element={<RegisterPage />} />
+                    <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                    <Route path="/reset-password" element={<ResetPasswordPage />} />
 
                     {/* Protected routes - require authentication */}
                     <Route

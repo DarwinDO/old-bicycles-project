@@ -24,10 +24,14 @@ export const ROUTES = {
   // Seller routes
   SELLER: '/seller',
   SELLER_LISTINGS: '/seller/listings',
+  SELLER_EDIT_PRODUCT: '/seller/listings/:id/edit',
   SELLER_ORDERS: '/seller/orders',
+  // User routes
+  WISHLIST: '/wishlist',
 } as const;
 
 // Helper function to build dynamic routes
 export const buildRoute = {
   bikeDetail: (id: string | number) => `/bikes/${id}`,
+  sellerEditProduct: (id: string | number) => `/seller/listings/${id}/edit`,
 };

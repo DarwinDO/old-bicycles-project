@@ -40,7 +40,11 @@ const AdminDisputesPage = lazy(() => import('../pages/admin/AdminDisputesPage'))
 // Seller pages (lazy loaded)
 const SellerDashboardPage = lazy(() => import('../pages/seller/SellerDashboardPage'));
 const SellerListingsPage = lazy(() => import('../pages/seller/SellerListingsPage'));
+const SellerEditProductPage = lazy(() => import('../pages/seller/SellerEditProductPage'));
 const SellerOrdersPage = lazy(() => import('../pages/seller/SellerOrdersPage'));
+
+// User pages (lazy loaded)
+const WishlistPage = lazy(() => import('../pages/WishlistPage'));
 
 // Inspector pages (lazy loaded)
 const InspectorDashboardPage = lazy(() => import('../pages/inspector/InspectorDashboardPage'));
@@ -110,6 +114,14 @@ export default function AppRouter() {
                             </ProtectedRoute>
                         }
                     />
+                    <Route
+                        path={ROUTES.WISHLIST}
+                        element={
+                            <ProtectedRoute>
+                                <WishlistPage />
+                            </ProtectedRoute>
+                        }
+                    />
                 </Route>
 
                 {/* Admin layout routes */}
@@ -126,6 +138,7 @@ export default function AppRouter() {
                 <Route element={<ProtectedRoute allowedRoles={['seller']}><SellerLayout /></ProtectedRoute>}>
                     <Route path={ROUTES.SELLER} element={<SellerDashboardPage />} />
                     <Route path={ROUTES.SELLER_LISTINGS} element={<SellerListingsPage />} />
+                    <Route path={ROUTES.SELLER_EDIT_PRODUCT} element={<SellerEditProductPage />} />
                     <Route path={ROUTES.SELLER_ORDERS} element={<SellerOrdersPage />} />
                 </Route>
 

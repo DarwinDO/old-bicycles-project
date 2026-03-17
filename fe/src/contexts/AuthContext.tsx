@@ -1,93 +1,103 @@
-import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
-import { authService, type User, type LoginRequest, type RegisterRequest } from '@/services/authService';
-
-// ─── Types ───────────────────────────────────────────────────────────────────
+/* eslint-disable react-refresh/only-export-components */
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { clearAuthSession } from '@/lib/auth-storage'
+import { setUnauthorizedHandler } from '@/lib/http'
+import { authService, type LoginRequest, type RegisterRequest, type User } from '@/services/authService'
+import type { AppRole } from '@/types/auth'
 
 interface AuthContextValue {
-  user: User | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  login: (data: LoginRequest) => Promise<void>;
-  register: (data: RegisterRequest) => Promise<void>;
-  logout: () => Promise<void>;
-  refreshUser: () => Promise<void>;
-  setUser: (user: User | null) => void;
+  user: User | null
+  isAuthenticated: boolean
+  isLoading: boolean
+  login: (data: LoginRequest) => Promise<void>
+  register: (data: RegisterRequest) => Promise<void>
+  logout: () => Promise<void>
+  refreshUser: () => Promise<void>
+  setUser: (user: User | null) => void
+  hasRole: (...roles: AppRole[]) => boolean
 }
 
-// ─── Context ─────────────────────────────────────────────────────────────────
-
-const AuthContext = createContext<AuthContextValue | null>(null);
-
-// ─── Provider ────────────────────────────────────────────────────────────────
+const AuthContext = createContext<AuthContextValue | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+
+  const clearSessionState = useCallback(() => {
+    clearAuthSession()
+    setUser(null)
+    setIsLoading(false)
+  }, [])
 
   const refreshUser = useCallback(async () => {
     if (!authService.getToken()) {
-      setIsLoading(false);
-      return;
+      setUser(null)
+      setIsLoading(false)
+      return
     }
-    try {
-      const me = await authService.getMe();
-      setUser(me);
-    } catch {
-      // token invalid or expired — clear it
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('refreshToken');
-      setUser(null);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
 
-  // On mount: fetch current user if a token exists
+    try {
+      const me = await authService.getMe()
+      setUser(me)
+    } catch {
+      clearSessionState()
+    } finally {
+      setIsLoading(false)
+    }
+  }, [clearSessionState])
+
   useEffect(() => {
-    refreshUser();
-  }, [refreshUser]);
+    setUnauthorizedHandler(() => {
+      clearSessionState()
+    })
+
+    return () => {
+      setUnauthorizedHandler(null)
+    }
+  }, [clearSessionState])
+
+  useEffect(() => {
+    refreshUser()
+  }, [refreshUser])
 
   const login = async (data: LoginRequest) => {
-    const res = await authService.login(data);
-    // If the server returns user directly in login response, use it
-    if (res.user) {
-      setUser(res.user);
-    } else {
-      // Otherwise fetch user info separately
-      const me = await authService.getMe();
-      setUser(me);
-    }
-  };
+    const session = await authService.login(data)
+    setUser(session.user)
+  }
 
   const register = async (data: RegisterRequest) => {
-    await authService.register(data);
-  };
+    await authService.register(data)
+  }
 
   const logout = async () => {
-    await authService.logout();
-    setUser(null);
-  };
+    await authService.logout()
+    setUser(null)
+  }
 
-  const value: AuthContextValue = {
-    user,
-    isAuthenticated: Boolean(user),
-    isLoading,
-    login,
-    register,
-    logout,
-    refreshUser,
-    setUser,
-  };
+  const value = useMemo<AuthContextValue>(
+    () => ({
+      user,
+      isAuthenticated: Boolean(user),
+      isLoading,
+      login,
+      register,
+      logout,
+      refreshUser,
+      setUser,
+      hasRole: (...roles) => Boolean(user?.role && roles.includes(user.role)),
+    }),
+    [user, isLoading, refreshUser],
+  )
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
-// ─── Hook ────────────────────────────────────────────────────────────────────
-
 export function useAuth(): AuthContextValue {
-  const ctx = useContext(AuthContext);
+  const ctx = useContext(AuthContext)
+
   if (!ctx) {
-    throw new Error('useAuth must be used within an <AuthProvider>');
+    throw new Error('useAuth must be used within an <AuthProvider>')
   }
-  return ctx;
+
+  return ctx
 }

@@ -69,7 +69,7 @@ export default function AppRouter() {
                     <Route
                         path={ROUTES.SELL}
                         element={
-                            <ProtectedRoute>
+                            <ProtectedRoute allowedRoles={['seller']}>
                                 <SellBikePage />
                             </ProtectedRoute>
                         }
@@ -93,7 +93,7 @@ export default function AppRouter() {
                 </Route>
 
                 {/* Admin layout routes */}
-                <Route element={<AdminLayout />}>
+                <Route element={<ProtectedRoute allowedRoles={['admin']}><AdminLayout /></ProtectedRoute>}>
                     <Route path={ROUTES.ADMIN} element={<AdminDashboardPage />} />
                     <Route path={ROUTES.ADMIN_USERS} element={<AdminUsersPage />} />
                     <Route path={ROUTES.ADMIN_LISTINGS} element={<AdminListingsPage />} />
@@ -103,14 +103,14 @@ export default function AppRouter() {
                 </Route>
 
                 {/* Seller layout routes (Protected) */}
-                <Route element={<ProtectedRoute><SellerLayout /></ProtectedRoute>}>
+                <Route element={<ProtectedRoute allowedRoles={['seller']}><SellerLayout /></ProtectedRoute>}>
                     <Route path={ROUTES.SELLER} element={<SellerDashboardPage />} />
                     <Route path={ROUTES.SELLER_LISTINGS} element={<SellerListingsPage />} />
                     <Route path={ROUTES.SELLER_ORDERS} element={<SellerOrdersPage />} />
                 </Route>
 
                 {/* Inspector layout routes */}
-                <Route element={<InspectorLayout />}>
+                <Route element={<ProtectedRoute allowedRoles={['inspector', 'admin']}><InspectorLayout /></ProtectedRoute>}>
                     <Route path={ROUTES.INSPECTOR} element={<InspectorDashboardPage />} />
                     <Route path={ROUTES.INSPECTOR_REQUESTS} element={<InspectionRequestsPage />} />
                     <Route path={ROUTES.INSPECTOR_FORM} element={<InspectionFormPage />} />

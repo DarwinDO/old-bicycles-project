@@ -136,7 +136,7 @@ export default function ProfilePage() {
                     <div className="flex flex-col items-center gap-4 md:flex-row md:gap-6">
                         <div className="relative">
                             <Avatar className="h-24 w-24 border-4 border-white">
-                                <AvatarImage src={user.avatar} />
+                                <AvatarImage src={user.avatar ?? undefined} />
                                 <AvatarFallback className="text-2xl">{(user.firstName || user.email)?.[0]?.toUpperCase()}</AvatarFallback>
                             </Avatar>
                             <button className="absolute bottom-0 right-0 h-8 w-8 rounded-full bg-background flex items-center justify-center border shadow-sm">

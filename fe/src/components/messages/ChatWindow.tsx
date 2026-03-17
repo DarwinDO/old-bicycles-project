@@ -33,7 +33,7 @@ export function ChatWindow({ conversationId, onBack }: ChatWindowProps) {
         if (!inputValue.trim()) return;
 
         // Optimistic UI update
-        const newMessage = {
+        const newMessage: Message = {
             id: Date.now().toString(),
             text: inputValue,
             isMe: true,

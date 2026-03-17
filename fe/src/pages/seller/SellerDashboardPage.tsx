@@ -15,27 +15,27 @@ export default function SellerDashboardPage() {
                 <StatCard
                     title="Đơn cọc chờ xử lý"
                     value="3"
-                    icon={<ShoppingBag className="h-4 w-4 text-muted-foreground" />}
+                    icon={ShoppingBag}
                     description="Cần xác nhận ngay"
                     trend={{ value: 1, isPositive: true }}
                 />
                 <StatCard
                     title="Tin đang bật"
                     value="12"
-                    icon={<Package className="h-4 w-4 text-muted-foreground" />}
+                    icon={Package}
                     description="2 tin đang chờ duyệt"
                 />
                 <StatCard
                     title="Lượt xem tuần này"
                     value="845"
-                    icon={<Eye className="h-4 w-4 text-muted-foreground" />}
+                    icon={Eye}
                     trend={{ value: 12.5, isPositive: true }}
                     description="Tuyệt vời, tăng trưởng tốt!"
                 />
                 <StatCard
                     title="Tỷ lệ chuyển đổi"
                     value="4.2%"
-                    icon={<TrendingUp className="h-4 w-4 text-muted-foreground" />}
+                    icon={TrendingUp}
                     trend={{ value: 0.8, isPositive: true }}
                     description="So với tháng trước"
                 />

@@ -84,7 +84,7 @@ export default function AppHeader() {
                                 <DropdownMenuTrigger asChild>
                                     <button className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-muted transition-colors">
                                         <Avatar className="h-8 w-8">
-                                            <AvatarImage src={user.avatar} />
+                                            <AvatarImage src={user.avatar ?? undefined} />
                                             <AvatarFallback className="text-sm">{(user.firstName || user.email)?.[0]?.toUpperCase()}</AvatarFallback>
                                         </Avatar>
                                         <span className="text-sm font-medium max-w-[120px] truncate">{user.name || user.email}</span>
@@ -148,7 +148,7 @@ export default function AppHeader() {
                                 {isAuthenticated && user && (
                                     <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-muted mb-2">
                                         <Avatar className="h-9 w-9">
-                                            <AvatarImage src={user.avatar} />
+                                            <AvatarImage src={user.avatar ?? undefined} />
                                             <AvatarFallback>{(user.firstName || user.email)?.[0]?.toUpperCase()}</AvatarFallback>
                                         </Avatar>
                                         <div className="flex flex-col">

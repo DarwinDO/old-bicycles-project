@@ -253,3 +253,83 @@ Lượt sửa này giúp frontend ổn hơn ở 3 điểm:
 Đây là một ví dụ rất điển hình cho bài học frontend:
 
 > Không chỉ cần “gọi được API”, mà còn phải gọi đúng API, đúng ngữ cảnh, và hiểu rõ dữ liệu rỗng khác với lỗi thật như thế nào.
+
+## Bổ sung: vì sao đã gửi tin nhắn rồi mà màn chat vẫn trắng?
+
+Đây là một tình huống rất dễ gây hiểu lầm.
+
+### Điều đã kiểm tra được
+
+Trong case thực tế:
+
+- frontend đã gửi frame STOMP `SEND`
+- backend đã lưu message vào database
+- REST API `GET /api/conversations/{id}/messages` cũng trả ra đúng danh sách message
+
+Nghĩa là:
+
+- dữ liệu **không bị mất**
+- backend **không bị hỏng hoàn toàn**
+
+Nhưng UI vẫn trắng vì frontend trước đó quá phụ thuộc vào việc:
+
+- hoặc realtime echo phải quay về ngay
+- hoặc dữ liệu ban đầu phải luôn nạp trơn tru một lần là đủ
+
+Trong thực tế, realtime có thể bị trễ hoặc hụt một nhịp.
+
+### Cách sửa bổ sung
+
+Ở [ChatWindow.tsx](/e:/Old_bicycle_system/old-bicycles-project/fe/src/components/messages/ChatWindow.tsx), tôi thêm 2 lớp an toàn:
+
+1. Khi mở conversation, frontend vẫn load message history qua REST như cũ.
+2. Khi người dùng bấm gửi, frontend sẽ lên lịch gọi lại `getMessages(...)` sau một nhịp ngắn để đồng bộ.
+3. Trong lúc chat đang mở, frontend cũng có một interval nhỏ để refresh lịch sử tin nhắn làm lớp dự phòng.
+
+### Vì sao cần lớp dự phòng?
+
+Vì trong chat realtime có 2 đường dữ liệu:
+
+1. **Đường realtime**
+   - nhanh
+   - đẹp
+   - nhưng có thể hụt nếu có vấn đề mạng, proxy, reconnect, hoặc timing
+
+2. **Đường REST history**
+   - chậm hơn một chút
+   - nhưng ổn định
+   - phù hợp làm nguồn dữ liệu dự phòng
+
+Ta có thể hiểu đơn giản:
+
+- WebSocket giống như nghe radio trực tiếp
+- REST giống như mở lại bản ghi đã lưu
+
+Nếu radio hụt một câu, ta vẫn có thể nhìn lại bản ghi để không mất dữ liệu.
+
+### Luồng mới của màn chat
+
+```text
+Người dùng mở conversation
+-> ChatWindow load history qua REST
+-> ChatWindow connect WebSocket và subscribe
+-> Người dùng bấm gửi
+-> FE publish STOMP SEND
+-> Backend lưu message
+-> Nếu realtime echo về kịp -> append message ngay
+-> Nếu realtime echo chậm hoặc hụt -> FE refetch history qua REST
+-> messages state được cập nhật
+-> giao diện hiển thị tin nhắn
+```
+
+### Bài học quan trọng cho người mới
+
+Khi làm chat hoặc realtime, đừng nghĩ:
+
+> “Có WebSocket rồi thì không cần REST nữa.”
+
+Suy nghĩ đúng hơn là:
+
+> “WebSocket để nhận dữ liệu mới nhanh, còn REST để đồng bộ và cứu lỗi.”
+
+Đây là một mẫu thiết kế rất phổ biến trong frontend thực tế.

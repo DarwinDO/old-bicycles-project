@@ -13,6 +13,10 @@ export function getConversationPreview(conversation: Conversation) {
   return conversation.lastMessage?.trim() || 'Chưa có tin nhắn nào.'
 }
 
+export function shouldShowConversationInList(conversation: Conversation, selectedId: string | null) {
+  return Boolean(conversation.lastMessage?.trim()) || conversation.id === selectedId
+}
+
 export function formatConversationTimestamp(value: string) {
   const date = new Date(value)
   const now = new Date()

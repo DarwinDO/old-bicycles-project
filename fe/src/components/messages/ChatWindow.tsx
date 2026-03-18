@@ -22,6 +22,9 @@ interface ChatWindowProps {
   onBack: () => void
 }
 
+const REALTIME_CONNECTION_WARNING = 'Kết nối realtime đang gián đoạn. Hệ thống sẽ tự thử kết nối lại.'
+const INITIAL_CONNECTION_WARNING_DELAY_MS = 8000
+
 function getErrorMessage(error: unknown, fallback: string) {
   if (
     error &&
@@ -54,6 +57,7 @@ export function ChatWindow({ conversation, onBack }: ChatWindowProps) {
   const [isSocketReady, setIsSocketReady] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const socketRef = useRef<ChatSocketClient | null>(null)
+  const hasConnectedRealtimeRef = useRef(false)
   const currentUserId = user?.id ?? ''
 
   const partner = useMemo(() => {
@@ -82,24 +86,38 @@ export function ChatWindow({ conversation, onBack }: ChatWindowProps) {
     let cancelled = false
     let unsubscribeConversation: (() => void) | null = null
     let unsubscribeConnectionState: (() => void) | null = null
+    let fallbackRefreshIntervalId: number | null = null
+    let initialConnectionWarningTimeoutId: number | null = null
     const token = authService.getToken()
     const activeConversation = conversation
     const activeUser = user
+
+    function clearInitialConnectionWarningTimeout() {
+      if (initialConnectionWarningTimeoutId !== null) {
+        window.clearTimeout(initialConnectionWarningTimeoutId)
+        initialConnectionWarningTimeoutId = null
+      }
+    }
+
+    async function refreshMessages() {
+      const messagePage = await chatApi.getMessages(activeConversation.id, 0, 50)
+
+      if (cancelled) {
+        return
+      }
+
+      setMessages(normalizeMessagesChronologically(messagePage.content))
+    }
 
     async function loadConversation() {
       setLoading(true)
       setError(null)
       setMessages([])
       setIsSocketReady(false)
+      hasConnectedRealtimeRef.current = false
 
       try {
-        const messagePage = await chatApi.getMessages(activeConversation.id, 0, 50)
-
-        if (cancelled) {
-          return
-        }
-
-        setMessages(normalizeMessagesChronologically(messagePage.content))
+        await refreshMessages()
         await chatApi.markAsRead(activeConversation.id)
 
         if (!token) {
@@ -116,22 +134,38 @@ export function ChatWindow({ conversation, onBack }: ChatWindowProps) {
 
           setIsSocketReady(connected)
 
-          if (!connected) {
+          if (connected) {
+            hasConnectedRealtimeRef.current = true
+            clearInitialConnectionWarningTimeout()
+            setError((currentError) => (currentError === REALTIME_CONNECTION_WARNING ? null : currentError))
+            return
+          }
+
+          if (hasConnectedRealtimeRef.current) {
             setError((currentError) => {
-              if (currentError && currentError !== 'Kết nối realtime đang gián đoạn. Hệ thống sẽ tự thử kết nối lại.') {
+              if (currentError && currentError !== REALTIME_CONNECTION_WARNING) {
                 return currentError
               }
 
-              return 'Kết nối realtime đang gián đoạn. Hệ thống sẽ tự thử kết nối lại.'
+              return REALTIME_CONNECTION_WARNING
             })
             return
           }
 
-          setError((currentError) =>
-            currentError === 'Kết nối realtime đang gián đoạn. Hệ thống sẽ tự thử kết nối lại.'
-              ? null
-              : currentError,
-          )
+          clearInitialConnectionWarningTimeout()
+          initialConnectionWarningTimeoutId = window.setTimeout(() => {
+            if (cancelled || hasConnectedRealtimeRef.current || socketClient.isConnected()) {
+              return
+            }
+
+            setError((currentError) => {
+              if (currentError && currentError !== REALTIME_CONNECTION_WARNING) {
+                return currentError
+              }
+
+              return REALTIME_CONNECTION_WARNING
+            })
+          }, INITIAL_CONNECTION_WARNING_DELAY_MS)
         })
 
         await socketClient.connect()
@@ -148,8 +182,13 @@ export function ChatWindow({ conversation, onBack }: ChatWindowProps) {
             void chatApi.markAsRead(activeConversation.id)
           }
         })
+
+        fallbackRefreshIntervalId = window.setInterval(() => {
+          void refreshMessages()
+        }, 5000)
       } catch (requestError) {
         if (!cancelled) {
+          clearInitialConnectionWarningTimeout()
           setError(getErrorMessage(requestError, 'Không thể tải cuộc trò chuyện lúc này.'))
         }
       } finally {
@@ -164,8 +203,12 @@ export function ChatWindow({ conversation, onBack }: ChatWindowProps) {
     return () => {
       cancelled = true
       setIsSocketReady(false)
+      clearInitialConnectionWarningTimeout()
       unsubscribeConversation?.()
       unsubscribeConnectionState?.()
+      if (fallbackRefreshIntervalId !== null) {
+        window.clearInterval(fallbackRefreshIntervalId)
+      }
 
       const socketClient = socketRef.current
       socketRef.current = null
@@ -197,6 +240,21 @@ export function ChatWindow({ conversation, onBack }: ChatWindowProps) {
 
     setInputValue('')
     setError(null)
+
+    window.setTimeout(() => {
+      if (!conversation) {
+        return
+      }
+
+      void chatApi
+        .getMessages(conversation.id, 0, 50)
+        .then((messagePage) => {
+          setMessages(normalizeMessagesChronologically(messagePage.content))
+        })
+        .catch(() => {
+          // Realtime already handles the happy path; this is only a silent fallback refresh.
+        })
+    }, 500)
   }
 
   if (!conversation || !partner) {

@@ -1,5 +1,13 @@
-import { getResult, postResult } from '@/lib/http'
-import type { Inspection, InspectionEvaluationRequest } from '@/types/inspection'
+import { compactParams, getResult, postResult } from '@/lib/http'
+import type {
+  Inspection,
+  InspectionDashboard,
+  InspectionEvaluationRequest,
+  InspectionHistoryItem,
+  InspectionListFilters,
+  InspectionRequestItem,
+} from '@/types/inspection'
+import type { PageResult } from '@/types/api'
 
 export const inspectionsApi = {
   request(productId: string) {
@@ -12,5 +20,21 @@ export const inspectionsApi = {
 
   getByProduct(productId: string) {
     return getResult<Inspection>(`/api/inspections/product/${productId}`)
+  },
+
+  getDashboard() {
+    return getResult<InspectionDashboard>('/api/inspections/dashboard')
+  },
+
+  getRequests(filters: InspectionListFilters) {
+    return getResult<PageResult<InspectionRequestItem>>('/api/inspections/requests', {
+      params: compactParams(filters),
+    })
+  },
+
+  getHistory(filters: InspectionListFilters) {
+    return getResult<PageResult<InspectionHistoryItem>>('/api/inspections/history', {
+      params: compactParams(filters),
+    })
   },
 }

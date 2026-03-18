@@ -1,5 +1,5 @@
 import { Client, type IMessage, type StompSubscription } from '@stomp/stompjs'
-import SockJS from 'sockjs-client'
+import SockJS from 'sockjs-client/dist/sockjs'
 import type { ChatMessage, SendChatMessageRequest } from '@/types/chat'
 
 type ConnectionListener = (connected: boolean) => void

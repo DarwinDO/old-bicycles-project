@@ -65,7 +65,7 @@ vi.mock('@stomp/stompjs', () => ({
   Client: MockStompClient,
 }))
 
-vi.mock('sockjs-client', () => ({
+vi.mock('sockjs-client/dist/sockjs', () => ({
   default: mockSockJsFactory,
 }))
 

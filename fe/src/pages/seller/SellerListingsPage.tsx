@@ -192,7 +192,7 @@ export default function SellerListingsPage() {
               ) : (
                 filteredProducts.map((product) => {
                   const isActing = actionLoading === product.id
-                  const canEdit = product.status === 'active' || product.status === 'hidden'
+                  const canEdit = product.status !== 'sold'
                   const canHide = product.status === 'active' || product.status === 'inspected_passed'
                   const canShow = product.status === 'hidden'
                   const canRequestInspection = product.status === 'active'

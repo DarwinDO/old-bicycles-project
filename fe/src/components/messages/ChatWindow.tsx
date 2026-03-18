@@ -75,11 +75,13 @@ export function ChatWindow({ conversation, onBack }: ChatWindowProps) {
       setMessages([])
       setLoading(false)
       setIsSocketReady(false)
+      setError(null)
       return
     }
 
     let cancelled = false
     let unsubscribeConversation: (() => void) | null = null
+    let unsubscribeConnectionState: (() => void) | null = null
     const token = authService.getToken()
     const activeConversation = conversation
     const activeUser = user
@@ -98,7 +100,6 @@ export function ChatWindow({ conversation, onBack }: ChatWindowProps) {
         }
 
         setMessages(normalizeMessagesChronologically(messagePage.content))
-
         await chatApi.markAsRead(activeConversation.id)
 
         if (!token) {
@@ -107,6 +108,31 @@ export function ChatWindow({ conversation, onBack }: ChatWindowProps) {
 
         const socketClient = createChatSocketClient(token)
         socketRef.current = socketClient
+
+        unsubscribeConnectionState = socketClient.addConnectionListener((connected) => {
+          if (cancelled) {
+            return
+          }
+
+          setIsSocketReady(connected)
+
+          if (!connected) {
+            setError((currentError) => {
+              if (currentError && currentError !== 'Kết nối realtime đang gián đoạn. Hệ thống sẽ tự thử kết nối lại.') {
+                return currentError
+              }
+
+              return 'Kết nối realtime đang gián đoạn. Hệ thống sẽ tự thử kết nối lại.'
+            })
+            return
+          }
+
+          setError((currentError) =>
+            currentError === 'Kết nối realtime đang gián đoạn. Hệ thống sẽ tự thử kết nối lại.'
+              ? null
+              : currentError,
+          )
+        })
 
         await socketClient.connect()
 
@@ -122,8 +148,6 @@ export function ChatWindow({ conversation, onBack }: ChatWindowProps) {
             void chatApi.markAsRead(activeConversation.id)
           }
         })
-
-        setIsSocketReady(true)
       } catch (requestError) {
         if (!cancelled) {
           setError(getErrorMessage(requestError, 'Không thể tải cuộc trò chuyện lúc này.'))
@@ -141,6 +165,7 @@ export function ChatWindow({ conversation, onBack }: ChatWindowProps) {
       cancelled = true
       setIsSocketReady(false)
       unsubscribeConversation?.()
+      unsubscribeConnectionState?.()
 
       const socketClient = socketRef.current
       socketRef.current = null

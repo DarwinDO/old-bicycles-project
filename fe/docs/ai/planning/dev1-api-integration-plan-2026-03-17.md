@@ -6,6 +6,34 @@ description: File-level backlog and execution order for FE Dev 1 API integration
 
 # FE Dev 1 API Integration Plan - 2026-03-17
 
+## Cập Nhật Mới Nhất - 2026-03-18
+
+Dev 1 đã nối thêm 2 cầu nối quan trọng để flow người mua chạy thật từ UI marketplace:
+
+- `BikeDetailPage -> MessagesPage`
+  - nút chat vẫn đi qua `?productId=...`
+  - `MessagesPage` giờ tự gọi `POST /api/conversations?productId=...`
+  - nếu chưa đăng nhập, `LoginPage` giữ lại cả `pathname + search`, nên sau login vẫn quay đúng về flow chat
+- `BikeDetailPage -> create order -> ProfilePage?tab=orders`
+  - người mua có dialog tạo yêu cầu mua ngay tại trang chi tiết xe
+  - FE gọi `POST /api/orders`
+  - tạo đơn xong sẽ chuyển sang `/profile?tab=orders`
+  - `ProfilePage` giờ hiểu query `tab=orders`
+
+Kết luận impact review với phần Dev 2 và Dev 3:
+
+- Không có bug bắt buộc phải sửa ngay chỉ vì Dev 1 đổi flow order.
+- Có 3 điểm cần team hiểu đúng:
+  - `completed` giờ là trạng thái sau khi buyer xác nhận đã nhận xe
+  - có thêm trạng thái `awaiting_buyer_confirmation`
+  - mọi CTA chat từ trang chi tiết xe nên giữ query `productId` nếu đi qua login redirect
+
+Những gì còn lại của Dev 1 sau tranche này:
+
+- unread badge toàn cục cho chat qua `/user/queue/messages`
+- reconnect/resubscribe nâng cao cho chat
+- admin refund review UI nếu chốt giao phần đó cho Dev 1
+
 ## Cập Nhật Mới Nhất - 2026-03-17
 
 Dev 1 hiện đã nối xong 3 tranche lớn:

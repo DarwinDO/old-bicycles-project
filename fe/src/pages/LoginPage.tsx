@@ -19,7 +19,10 @@ export default function LoginPage() {
     const location = useLocation()
 
     // After login, redirect to the page they were trying to access (or home)
-    const from = (location.state as { from?: { pathname: string } })?.from?.pathname || ROUTES.HOME
+    const fromLocation = (location.state as { from?: { pathname: string; search?: string } })?.from
+    const from = fromLocation
+        ? `${fromLocation.pathname}${fromLocation.search ?? ''}`
+        : ROUTES.HOME
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()

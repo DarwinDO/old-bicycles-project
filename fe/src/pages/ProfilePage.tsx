@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { User, Mail, Phone, MapPin, Camera, Settings, LogOut, Heart, Package, Star, Shield, ShoppingBag, Lock, AlertCircle, Check, Eye, EyeOff, Pencil, Trash2, Loader2, PlusCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -33,10 +33,16 @@ const tabs = [
     { id: 'security', label: 'Bảo mật', icon: Lock },
 ]
 
+const tabIds = new Set(tabs.map((tab) => tab.id))
+
 export default function ProfilePage() {
     const { user, logout, setUser } = useAuth()
     const navigate = useNavigate()
-    const [activeTab, setActiveTab] = useState('profile')
+    const [searchParams, setSearchParams] = useSearchParams()
+    const requestedTab = searchParams.get('tab')
+    const [activeTab, setActiveTab] = useState(
+        requestedTab && tabIds.has(requestedTab) ? requestedTab : 'profile',
+    )
     const [isEditing, setIsEditing] = useState(false)
     const [profileLoading, setProfileLoading] = useState(false)
     const [profileError, setProfileError] = useState<string | null>(null)
@@ -70,6 +76,27 @@ export default function ProfilePage() {
             })
         }
     }, [user])
+
+    useEffect(() => {
+        if (requestedTab && tabIds.has(requestedTab)) {
+            setActiveTab(requestedTab)
+        }
+    }, [requestedTab])
+
+    const handleTabChange = (nextTab: string) => {
+        setActiveTab(nextTab)
+        setSearchParams((currentParams) => {
+            const nextParams = new URLSearchParams(currentParams)
+
+            if (nextTab === 'profile') {
+                nextParams.delete('tab')
+            } else {
+                nextParams.set('tab', nextTab)
+            }
+
+            return nextParams
+        }, { replace: true })
+    }
 
     // Load wishlist when tab is opened
     useEffect(() => {
@@ -234,7 +261,7 @@ export default function ProfilePage() {
                                     {tabs.map((tab) => (
                                         <button
                                             key={tab.id}
-                                            onClick={() => setActiveTab(tab.id)}
+                                            onClick={() => handleTabChange(tab.id)}
                                             className={cn(
                                                 "w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors",
                                                 activeTab === tab.id

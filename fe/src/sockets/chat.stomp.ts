@@ -2,10 +2,20 @@ import { Client, type IMessage, type StompSubscription } from '@stomp/stompjs'
 import SockJS from 'sockjs-client'
 import type { ChatMessage, SendChatMessageRequest } from '@/types/chat'
 
+type ConnectionListener = (connected: boolean) => void
+
+interface SubscriptionEntry {
+  id: string
+  destination: string
+  onMessage: (message: ChatMessage) => void
+  activeSubscription: StompSubscription | null
+}
+
 export interface ChatSocketClient {
   connect: () => Promise<void>
   subscribeToConversation: (conversationId: string, onMessage: (message: ChatMessage) => void) => () => void
   subscribeToInbox: (onMessage: (message: ChatMessage) => void) => () => void
+  addConnectionListener: (listener: ConnectionListener) => () => void
   sendMessage: (payload: SendChatMessageRequest) => void
   disconnect: () => Promise<void>
   isConnected: () => boolean
@@ -38,7 +48,75 @@ export function createChatSocketClient(token: string): ChatSocketClient {
     debug: () => {},
   })
 
-  const subscriptions = new Set<StompSubscription>()
+  const subscriptions = new Map<string, SubscriptionEntry>()
+  const connectionListeners = new Set<ConnectionListener>()
+  let connectPromise: Promise<void> | null = null
+  let subscriptionSequence = 0
+
+  function notifyConnectionState(connected: boolean) {
+    connectionListeners.forEach((listener) => listener(connected))
+  }
+
+  function clearActiveSubscriptions() {
+    subscriptions.forEach((entry) => {
+      entry.activeSubscription = null
+    })
+  }
+
+  function activateEntry(entry: SubscriptionEntry) {
+    entry.activeSubscription?.unsubscribe()
+    entry.activeSubscription = client.subscribe(entry.destination, (frame) => {
+      entry.onMessage(parseMessage(frame))
+    })
+  }
+
+  function resubscribeAll() {
+    subscriptions.forEach((entry) => {
+      activateEntry(entry)
+    })
+  }
+
+  function createSubscription(destination: string, onMessage: (message: ChatMessage) => void) {
+    const id = `subscription-${subscriptionSequence++}`
+    const entry: SubscriptionEntry = {
+      id,
+      destination,
+      onMessage,
+      activeSubscription: null,
+    }
+
+    subscriptions.set(id, entry)
+
+    if (client.connected) {
+      activateEntry(entry)
+    }
+
+    return () => {
+      const currentEntry = subscriptions.get(id)
+
+      if (!currentEntry) {
+        return
+      }
+
+      currentEntry.activeSubscription?.unsubscribe()
+      subscriptions.delete(id)
+    }
+  }
+
+  client.onConnect = () => {
+    resubscribeAll()
+    notifyConnectionState(true)
+  }
+
+  client.onDisconnect = () => {
+    clearActiveSubscriptions()
+    notifyConnectionState(false)
+  }
+
+  client.onWebSocketClose = () => {
+    clearActiveSubscriptions()
+    notifyConnectionState(false)
+  }
 
   return {
     connect() {
@@ -46,37 +124,58 @@ export function createChatSocketClient(token: string): ChatSocketClient {
         return Promise.resolve()
       }
 
-      return new Promise<void>((resolve, reject) => {
-        client.onConnect = () => resolve()
-        client.onStompError = (frame) => reject(new Error(frame.headers.message ?? 'STOMP connection failed'))
-        client.onWebSocketError = () => reject(new Error('WebSocket connection failed'))
-        client.activate()
+      if (connectPromise) {
+        return connectPromise
+      }
+
+      connectPromise = new Promise<void>((resolve, reject) => {
+        const resolveConnection = () => {
+          connectPromise = null
+          resolve()
+        }
+
+        const rejectConnection = (error: Error) => {
+          connectPromise = null
+          notifyConnectionState(false)
+          reject(error)
+        }
+
+        client.onConnect = () => {
+          resubscribeAll()
+          notifyConnectionState(true)
+          resolveConnection()
+        }
+
+        client.onStompError = (frame) => {
+          rejectConnection(new Error(frame.headers.message ?? 'STOMP connection failed'))
+        }
+
+        client.onWebSocketError = () => {
+          rejectConnection(new Error('WebSocket connection failed'))
+        }
+
+        if (!client.active) {
+          client.activate()
+        }
       })
+
+      return connectPromise
     },
 
     subscribeToConversation(conversationId, onMessage) {
-      const subscription = client.subscribe(`/topic/conversation/${conversationId}`, (frame) => {
-        onMessage(parseMessage(frame))
-      })
-
-      subscriptions.add(subscription)
-
-      return () => {
-        subscription.unsubscribe()
-        subscriptions.delete(subscription)
-      }
+      return createSubscription(`/topic/conversation/${conversationId}`, onMessage)
     },
 
     subscribeToInbox(onMessage) {
-      const subscription = client.subscribe('/user/queue/messages', (frame) => {
-        onMessage(parseMessage(frame))
-      })
+      return createSubscription('/user/queue/messages', onMessage)
+    },
 
-      subscriptions.add(subscription)
+    addConnectionListener(listener) {
+      connectionListeners.add(listener)
+      listener(client.connected)
 
       return () => {
-        subscription.unsubscribe()
-        subscriptions.delete(subscription)
+        connectionListeners.delete(listener)
       }
     },
 
@@ -88,14 +187,17 @@ export function createChatSocketClient(token: string): ChatSocketClient {
     },
 
     async disconnect() {
-      subscriptions.forEach((subscription) => subscription.unsubscribe())
+      subscriptions.forEach((entry) => entry.activeSubscription?.unsubscribe())
       subscriptions.clear()
+      connectionListeners.clear()
 
       if (!client.active) {
+        clearActiveSubscriptions()
         return
       }
 
       await client.deactivate()
+      clearActiveSubscriptions()
     },
 
     isConnected() {

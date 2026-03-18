@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
-import { Link, useParams, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import {
-  MapPin, Shield, MessageCircle, Heart, Share2, ChevronLeft, ChevronRight,
+  CreditCard, MapPin, Shield, MessageCircle, Heart, Share2, ChevronLeft, ChevronRight,
   Star, Clock, AlertTriangle, Loader2, ExternalLink,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -9,12 +9,18 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ROUTES } from '@/constants/routes'
 import { cn } from '@/lib/utils'
+import { ordersApi } from '@/api/orders.api'
 import { productsApi } from '@/api/products.api'
 import { wishlistApi } from '@/api/wishlist.api'
 import { reviewsApi } from '@/api/reviews.api'
 import { inspectionsApi } from '@/api/inspections.api'
+import type { PaymentMethod, PaymentOption } from '@/types/order'
 import type { Product } from '@/types/product'
 import type { Review } from '@/types/review'
 import type { Inspection } from '@/types/inspection'
@@ -48,6 +54,17 @@ function getTimeAgo(dateStr: string): string {
   return `${months} tháng trước`
 }
 
+function parseCurrencyInput(rawValue: string): number | null {
+  const normalizedDigits = rawValue.replace(/[^\d]/g, '')
+
+  if (!normalizedDigits) {
+    return null
+  }
+
+  const parsedValue = Number(normalizedDigits)
+  return Number.isFinite(parsedValue) ? parsedValue : null
+}
+
 function StarRating({ rating }: { rating: number }) {
   return (
     <div className="flex items-center gap-0.5">
@@ -63,7 +80,8 @@ function StarRating({ rating }: { rating: number }) {
 
 export default function BikeDetailPage() {
   const { id } = useParams<{ id: string }>()
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, user } = useAuth()
+  const location = useLocation()
   const navigate = useNavigate()
 
   const [product, setProduct] = useState<Product | null>(null)
@@ -76,6 +94,12 @@ export default function BikeDetailPage() {
   const [wishlistLoading, setWishlistLoading] = useState(false)
   const [wishlistError, setWishlistError] = useState<string | null>(null)
   const [imgErrors, setImgErrors] = useState<Record<string, boolean>>({})
+  const [isOrderDialogOpen, setIsOrderDialogOpen] = useState(false)
+  const [orderError, setOrderError] = useState<string | null>(null)
+  const [orderLoading, setOrderLoading] = useState(false)
+  const [paymentOption, setPaymentOption] = useState<PaymentOption>('partial')
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('transfer')
+  const [upfrontAmount, setUpfrontAmount] = useState('')
 
   useEffect(() => {
     if (!id) return
@@ -180,6 +204,80 @@ export default function BikeDetailPage() {
   const avgRating = reviews.length > 0
     ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
     : null
+
+  const isOwnListing = Boolean(user?.id && product?.seller?.id && user.id === product.seller.id)
+
+  const handleOpenOrderDialog = () => {
+    if (!product) {
+      return
+    }
+
+    if (!isAuthenticated) {
+      navigate(ROUTES.LOGIN, { state: { from: location } })
+      return
+    }
+
+    if (user?.role !== 'buyer') {
+      setOrderError('Chỉ tài khoản người mua mới có thể tạo yêu cầu mua.')
+      return
+    }
+
+    if (isOwnListing) {
+      setOrderError('Bạn không thể tạo đơn cho tin đăng của chính mình.')
+      return
+    }
+
+    setOrderError(null)
+    setIsOrderDialogOpen(true)
+  }
+
+  const handleCreateOrder = async () => {
+    if (!product) {
+      return
+    }
+
+    const parsedUpfrontAmount = paymentOption === 'partial' ? parseCurrencyInput(upfrontAmount) : null
+
+    if (paymentOption === 'partial' && (!parsedUpfrontAmount || parsedUpfrontAmount <= 0)) {
+      setOrderError('Vui lòng nhập số tiền ứng trước hợp lệ.')
+      return
+    }
+
+    setOrderLoading(true)
+    setOrderError(null)
+
+    try {
+      await ordersApi.create({
+        productId: product.id,
+        paymentMethod,
+        paymentOption,
+        upfrontAmount: paymentOption === 'partial' && parsedUpfrontAmount ? parsedUpfrontAmount : undefined,
+      })
+
+      setIsOrderDialogOpen(false)
+      setUpfrontAmount('')
+      navigate(`${ROUTES.PROFILE}?tab=orders`)
+    } catch (requestError) {
+      if (
+        requestError &&
+        typeof requestError === 'object' &&
+        'response' in requestError &&
+        requestError.response &&
+        typeof requestError.response === 'object' &&
+        'data' in requestError.response &&
+        requestError.response.data &&
+        typeof requestError.response.data === 'object' &&
+        'message' in requestError.response.data &&
+        typeof requestError.response.data.message === 'string'
+      ) {
+        setOrderError(requestError.response.data.message)
+      } else {
+        setOrderError('Không thể tạo yêu cầu mua lúc này. Vui lòng thử lại.')
+      }
+    } finally {
+      setOrderLoading(false)
+    }
+  }
 
   // Loading state
   if (isLoading) {
@@ -488,11 +586,15 @@ export default function BikeDetailPage() {
 
                 <div className="space-y-3">
                   <Link to={`${ROUTES.MESSAGES}?productId=${product.id}`}>
-                    <Button className="w-full" size="lg">
+                    <Button className="w-full" size="lg" disabled={isOwnListing}>
                       <MessageCircle className="mr-2 h-4 w-4" />
-                      Chat với người bán
+                      {isOwnListing ? 'Đây là tin đăng của bạn' : 'Chat với người bán'}
                     </Button>
                   </Link>
+                  <Button className="w-full" size="lg" variant="secondary" onClick={handleOpenOrderDialog}>
+                    <CreditCard className="mr-2 h-4 w-4" />
+                    Tạo yêu cầu mua
+                  </Button>
                   <div className="flex gap-2">
                     <Button
                       variant="outline"
@@ -521,6 +623,12 @@ export default function BikeDetailPage() {
                     <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
                       <AlertTriangle className="h-4 w-4 shrink-0" />
                       {wishlistError}
+                    </div>
+                  )}
+                  {orderError && (
+                    <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                      <AlertTriangle className="h-4 w-4 shrink-0" />
+                      {orderError}
                     </div>
                   )}
                 </div>
@@ -566,6 +674,97 @@ export default function BikeDetailPage() {
           </div>
         </div>
       </div>
+
+      <Dialog
+        open={isOrderDialogOpen}
+        onOpenChange={(open) => {
+          setIsOrderDialogOpen(open)
+          if (!open) {
+            setOrderError(null)
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[520px]">
+          <DialogHeader>
+            <DialogTitle>Tạo yêu cầu mua xe</DialogTitle>
+            <DialogDescription>
+              Bạn đang tạo yêu cầu mua cho <span className="font-semibold text-foreground">{product.title}</span>.
+              Sau khi người bán chấp nhận, bạn sẽ thanh toán ở trang đơn mua của mình.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="rounded-lg border bg-muted/30 p-4">
+              <div className="text-sm text-muted-foreground">Giá niêm yết</div>
+              <div className="mt-1 text-2xl font-bold text-foreground">{formatPrice(product.price)}</div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="payment-option">Hình thức thanh toán</Label>
+              <Select value={paymentOption} onValueChange={(value) => setPaymentOption(value as PaymentOption)}>
+                <SelectTrigger id="payment-option">
+                  <SelectValue placeholder="Chọn hình thức thanh toán" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="partial">Đặt cọc một phần</SelectItem>
+                  <SelectItem value="full">Thanh toán toàn bộ</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="payment-method">Phương thức thanh toán</Label>
+              <Select value={paymentMethod} onValueChange={(value) => setPaymentMethod(value as PaymentMethod)}>
+                <SelectTrigger id="payment-method">
+                  <SelectValue placeholder="Chọn phương thức thanh toán" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="transfer">Chuyển khoản</SelectItem>
+                  <SelectItem value="cash">Tiền mặt</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {paymentOption === 'partial' && (
+              <div className="space-y-2">
+                <Label htmlFor="upfront-amount">Số tiền ứng trước</Label>
+                <Input
+                  id="upfront-amount"
+                  inputMode="numeric"
+                  placeholder="Ví dụ: 5000000"
+                  value={upfrontAmount}
+                  onChange={(event) => setUpfrontAmount(event.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Backend cho phép bạn nhập số tiền ứng trước hợp lệ, miễn lớn hơn 0 và không vượt quá giá xe.
+                </p>
+              </div>
+            )}
+
+            {orderError && (
+              <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                <AlertTriangle className="h-4 w-4 shrink-0" />
+                {orderError}
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsOrderDialogOpen(false)
+                setOrderError(null)
+              }}
+            >
+              Hủy
+            </Button>
+            <Button onClick={handleCreateOrder} disabled={orderLoading}>
+              {orderLoading ? 'Đang tạo đơn...' : 'Tạo yêu cầu mua'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

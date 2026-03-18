@@ -6,6 +6,7 @@ export const ROUTES = {
   SELL: '/sell',
   LOGIN: '/login',
   REGISTER: '/register',
+  VERIFY_EMAIL: '/verify-email',
   PROFILE: '/profile',
   MESSAGES: '/messages',
   GUIDE: '/guide',

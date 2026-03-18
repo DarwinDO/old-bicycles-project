@@ -17,6 +17,7 @@ import {
     SellBikePage,
     LoginPage,
     RegisterPage,
+    VerifyEmailPage,
     ProfilePage,
     GuidePage,
 } from './lazyPages';
@@ -70,6 +71,7 @@ export default function AppRouter() {
                     <Route path={ROUTES.GUIDE} element={<GuidePage />} />
                     <Route path={ROUTES.LOGIN} element={<LoginPage />} />
                     <Route path={ROUTES.REGISTER} element={<RegisterPage />} />
+                    <Route path={ROUTES.VERIFY_EMAIL} element={<VerifyEmailPage />} />
                     <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                     <Route path="/reset-password" element={<ResetPasswordPage />} />
 

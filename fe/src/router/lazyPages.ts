@@ -7,5 +7,6 @@ export const BikeDetailPage = lazy(() => import('../pages/BikeDetailPage'));
 export const SellBikePage = lazy(() => import('../pages/SellBikePage'));
 export const LoginPage = lazy(() => import('../pages/LoginPage'));
 export const RegisterPage = lazy(() => import('../pages/RegisterPage'));
+export const VerifyEmailPage = lazy(() => import('../pages/VerifyEmailPage'));
 export const ProfilePage = lazy(() => import('../pages/ProfilePage'));
 export const GuidePage = lazy(() => import('../pages/GuidePage'));

@@ -10,6 +10,20 @@ import type {
   UpdateProfileRequest,
 } from '@/types/auth'
 
+function isAuthSession(result: unknown): result is AuthSession {
+  if (!result || typeof result !== 'object') {
+    return false
+  }
+
+  const candidate = result as Partial<AuthSession>
+
+  return typeof candidate.accessToken === 'string' && Boolean(candidate.user)
+}
+
+function isVerifyEmailResult(result: unknown): result is string | AuthSession {
+  return typeof result === 'string' || isAuthSession(result)
+}
+
 function normalizeAuthUser(user: Omit<AuthUser, 'name' | 'avatar' | 'address' | 'verified'> & Partial<AuthUser>): AuthUser {
   const firstName = user.firstName ?? ''
   const lastName = user.lastName ?? ''
@@ -70,8 +84,14 @@ export const authApi = {
   },
 
   verifyEmail(token: string) {
-    return getResult<string>('/api/auth/verify-email', { params: { token } })
+    return getResult<string | AuthSession>('/api/auth/verify-email', { params: { token } }).then((result) => {
+      if (!isVerifyEmailResult(result)) {
+        throw new Error('Invalid verify email response')
+      }
+
+      return isAuthSession(result) ? normalizeAuthSession(result) : result
+    })
   },
 }
 
-export { normalizeAuthUser }
+export { isAuthSession, normalizeAuthUser }

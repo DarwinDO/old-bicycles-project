@@ -65,6 +65,9 @@ function parseCurrencyInput(rawValue: string): number | null {
   return Number.isFinite(parsedValue) ? parsedValue : null
 }
 
+const ORDER_CREATED_NOTICE =
+  'Đơn mua đã được tạo. Sau khi người bán chấp nhận đơn, bạn mới có thể lấy mã QR hoặc thông tin chuyển khoản ở mục Đơn mua.'
+
 function StarRating({ rating }: { rating: number }) {
   return (
     <div className="flex items-center gap-0.5">
@@ -115,11 +118,7 @@ export default function BikeDetailPage() {
         // Load inspection, reviews, and wishlist status in parallel (non-critical)
         const extras: Promise<unknown>[] = []
 
-        extras.push(
-          inspectionsApi.getByProduct(id)
-            .then(setInspection)
-            .catch(() => { /* not all products have inspection */ }),
-        )
+        extras.push(inspectionsApi.getByProduct(id).then(setInspection))
 
         if (p.seller?.id) {
           extras.push(
@@ -206,6 +205,7 @@ export default function BikeDetailPage() {
     : null
 
   const isOwnListing = Boolean(user?.id && product?.seller?.id && user.id === product.seller.id)
+  const isLockedForTransaction = Boolean(product?.lockedForTransaction)
 
   const handleOpenOrderDialog = () => {
     if (!product) {
@@ -224,6 +224,11 @@ export default function BikeDetailPage() {
 
     if (isOwnListing) {
       setOrderError('Bạn không thể tạo đơn cho tin đăng của chính mình.')
+      return
+    }
+
+    if (isLockedForTransaction) {
+      setOrderError('Xe này đang có giao dịch đang xử lý. Bạn chưa thể tạo thêm đơn mua mới.')
       return
     }
 
@@ -247,7 +252,7 @@ export default function BikeDetailPage() {
     setOrderError(null)
 
     try {
-      await ordersApi.create({
+      const createdOrder = await ordersApi.create({
         productId: product.id,
         paymentMethod,
         paymentOption,
@@ -256,7 +261,12 @@ export default function BikeDetailPage() {
 
       setIsOrderDialogOpen(false)
       setUpfrontAmount('')
-      navigate(`${ROUTES.PROFILE}?tab=orders`)
+      navigate(`${ROUTES.PROFILE}?tab=orders`, {
+        state: {
+          orderCreatedNotice: ORDER_CREATED_NOTICE,
+          createdOrderId: createdOrder.id,
+        },
+      })
     } catch (requestError) {
       if (
         requestError &&
@@ -582,6 +592,13 @@ export default function BikeDetailPage() {
                   </div>
                 </div>
 
+                {isLockedForTransaction && (
+                  <div className="mt-4 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-3 text-sm text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                    Xe này đang có giao dịch đang xử lý. Tạm thời hệ thống không nhận thêm đơn mua mới cho xe này.
+                  </div>
+                )}
+
                 <Separator className="my-6" />
 
                 <div className="space-y-3">
@@ -591,7 +608,13 @@ export default function BikeDetailPage() {
                       {isOwnListing ? 'Đây là tin đăng của bạn' : 'Chat với người bán'}
                     </Button>
                   </Link>
-                  <Button className="w-full" size="lg" variant="secondary" onClick={handleOpenOrderDialog}>
+                  <Button
+                    className="w-full"
+                    size="lg"
+                    variant="secondary"
+                    onClick={handleOpenOrderDialog}
+                    disabled={isLockedForTransaction}
+                  >
                     <CreditCard className="mr-2 h-4 w-4" />
                     Tạo yêu cầu mua
                   </Button>

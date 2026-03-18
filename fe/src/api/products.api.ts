@@ -46,6 +46,10 @@ export const productsApi = {
     return getResult<Product>(`/api/products/${productId}`)
   },
 
+  getMineById(productId: string) {
+    return getResult<Product>(`/api/products/my/${productId}`)
+  },
+
   getMine(page = 0, size = 12) {
     return getResult<PageResult<Product>>('/api/products/my', {
       params: { page, size },

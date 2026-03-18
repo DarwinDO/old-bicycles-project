@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import {
   AlertTriangle,
   CreditCard,
@@ -55,14 +56,28 @@ function getErrorMessage(error: unknown, fallback: string) {
 
 export function BuyerOrdersView() {
   const { user } = useAuth()
+  const location = useLocation()
+  const navigate = useNavigate()
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
   const [actionLoadingKey, setActionLoadingKey] = useState<string | null>(null)
   const [paymentRequests, setPaymentRequests] = useState<Record<string, PaymentRequestResponse>>({})
   const [selectedOrderForRefund, setSelectedOrderForRefund] = useState<Order | null>(null)
   const [refundError, setRefundError] = useState<string | null>(null)
   const buyerOrders = user ? orders.filter((order) => order.buyerId === user.id) : []
+
+  useEffect(() => {
+    const state = location.state as { orderCreatedNotice?: string } | null
+
+    if (!state?.orderCreatedNotice) {
+      return
+    }
+
+    setNotice(state.orderCreatedNotice)
+    navigate(`${location.pathname}${location.search}`, { replace: true, state: null })
+  }, [location.pathname, location.search, location.state, navigate])
 
   useEffect(() => {
     if (!user) {
@@ -210,6 +225,12 @@ export function BuyerOrdersView() {
       {error && (
         <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
           {error}
+        </div>
+      )}
+
+      {notice && (
+        <div className="rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-primary">
+          {notice}
         </div>
       )}
 

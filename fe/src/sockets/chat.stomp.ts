@@ -182,6 +182,9 @@ export function createChatSocketClient(token: string): ChatSocketClient {
     sendMessage(payload) {
       client.publish({
         destination: '/app/chat.sendMessage',
+        headers: {
+          'content-type': 'application/json',
+        },
         body: JSON.stringify(payload),
       })
     },

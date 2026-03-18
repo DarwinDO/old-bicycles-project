@@ -110,8 +110,8 @@ export default function InspectionFormPage() {
         setProduct(productResult)
         setInspection(inspectionResult)
         setScores(buildScoresFromInspection(inspectionResult))
-        setWearPercentage(String(inspectionResult.wearPercentage ?? 10))
-        setNotes(inspectionResult.expertNotes ?? '')
+        setWearPercentage(String(inspectionResult?.wearPercentage ?? 10))
+        setNotes(inspectionResult?.expertNotes ?? '')
         setError(null)
       } catch (requestError) {
         if (ignore) {

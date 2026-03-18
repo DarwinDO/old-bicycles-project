@@ -79,7 +79,7 @@ export default function SellerEditProductPage() {
       referenceDataApi.getCategories(),
       referenceDataApi.getBrakeTypes(),
       referenceDataApi.getFrameMaterials(),
-      productsApi.getById(id)
+      productsApi.getMineById(id)
     ])
       .then(([b, c, bt, fm, p]) => {
         setBrands(b)

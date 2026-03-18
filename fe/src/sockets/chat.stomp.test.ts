@@ -121,4 +121,29 @@ describe('createChatSocketClient', () => {
 
     expect(states).toEqual([false, true, false])
   })
+
+  it('publishes chat messages as JSON payloads', async () => {
+    const socketClient = createChatSocketClient('token-123')
+    const connectPromise = socketClient.connect()
+    const mockClient = mockClients[0]
+
+    mockClient.simulateConnect()
+    await connectPromise
+
+    socketClient.sendMessage({
+      conversationId: 'conversation-1',
+      content: 'Xin chào',
+    })
+
+    expect(mockClient.publish).toHaveBeenCalledWith({
+      destination: '/app/chat.sendMessage',
+      headers: {
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        conversationId: 'conversation-1',
+        content: 'Xin chào',
+      }),
+    })
+  })
 })

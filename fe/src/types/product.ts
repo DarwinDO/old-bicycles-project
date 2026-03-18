@@ -55,6 +55,7 @@ export interface Product {
   frameMaterialName?: string | null
   images: ProductImage[]
   isVerified: boolean
+  lockedForTransaction: boolean
   inspection?: ProductInspectionInfo | null
 }
 

@@ -19,7 +19,7 @@ export const inspectionsApi = {
   },
 
   getByProduct(productId: string) {
-    return getResult<Inspection>(`/api/inspections/product/${productId}`)
+    return getResult<Inspection | null>(`/api/inspections/product/${productId}`)
   },
 
   getDashboard() {

@@ -112,8 +112,16 @@ export default function SellerEditProductPage() {
         })
       })
       .catch((err) => {
+        const res = (err as { response?: { data?: { message?: string; code?: number } } })?.response
+        const beMsg = res?.data?.message
+        const code = res?.data?.code
+        
+        if (code === 1009 || beMsg?.toLowerCase().includes('not found')) {
+          setSubmitError('Sản phẩm đang ở trạng thái chờ duyệt hoặc không tồn tại. Không thể chỉnh sửa.')
+        } else {
+          setSubmitError(beMsg || 'Không thể tải thông tin sản phẩm. Vui lòng thử lại.')
+        }
         console.error('Failed to load edit product data:', err)
-        navigate(ROUTES.SELLER_LISTINGS)
       })
       .finally(() => {
         setRefLoading(false)
@@ -223,12 +231,25 @@ export default function SellerEditProductPage() {
     </div>
   )
 
-  if (isLoadingProduct) {
+   if (isLoadingProduct) {
     return (
       <div className="min-h-screen bg-muted/40 flex items-center justify-center">
         <div className="text-center space-y-3">
           <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
           <p className="text-muted-foreground">Đang tải thông tin sản phẩm...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (submitError && !formData.title) {
+    return (
+      <div className="min-h-screen bg-muted/40 flex items-center justify-center">
+        <div className="text-center space-y-4 max-w-md px-4">
+          <div className="text-sm text-destructive bg-destructive/10 rounded-md p-4">{submitError}</div>
+          <Button variant="outline" onClick={() => navigate(ROUTES.SELLER_LISTINGS)}>
+            ← Quay lại danh sách tin đăng
+          </Button>
         </div>
       </div>
     )

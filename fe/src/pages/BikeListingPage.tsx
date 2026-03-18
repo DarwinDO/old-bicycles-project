@@ -116,9 +116,22 @@ export default function BikeListingPage() {
 
     try {
       const result = await productsApi.search(filters)
-      setProducts(result.content)
+      const availableProducts = result.content.filter(
+        (p) =>
+          p.status !== 'inspected_failed' &&
+          p.status !== 'pending' &&
+          p.status !== 'hidden' &&
+          p.status !== 'sold' &&
+          p.status !== 'pending_inspection'
+      )
+      
+      setProducts(availableProducts)
       setTotalPages(result.totalPages)
-      setTotalElements(result.totalElements)
+      // Tạm thời tính lại số lượng hiển thị thực tế trên trang này
+      // (Backend cần sửa API để totalElements trả về đúng)
+      setTotalElements(
+        result.totalElements - (result.content.length - availableProducts.length)
+      )
     } catch {
       setError('Không thể tải danh sách xe. Vui lòng thử lại.')
     } finally {

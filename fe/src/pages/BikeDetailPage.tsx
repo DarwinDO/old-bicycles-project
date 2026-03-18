@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ROUTES } from '@/constants/routes'
 import { cn } from '@/lib/utils'
+import { adminProductsApi } from '@/api/admin-products.api'
 import { ordersApi } from '@/api/orders.api'
 import { productsApi } from '@/api/products.api'
 import { wishlistApi } from '@/api/wishlist.api'
@@ -83,7 +84,7 @@ function StarRating({ rating }: { rating: number }) {
 
 export default function BikeDetailPage() {
   const { id } = useParams<{ id: string }>()
-  const { isAuthenticated, user } = useAuth()
+  const { isAuthenticated, isLoading: isAuthLoading, user } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
 
@@ -105,14 +106,16 @@ export default function BikeDetailPage() {
   const [upfrontAmount, setUpfrontAmount] = useState('')
 
   useEffect(() => {
-    if (!id) return
+    if (!id || isAuthLoading) return
 
     const fetchAll = async () => {
       setIsLoading(true)
       setError(null)
 
       try {
-        const p = await productsApi.getById(id)
+        const p = user?.role === 'admin'
+          ? await adminProductsApi.getById(id)
+          : await productsApi.getById(id)
         setProduct(p)
 
         // Load inspection, reviews, and wishlist status in parallel (non-critical)
@@ -146,7 +149,7 @@ export default function BikeDetailPage() {
     }
 
     fetchAll()
-  }, [id, isAuthenticated])
+  }, [id, isAuthenticated, isAuthLoading, user?.role])
 
   const handleWishlistToggle = async () => {
     if (!isAuthenticated) {

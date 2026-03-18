@@ -1,42 +1,92 @@
-import { Outlet } from 'react-router-dom';
-import { Sidebar, sellerNavItems } from '@/components/dashboard/Sidebar';
-import { ThemeToggle } from '@/components/theme-toggle';
-import { Bell, User } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Outlet, useNavigate } from 'react-router-dom'
+import { Bell, Home, LogOut, User } from 'lucide-react'
+import { Sidebar, sellerNavItems } from '@/components/dashboard/Sidebar'
+import { ThemeToggle } from '@/components/theme-toggle'
+import { Button } from '@/components/ui/button'
+import { useAuth } from '@/contexts/AuthContext'
+import { ROUTES } from '@/constants/routes'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
 export default function SellerLayout() {
-    return (
-        <div className="flex h-screen bg-background text-foreground">
-            {/* Sidebar */}
-            <Sidebar items={sellerNavItems} title="Kênh Người Bán" />
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
 
-            {/* Main content */}
-            <div className="flex-1 flex flex-col overflow-hidden">
-                {/* Top header */}
-                <header className="h-16 border-b border-border bg-card flex items-center justify-between px-6">
-                    <h1 className="text-lg font-semibold">
-                        Kênh Người Bán
-                    </h1>
+  const handleLogout = async () => {
+    await logout()
+    navigate(ROUTES.HOME)
+  }
 
-                    <div className="flex items-center gap-3">
-                        <ThemeToggle />
-                        <Button variant="ghost" size="icon" className="relative">
-                            <Bell className="h-5 w-5" />
-                            <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center">
-                                3
-                            </span>
-                        </Button>
-                        <Button variant="ghost" size="icon">
-                            <User className="h-5 w-5" />
-                        </Button>
-                    </div>
-                </header>
+  return (
+    <div className="flex h-screen bg-background text-foreground">
+      <Sidebar items={sellerNavItems} title="Kênh Người Bán" />
 
-                {/* Page content */}
-                <main className="flex-1 overflow-auto bg-muted/30 p-6">
-                    <Outlet />
-                </main>
-            </div>
-        </div>
-    );
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <header className="flex h-16 items-center justify-between border-b border-border bg-card px-6">
+          <h1 className="text-lg font-semibold">Kênh Người Bán</h1>
+
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="relative"
+              onClick={() => navigate('/notifications')}
+            >
+              <Bell className="h-5 w-5" />
+              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
+                3
+              </span>
+            </Button>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-muted transition-colors">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={user?.avatar ?? undefined} />
+                    <AvatarFallback className="text-sm">
+                      {(user?.firstName || user?.email)?.[0]?.toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">{user?.name || user?.email}</p>
+                    <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => navigate(ROUTES.PROFILE)}>
+                  <User className="mr-2 h-4 w-4" />
+                  Trang cá nhân
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate(ROUTES.HOME)}>
+                  <Home className="mr-2 h-4 w-4" />
+                  Về trang mua bán
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={handleLogout}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Đăng xuất
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </header>
+
+        <main className="flex-1 overflow-auto bg-muted/30 p-6">
+          <Outlet />
+        </main>
+      </div>
+    </div>
+  )
 }

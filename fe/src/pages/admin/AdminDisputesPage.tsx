@@ -162,9 +162,15 @@ export default function AdminDisputesPage() {
     }
   }, [deferredSearchQuery, page, statusFilter])
 
-  const reviewDialogTitle = useMemo(() => {
-    return reviewLabels[reviewDialog.nextStatus]
-  }, [reviewDialog.nextStatus])
+  const reviewDialogTitle = useMemo(() => reviewLabels[reviewDialog.nextStatus], [reviewDialog.nextStatus])
+
+  const emptyMessage = useMemo(() => {
+    if (deferredSearchQuery || statusFilter !== 'all') {
+      return 'Không tìm thấy yêu cầu tranh chấp phù hợp.'
+    }
+
+    return 'Chưa có yêu cầu tranh chấp nào.'
+  }, [deferredSearchQuery, statusFilter])
 
   function openReviewDialog(refund: AdminRefund, nextStatus: RefundStatus) {
     setReviewDialog({
@@ -175,6 +181,20 @@ export default function AdminDisputesPage() {
       refundReference: '',
       loading: false,
     })
+  }
+
+  async function reloadRefunds() {
+    const result = await refundsApi.getAll({
+      keyword: deferredSearchQuery || undefined,
+      status: statusFilter === 'all' ? undefined : statusFilter,
+      page,
+      size: PAGE_SIZE,
+    })
+
+    setRefunds(result.content)
+    setTotalPages(result.totalPages)
+    setTotalElements(result.totalElements)
+    setError(null)
   }
 
   async function handleReviewRefund() {
@@ -194,17 +214,7 @@ export default function AdminDisputesPage() {
             : undefined,
       })
 
-      const result = await refundsApi.getAll({
-        keyword: deferredSearchQuery || undefined,
-        status: statusFilter === 'all' ? undefined : statusFilter,
-        page,
-        size: PAGE_SIZE,
-      })
-
-      setRefunds(result.content)
-      setTotalPages(result.totalPages)
-      setTotalElements(result.totalElements)
-      setError(null)
+      await reloadRefunds()
       setReviewDialog({
         open: false,
         refund: null,
@@ -319,7 +329,7 @@ export default function AdminDisputesPage() {
       </div>
 
       <div className="flex flex-col gap-4 md:flex-row md:items-center">
-        <div className="relative flex-1 max-w-sm">
+        <div className="relative max-w-sm flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Tìm theo mã đơn, sản phẩm hoặc người dùng..."
@@ -362,7 +372,7 @@ export default function AdminDisputesPage() {
 
       <div className="space-y-4">
         <div className="flex flex-col gap-2 text-sm text-muted-foreground md:flex-row md:items-center md:justify-between">
-          <p>{loading ? 'Đang tải danh sách...' : `Tìm thấy ${totalElements} yêu cầu tranh chấp`}</p>
+          <p>{loading ? 'Đang tải dữ liệu tranh chấp...' : `Tìm thấy ${totalElements} yêu cầu tranh chấp`}</p>
           <p>
             {statusFilter === 'all'
               ? 'Đang xem tất cả trạng thái'
@@ -370,7 +380,15 @@ export default function AdminDisputesPage() {
           </p>
         </div>
 
-        <DataTable columns={columns} data={refunds} pageSize={PAGE_SIZE} showPagination={false} />
+        <DataTable
+          columns={columns}
+          data={refunds}
+          pageSize={PAGE_SIZE}
+          showPagination={false}
+          loading={loading}
+          loadingRowCount={6}
+          emptyMessage={emptyMessage}
+        />
 
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
@@ -440,10 +458,7 @@ export default function AdminDisputesPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog
-        open={reviewDialog.open}
-        onOpenChange={(open) => setReviewDialog((current) => ({ ...current, open }))}
-      >
+      <Dialog open={reviewDialog.open} onOpenChange={(open) => setReviewDialog((current) => ({ ...current, open }))}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>{reviewDialogTitle}</DialogTitle>

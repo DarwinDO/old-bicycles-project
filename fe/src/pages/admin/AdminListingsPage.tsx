@@ -1,7 +1,7 @@
 import { useDeferredValue, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { type ColumnDef } from '@tanstack/react-table'
-import { Check, Eye, EyeOff, MoreHorizontal, Search } from 'lucide-react'
+import { ClipboardCheck, Eye, EyeOff, MoreHorizontal, Search } from 'lucide-react'
 import { adminProductsApi } from '@/api/admin-products.api'
 import { ConfirmDialog } from '@/components/dashboard/ConfirmDialog'
 import { DataTable } from '@/components/dashboard/DataTable'
@@ -24,7 +24,7 @@ import { Button } from '@/components/ui/button'
 import { buildRoute } from '@/constants/routes'
 import type { Product, ProductStatus } from '@/types/product'
 
-type ListingAction = 'approve' | 'hide'
+type ListingAction = 'route_to_inspection' | 'hide'
 type StatusFilter = 'all' | ProductStatus
 
 const PAGE_SIZE = 12
@@ -32,16 +32,16 @@ const initialDialogState: {
   open: boolean
   product: Product | null
   action: ListingAction
-} = { open: false, product: null, action: 'approve' }
+} = { open: false, product: null, action: 'route_to_inspection' }
 
 const statusOptions: Array<{ value: StatusFilter; label: string }> = [
   { value: 'all', label: 'Tất cả trạng thái' },
-  { value: 'pending', label: 'Chờ duyệt' },
-  { value: 'active', label: 'Đang hiển thị' },
+  { value: 'pending', label: 'Chờ kiểm duyệt ban đầu' },
+  { value: 'active', label: 'Đang hiển thị công khai' },
   { value: 'hidden', label: 'Đã ẩn' },
-  { value: 'pending_inspection', label: 'Chờ kiểm định' },
-  { value: 'inspected_passed', label: 'Đạt kiểm định' },
-  { value: 'inspected_failed', label: 'Không đạt kiểm định' },
+  { value: 'pending_inspection', label: 'Chờ inspector kiểm định' },
+  { value: 'inspected_passed', label: 'Đã kiểm định đạt (legacy)' },
+  { value: 'inspected_failed', label: 'Kiểm định không đạt' },
   { value: 'sold', label: 'Đã bán' },
 ]
 
@@ -87,6 +87,18 @@ function getErrorMessage(error: unknown, fallback: string) {
   }
 
   return fallback
+}
+
+function canRouteToInspection(product: Product) {
+  if (product.lockedForTransaction || product.status === 'sold' || product.status === 'pending_inspection') {
+    return false
+  }
+
+  if (product.status === 'pending' || product.status === 'inspected_failed') {
+    return true
+  }
+
+  return product.status === 'active' && !product.isVerified
 }
 
 export default function AdminListingsPage() {
@@ -161,8 +173,8 @@ export default function AdminListingsPage() {
     setIsSubmittingAction(true)
 
     try {
-      if (confirmDialog.action === 'approve') {
-        await adminProductsApi.approve(confirmDialog.product.id)
+      if (confirmDialog.action === 'route_to_inspection') {
+        await adminProductsApi.routeToInspection(confirmDialog.product.id)
       } else {
         await adminProductsApi.hide(confirmDialog.product.id)
       }
@@ -174,8 +186,8 @@ export default function AdminListingsPage() {
       setError(
         getErrorMessage(
           requestError,
-          confirmDialog.action === 'approve'
-            ? 'Không thể duyệt tin đăng lúc này.'
+          confirmDialog.action === 'route_to_inspection'
+            ? 'Không thể chuyển tin đăng sang kiểm định lúc này.'
             : 'Không thể ẩn tin đăng lúc này.',
         ),
       )
@@ -240,14 +252,14 @@ export default function AdminListingsPage() {
               Xem chi tiết
             </DropdownMenuItem>
 
-            {row.original.status !== 'active' && row.original.status !== 'sold' && (
-              <DropdownMenuItem onClick={() => openActionDialog(row.original, 'approve')}>
-                <Check className="mr-2 h-4 w-4" />
-                {row.original.status === 'hidden' ? 'Hiện lại tin' : 'Duyệt tin'}
+            {canRouteToInspection(row.original) && (
+              <DropdownMenuItem onClick={() => openActionDialog(row.original, 'route_to_inspection')}>
+                <ClipboardCheck className="mr-2 h-4 w-4" />
+                Đưa qua kiểm định
               </DropdownMenuItem>
             )}
 
-            {row.original.status !== 'hidden' && (
+            {row.original.status !== 'hidden' && row.original.status !== 'sold' && (
               <DropdownMenuItem onClick={() => openActionDialog(row.original, 'hide')}>
                 <EyeOff className="mr-2 h-4 w-4" />
                 Ẩn tin
@@ -262,8 +274,11 @@ export default function AdminListingsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-foreground">Duyệt tin đăng</h2>
-        <p className="text-muted-foreground">Quản lý và kiểm duyệt các tin đăng bán xe.</p>
+        <h2 className="text-2xl font-bold text-foreground">Duyệt và điều phối kiểm định</h2>
+        <p className="text-muted-foreground">
+          Mọi tin đăng phải được admin chuyển sang kiểm định trước khi đủ điều kiện hiển thị công
+          khai.
+        </p>
       </div>
 
       <div className="flex flex-col gap-4 md:flex-row md:items-center">
@@ -280,7 +295,7 @@ export default function AdminListingsPage() {
           />
         </div>
 
-        <div className="w-full md:w-56">
+        <div className="w-full md:w-64">
           <Select
             value={statusFilter}
             onValueChange={(value) => {
@@ -357,17 +372,17 @@ export default function AdminListingsPage() {
       <ConfirmDialog
         open={confirmDialog.open}
         onOpenChange={(open) => setConfirmDialog((previous) => ({ ...previous, open }))}
-        title={confirmDialog.action === 'approve' ? 'Duyệt tin đăng' : 'Ẩn tin đăng'}
+        title={confirmDialog.action === 'route_to_inspection' ? 'Đưa tin qua kiểm định' : 'Ẩn tin đăng'}
         description={
-          confirmDialog.action === 'approve'
-            ? 'Bạn có chắc muốn đưa tin đăng này về trạng thái hiển thị?'
-            : 'Bạn có chắc muốn ẩn tin đăng này khỏi marketplace?'
+          confirmDialog.action === 'route_to_inspection'
+            ? 'Tin đăng sẽ được chuyển vào hàng chờ inspector. Chỉ khi kiểm định đạt thì tin mới được hiển thị công khai.'
+            : 'Bài đăng sẽ bị ẩn khỏi các luồng hiển thị công khai. Bạn có chắc muốn tiếp tục?'
         }
         confirmText={
           isSubmittingAction
             ? 'Đang xử lý...'
-            : confirmDialog.action === 'approve'
-              ? 'Duyệt'
+            : confirmDialog.action === 'route_to_inspection'
+              ? 'Chuyển kiểm định'
               : 'Ẩn tin'
         }
         onConfirm={handleConfirmAction}

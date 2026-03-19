@@ -2,9 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import AdminListingsPage from './AdminListingsPage'
 
-const { getAllMock, approveMock, hideMock, navigateMock } = vi.hoisted(() => ({
+const { getAllMock, approveMock, routeToInspectionMock, hideMock, navigateMock } = vi.hoisted(() => ({
   getAllMock: vi.fn(),
   approveMock: vi.fn(),
+  routeToInspectionMock: vi.fn(),
   hideMock: vi.fn(),
   navigateMock: vi.fn(),
 }))
@@ -13,6 +14,7 @@ vi.mock('@/api/admin-products.api', () => ({
   adminProductsApi: {
     getAll: getAllMock,
     approve: approveMock,
+    routeToInspection: routeToInspectionMock,
     hide: hideMock,
   },
 }))
@@ -30,6 +32,7 @@ describe('AdminListingsPage', () => {
   beforeEach(() => {
     getAllMock.mockReset()
     approveMock.mockReset()
+    routeToInspectionMock.mockReset()
     hideMock.mockReset()
     navigateMock.mockReset()
 

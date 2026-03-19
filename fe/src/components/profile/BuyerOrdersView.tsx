@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   AlertTriangle,
   CreditCard,
@@ -386,6 +386,12 @@ export function BuyerOrdersView() {
                         <Button variant="ghost" className="cursor-default hover:bg-transparent" disabled>
                           <XCircle className="mr-2 h-4 w-4" />
                           Đơn hàng đã đóng
+                        </Button>
+                      )}
+
+                      {order.fundingStatus === 'refund_pending_transfer' && (
+                        <Button variant="outline" asChild>
+                          <Link to="/profile?tab=payout">Cập nhật tài khoản nhận tiền</Link>
                         </Button>
                       )}
                     </div>

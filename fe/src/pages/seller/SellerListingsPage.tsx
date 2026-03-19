@@ -1,25 +1,33 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
-  Package, Search, PlusCircle, PenSquare, EyeOff, Eye, Trash2, ShieldCheck, Loader2, ChevronLeft, ChevronRight,
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  EyeOff,
+  Loader2,
+  Package,
+  PenSquare,
+  PlusCircle,
+  Search,
+  Trash2,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ROUTES, buildRoute } from '@/constants/routes'
 import { productsApi } from '@/api/products.api'
-import { inspectionsApi } from '@/api/inspections.api'
 import type { Product, ProductStatus } from '@/types/product'
 
 const PAGE_SIZE = 10
 
 const STATUS_LABEL: Record<ProductStatus, string> = {
-  pending: 'Chờ duyệt',
-  active: 'Đang bán',
+  pending: 'Chờ admin duyệt và chuyển kiểm định',
+  active: 'Đang bán công khai',
   hidden: 'Đã ẩn',
   sold: 'Đã bán',
-  pending_inspection: 'Chờ kiểm định',
-  inspected_passed: 'Đã kiểm định ✓',
-  inspected_failed: 'Kiểm định thất bại',
+  pending_inspection: 'Đang chờ inspector kiểm định',
+  inspected_passed: 'Đã kiểm định đạt (legacy)',
+  inspected_failed: 'Kiểm định không đạt',
 }
 
 const STATUS_CLASS: Record<ProductStatus, string> = {
@@ -33,11 +41,30 @@ const STATUS_CLASS: Record<ProductStatus, string> = {
 }
 
 function formatPrice(price: number): string {
-  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(price)
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND',
+    maximumFractionDigits: 0,
+  }).format(price)
 }
 
 function formatDate(dateStr: string): string {
   return new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short' }).format(new Date(dateStr))
+}
+
+function getStatusHint(product: Product) {
+  switch (product.status) {
+    case 'pending':
+      return 'Admin sẽ kiểm duyệt sơ bộ rồi chuyển tin sang kiểm định trước khi public.'
+    case 'pending_inspection':
+      return 'Inspector đang xử lý đánh giá kỹ thuật cho tin đăng này.'
+    case 'inspected_failed':
+      return 'Bạn cần chỉnh sửa tin đăng rồi chờ admin chuyển kiểm định lại.'
+    case 'hidden':
+      return 'Hiện lại sẽ đưa tin về trạng thái chờ duyệt và kiểm định lại.'
+    default:
+      return null
+  }
 }
 
 export default function SellerListingsPage() {
@@ -46,12 +73,13 @@ export default function SellerListingsPage() {
   const [error, setError] = useState<string | null>(null)
   const [page, setPage] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
-  const [actionLoading, setActionLoading] = useState<string | null>(null) // productId being acted on
+  const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
 
   const fetchProducts = useCallback(async () => {
     setIsLoading(true)
     setError(null)
+
     try {
       const result = await productsApi.getMine(page, PAGE_SIZE)
       setProducts(result.content)
@@ -64,7 +92,7 @@ export default function SellerListingsPage() {
   }, [page])
 
   useEffect(() => {
-    fetchProducts()
+    void fetchProducts()
   }, [fetchProducts])
 
   const handleHide = async (productId: string) => {
@@ -72,8 +100,6 @@ export default function SellerListingsPage() {
     try {
       await productsApi.hide(productId)
       await fetchProducts()
-    } catch {
-      // silent — keep existing list
     } finally {
       setActionLoading(null)
     }
@@ -84,101 +110,99 @@ export default function SellerListingsPage() {
     try {
       await productsApi.show(productId)
       await fetchProducts()
-    } catch {
-      // silent
     } finally {
       setActionLoading(null)
     }
   }
 
   const handleDelete = async (productId: string, title: string) => {
-    if (!window.confirm(`Bạn có chắc muốn xóa tin "${title}"? Hành động này không thể hoàn tác.`)) return
+    if (!window.confirm(`Bạn có chắc muốn xóa tin "${title}"? Hành động này không thể hoàn tác.`)) {
+      return
+    }
+
     setActionLoading(productId)
     try {
       await productsApi.delete(productId)
       await fetchProducts()
-    } catch {
-      // silent
-    } finally {
-      setActionLoading(null)
-    }
-  }
-
-  const handleRequestInspection = async (productId: string) => {
-    setActionLoading(productId)
-    try {
-      await inspectionsApi.request(productId)
-      await fetchProducts()
-    } catch {
-      // silent
     } finally {
       setActionLoading(null)
     }
   }
 
   const filteredProducts = searchQuery
-    ? products.filter((p) =>
-        p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.id.toLowerCase().includes(searchQuery.toLowerCase()),
+    ? products.filter((product) =>
+        product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.id.toLowerCase().includes(searchQuery.toLowerCase()),
       )
     : products
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between shrink-0 gap-4">
+      <div className="flex flex-col justify-between gap-4 sm:flex-row">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Quản lý tin đăng</h2>
-          <p className="text-muted-foreground">Sửa, ẩn, xóa hoặc yêu cầu kiểm định xe của bạn.</p>
+          <p className="text-muted-foreground">
+            Mọi tin đăng đều phải qua admin và inspection trước khi hiển thị công khai.
+          </p>
         </div>
         <Link to={ROUTES.SELL}>
-          <Button className="w-full sm:w-auto gap-2">
+          <Button className="w-full gap-2 sm:w-auto">
             <PlusCircle className="h-4 w-4" /> Đăng tin mới
           </Button>
         </Link>
       </div>
 
-      {/* Search */}
-      <div className="flex flex-col sm:flex-row gap-4 items-center">
+      <div className="flex flex-col items-center gap-4 sm:flex-row">
         <div className="relative w-full max-w-sm">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             type="search"
             placeholder="Tìm theo tên xe..."
-            className="pl-8 bg-background"
+            className="bg-background pl-8"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(event) => setSearchQuery(event.target.value)}
           />
         </div>
       </div>
 
-      {/* Error */}
       {error && (
-        <div className="text-sm text-destructive bg-destructive/10 rounded-md p-3 flex items-center justify-between">
+        <div className="flex items-center justify-between rounded-md bg-destructive/10 p-3 text-sm text-destructive">
           {error}
-          <Button variant="ghost" size="sm" onClick={fetchProducts}>Thử lại</Button>
+          <Button variant="ghost" size="sm" onClick={() => void fetchProducts()}>
+            Thử lại
+          </Button>
         </div>
       )}
 
-      {/* Table */}
       <div className="rounded-md border bg-card">
         <div className="relative w-full overflow-auto">
           <table className="w-full caption-bottom text-sm">
             <thead className="[&_tr]:border-b">
               <tr className="border-b transition-colors hover:bg-muted/50">
-                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Sản phẩm</th>
-                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Giá</th>
-                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Trạng thái</th>
-                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground hidden md:table-cell">Ngày đăng</th>
-                <th className="h-12 px-4 text-right align-middle font-medium text-muted-foreground">Thao tác</th>
+                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
+                  Sản phẩm
+                </th>
+                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
+                  Giá
+                </th>
+                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
+                  Trạng thái
+                </th>
+                <th className="hidden h-12 px-4 text-left align-middle font-medium text-muted-foreground md:table-cell">
+                  Ngày đăng
+                </th>
+                <th className="h-12 px-4 text-right align-middle font-medium text-muted-foreground">
+                  Thao tác
+                </th>
               </tr>
             </thead>
             <tbody className="[&_tr:last-child]:border-0">
               {isLoading ? (
-                Array.from({ length: 4 }).map((_, i) => (
-                  <tr key={i} className="border-b">
-                    {Array.from({ length: 5 }).map((__, j) => (
-                      <td key={j} className="p-4">
-                        <div className="h-4 bg-muted rounded animate-pulse" />
+                Array.from({ length: 4 }).map((_, index) => (
+                  <tr key={index} className="border-b">
+                    {Array.from({ length: 5 }).map((__, cellIndex) => (
+                      <td key={cellIndex} className="p-4">
+                        <div className="h-4 animate-pulse rounded bg-muted" />
                       </td>
                     ))}
                   </tr>
@@ -195,7 +219,7 @@ export default function SellerListingsPage() {
                   const canEdit = product.status !== 'sold'
                   const canHide = product.status === 'active' || product.status === 'inspected_passed'
                   const canShow = product.status === 'hidden'
-                  const canRequestInspection = product.status === 'active'
+                  const statusHint = getStatusHint(product)
 
                   return (
                     <tr key={product.id} className="border-b transition-colors hover:bg-muted/50">
@@ -205,29 +229,35 @@ export default function SellerListingsPage() {
                             <img
                               src={product.images[0].url}
                               alt={product.title}
-                              className="h-10 w-10 rounded object-cover shrink-0"
+                              className="h-10 w-10 shrink-0 rounded object-cover"
                             />
                           ) : (
-                            <div className="h-10 w-10 flex items-center justify-center rounded bg-secondary/50 shrink-0">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-secondary/50">
                               <Package className="h-5 w-5 text-muted-foreground" />
                             </div>
                           )}
                           <div className="min-w-0">
-                            <p className="font-medium text-foreground line-clamp-1">{product.title}</p>
-                            <p className="text-xs text-muted-foreground truncate">#{product.id.slice(0, 8)}</p>
+                            <p className="line-clamp-1 font-medium text-foreground">{product.title}</p>
+                            <p className="truncate text-xs text-muted-foreground">
+                              #{product.id.slice(0, 8)}
+                            </p>
+                            {statusHint && (
+                              <p className="mt-1 text-xs text-muted-foreground">{statusHint}</p>
+                            )}
                           </div>
                         </div>
                       </td>
-                      <td className="p-4 align-middle font-medium whitespace-nowrap">{formatPrice(product.price)}</td>
+                      <td className="whitespace-nowrap p-4 align-middle font-medium">
+                        {formatPrice(product.price)}
+                      </td>
                       <td className="p-4 align-middle">
-                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_CLASS[product.status]}`}>
+                        <span
+                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_CLASS[product.status]}`}
+                        >
                           {STATUS_LABEL[product.status]}
                         </span>
-                        {product.status === 'hidden' && (
-                          <p className="text-xs text-muted-foreground mt-1">Hiện lại → về Chờ duyệt</p>
-                        )}
                       </td>
-                      <td className="p-4 align-middle text-muted-foreground hidden md:table-cell whitespace-nowrap">
+                      <td className="hidden whitespace-nowrap p-4 align-middle text-muted-foreground md:table-cell">
                         {formatDate(product.createdAt)}
                       </td>
                       <td className="p-4 align-middle text-right">
@@ -248,7 +278,7 @@ export default function SellerListingsPage() {
                                   variant="ghost"
                                   size="icon"
                                   title="Ẩn tin"
-                                  onClick={() => handleHide(product.id)}
+                                  onClick={() => void handleHide(product.id)}
                                 >
                                   <EyeOff className="h-4 w-4" />
                                 </Button>
@@ -257,21 +287,10 @@ export default function SellerListingsPage() {
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  title="Hiện lại (về Chờ duyệt)"
-                                  onClick={() => handleShow(product.id)}
+                                  title="Hiện lại"
+                                  onClick={() => void handleShow(product.id)}
                                 >
                                   <Eye className="h-4 w-4" />
-                                </Button>
-                              )}
-                              {canRequestInspection && (
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  title="Yêu cầu kiểm định"
-                                  className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:text-emerald-500 dark:hover:bg-emerald-950/30"
-                                  onClick={() => handleRequestInspection(product.id)}
-                                >
-                                  <ShieldCheck className="h-4 w-4" />
                                 </Button>
                               )}
                               {canEdit && (
@@ -279,8 +298,8 @@ export default function SellerListingsPage() {
                                   variant="ghost"
                                   size="icon"
                                   title="Xóa tin"
-                                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                                  onClick={() => handleDelete(product.id, product.title)}
+                                  className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                  onClick={() => void handleDelete(product.id, product.title)}
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
@@ -298,29 +317,28 @@ export default function SellerListingsPage() {
         </div>
       </div>
 
-      {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2">
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setPage((p) => Math.max(0, p - 1))}
+            onClick={() => setPage((currentPage) => Math.max(0, currentPage - 1))}
             disabled={page === 0 || isLoading}
           >
-            <ChevronLeft className="h-4 w-4 mr-1" />
+            <ChevronLeft className="mr-1 h-4 w-4" />
             Trước
           </Button>
-          <span className="text-sm text-muted-foreground px-4">
+          <span className="px-4 text-sm text-muted-foreground">
             Trang {page + 1} / {totalPages}
           </span>
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+            onClick={() => setPage((currentPage) => Math.min(totalPages - 1, currentPage + 1))}
             disabled={page >= totalPages - 1 || isLoading}
           >
             Tiếp
-            <ChevronRight className="h-4 w-4 ml-1" />
+            <ChevronRight className="ml-1 h-4 w-4" />
           </Button>
         </div>
       )}

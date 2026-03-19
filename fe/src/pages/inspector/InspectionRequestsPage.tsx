@@ -102,7 +102,8 @@ export default function InspectionRequestsPage() {
       <div className="space-y-2">
         <h2 className="text-2xl font-bold text-foreground">Yêu cầu kiểm định</h2>
         <p className="text-muted-foreground">
-          Đây là hàng chờ dành cho inspector. Mỗi thẻ tương ứng với một xe đang cần được đánh giá.
+          Đây là hàng chờ dành cho inspector. Mỗi thẻ là một tin đăng đã được admin chuyển sang
+          bước kiểm định.
         </p>
       </div>
 
@@ -175,7 +176,7 @@ export default function InspectionRequestsPage() {
 
                   <div className="grid gap-1 text-sm text-muted-foreground sm:grid-cols-2">
                     <p>Tỉnh thành: {request.province || 'Chưa cập nhật'}</p>
-                    <p>Thời điểm gửi: {formatDateTime(request.requestedAt)}</p>
+                    <p>Thời điểm chuyển kiểm định: {formatDateTime(request.requestedAt)}</p>
                   </div>
 
                   <div className="flex justify-end">
@@ -191,14 +192,21 @@ export default function InspectionRequestsPage() {
           <div className="col-span-full rounded-xl border border-dashed p-10 text-center text-muted-foreground">
             <ClipboardList className="mx-auto mb-4 h-10 w-10 opacity-40" />
             <p className="font-medium">Hiện chưa có yêu cầu kiểm định nào</p>
-            <p className="mt-1 text-sm">Khi seller gửi yêu cầu, danh sách sẽ hiển thị ở đây.</p>
+            <p className="mt-1 text-sm">
+              Khi admin chuyển tin qua kiểm định, danh sách sẽ hiển thị ở đây.
+            </p>
           </div>
         )}
       </div>
 
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-3">
-          <Button variant="outline" size="sm" onClick={() => setPage((current) => current - 1)} disabled={page === 0}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPage((current) => current - 1)}
+            disabled={page === 0}
+          >
             <ChevronLeft className="mr-1 h-4 w-4" />
             Trước
           </Button>

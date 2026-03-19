@@ -105,6 +105,34 @@ describe('order-display', () => {
     expect(canBuyerRequestRefund(order)).toBe(true)
   })
 
+  it('shows seller payout pending after buyer confirms receipt', () => {
+    const order = buildOrder({
+      status: 'completed',
+      fundingStatus: 'seller_payout_pending',
+      paidAmount: 30000000,
+      remainingAmount: 0,
+    })
+
+    const statusMeta = getOrderStatusMeta(order)
+
+    expect(statusMeta.label).toBe('Chờ giải ngân cho người bán')
+    expect(statusMeta.helperText).toContain('payout profile')
+  })
+
+  it('shows refund pending transfer after admin approves refund', () => {
+    const order = buildOrder({
+      status: 'deposited',
+      fundingStatus: 'refund_pending_transfer',
+      paidAmount: 3000000,
+      remainingAmount: 27000000,
+    })
+
+    const statusMeta = getOrderStatusMeta(order)
+
+    expect(statusMeta.label).toBe('Chờ chuyển khoản hoàn tiền')
+    expect(canBuyerRequestRefund(order)).toBe(false)
+  })
+
   it('maps refunded cancelled orders to refunded state', () => {
     const order = buildOrder({
       status: 'cancelled',

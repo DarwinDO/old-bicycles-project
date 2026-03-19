@@ -31,6 +31,10 @@ export const adminProductsApi = {
     return patchResult<Product>(`/api/admin/products/${productId}/approve`)
   },
 
+  routeToInspection(productId: string) {
+    return patchResult<unknown>(`/api/admin/products/${productId}/send-to-inspection`)
+  },
+
   hide(productId: string) {
     return patchResult<Product>(`/api/admin/products/${productId}/hide`)
   },

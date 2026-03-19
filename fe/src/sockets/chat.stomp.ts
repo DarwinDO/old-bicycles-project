@@ -21,10 +21,20 @@ export interface ChatSocketClient {
   isConnected: () => boolean
 }
 
-function getSocketBaseUrl() {
+export function getSocketBaseUrl() {
+  const configuredWsBaseUrl = import.meta.env.VITE_WS_BASE_URL?.trim()
+  if (configuredWsBaseUrl) {
+    return configuredWsBaseUrl.replace(/\/$/, '')
+  }
+
   const configuredApiBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim()
 
   if (!configuredApiBaseUrl) {
+    if (import.meta.env.DEV) {
+      const devProxyTarget = import.meta.env.VITE_DEV_PROXY_TARGET?.trim()
+      return (devProxyTarget || 'http://localhost:8080').replace(/\/$/, '')
+    }
+
     return window.location.origin
   }
 

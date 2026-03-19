@@ -1,4 +1,4 @@
-import { compactParams, getResult, postResult } from '@/lib/http'
+import { compactParams, getResult, http, postResult } from '@/lib/http'
 import type {
   Inspection,
   InspectionDashboard,
@@ -16,6 +16,17 @@ export const inspectionsApi = {
 
   evaluate(productId: string, request: InspectionEvaluationRequest) {
     return postResult<Inspection, InspectionEvaluationRequest>(`/api/inspections/evaluate/${productId}`, request)
+  },
+
+  async uploadReport(productId: string, reportFile: File) {
+    const formData = new FormData()
+    formData.append('reportFile', reportFile)
+    const response = await http.post(`/api/inspections/report/${productId}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+    return response.data.result as Inspection
   },
 
   getByProduct(productId: string) {

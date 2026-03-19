@@ -64,6 +64,9 @@ describe('InspectionRequestsPage', () => {
 
     expect(await screen.findByText('Specialized Allez')).toBeInTheDocument()
     expect(screen.getByText('Người bán: Minh Le · 0909123456')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Bắt đầu kiểm định' })).toHaveAttribute('href', '/inspector/inspect/product-1')
+    expect(screen.getByRole('link', { name: 'Bắt đầu kiểm định' })).toHaveAttribute(
+      'href',
+      '/inspector/inspect/product-1',
+    )
   })
 })

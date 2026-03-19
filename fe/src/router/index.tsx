@@ -36,6 +36,7 @@ const AdminListingsPage = lazy(() => import('../pages/admin/AdminListingsPage'))
 const AdminReportsPage = lazy(() => import('../pages/admin/AdminReportsPage'));
 const AdminCategoriesPage = lazy(() => import('../pages/admin/AdminCategoriesPage'));
 const AdminDisputesPage = lazy(() => import('../pages/admin/AdminDisputesPage'));
+const AdminPayoutsPage = lazy(() => import('../pages/admin/AdminPayoutsPage'));
 
 // Seller pages (lazy loaded)
 const SellerDashboardPage = lazy(() => import('../pages/seller/SellerDashboardPage'));
@@ -132,6 +133,7 @@ export default function AppRouter() {
                     <Route path={ROUTES.ADMIN_REPORTS} element={<AdminReportsPage />} />
                     <Route path={ROUTES.ADMIN_CATEGORIES} element={<AdminCategoriesPage />} />
                     <Route path={ROUTES.ADMIN_DISPUTES} element={<AdminDisputesPage />} />
+                    <Route path={ROUTES.ADMIN_PAYOUTS} element={<AdminPayoutsPage />} />
                 </Route>
 
                 {/* Seller layout routes (Protected) */}

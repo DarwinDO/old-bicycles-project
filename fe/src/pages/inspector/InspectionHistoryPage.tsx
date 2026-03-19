@@ -1,5 +1,5 @@
 import { useDeferredValue, useEffect, useState } from 'react'
-import { ChevronLeft, ChevronRight, History, Search } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ExternalLink, History, Search } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { inspectionsApi } from '@/api/inspections.api'
 import { Button } from '@/components/ui/button'
@@ -193,7 +193,15 @@ export default function InspectionHistoryPage() {
                     <p>Còn hiệu lực đến: {formatDateTime(inspection.validUntil)}</p>
                   </div>
 
-                  <div className="flex justify-end">
+                  <div className="flex flex-wrap justify-end gap-2">
+                    {inspection.reportFileUrl && (
+                      <a href={inspection.reportFileUrl} target="_blank" rel="noopener noreferrer">
+                        <Button variant="outline">
+                          <ExternalLink className="mr-2 h-4 w-4" />
+                          Xem báo cáo
+                        </Button>
+                      </a>
+                    )}
                     <Link to={`/bikes/${inspection.productId}`}>
                       <Button variant="outline">Xem xe trên marketplace</Button>
                     </Link>

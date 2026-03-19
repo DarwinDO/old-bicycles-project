@@ -18,9 +18,21 @@ export function canAccessSellerEntry(role?: AppRole | null, isAuthenticated = fa
   return !isAuthenticated || role === 'seller'
 }
 
+export function getSellEntryHref(role?: AppRole | null, isAuthenticated = false) {
+  if (role === 'seller' && isAuthenticated) {
+    return ROUTES.SELLER_NEW_PRODUCT
+  }
+
+  return ROUTES.SELL
+}
+
 export function getAppHeaderNavigation(role?: AppRole | null, isAuthenticated = false) {
   if (canAccessSellerEntry(role, isAuthenticated)) {
-    return baseNavigation
+    return baseNavigation.map((item) =>
+      item.href === ROUTES.SELL
+        ? { ...item, href: getSellEntryHref(role, isAuthenticated) }
+        : item,
+    )
   }
 
   return baseNavigation.filter((item) => item.href !== ROUTES.SELL)

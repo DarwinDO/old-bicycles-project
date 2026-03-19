@@ -1,11 +1,12 @@
 import { Outlet, useNavigate } from 'react-router-dom'
-import { Bell, Home, LogOut, User } from 'lucide-react'
+import { Home, LogOut, User } from 'lucide-react'
 import { Sidebar, inspectorNavItems } from '@/components/dashboard/Sidebar'
 import { ThemeToggle } from '@/components/theme-toggle'
-import { Button } from '@/components/ui/button'
 import { useAuth } from '@/contexts/AuthContext'
 import { ROUTES } from '@/constants/routes'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { NotificationBellButton } from '@/components/notifications/NotificationBellButton'
+import { useNotificationUnreadCount } from '@/lib/use-notification-unread-count'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,6 +19,7 @@ import {
 export default function InspectorLayout() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const unreadCount = useNotificationUnreadCount()
 
   const handleLogout = async () => {
     await logout()
@@ -34,21 +36,11 @@ export default function InspectorLayout() {
 
           <div className="flex items-center gap-3">
             <ThemeToggle />
-            <Button
-              variant="ghost"
-              size="icon"
-              className="relative"
-              onClick={() => navigate('/notifications')}
-            >
-              <Bell className="h-5 w-5" />
-              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-secondary text-xs text-secondary-foreground">
-                2
-              </span>
-            </Button>
+            <NotificationBellButton unreadCount={unreadCount} onClick={() => navigate(ROUTES.NOTIFICATIONS)} />
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-muted transition-colors">
+                <button className="flex items-center gap-2 rounded-lg px-2 py-1 transition-colors hover:bg-muted">
                   <Avatar className="h-8 w-8">
                     <AvatarImage src={user?.avatar ?? undefined} />
                     <AvatarFallback className="text-sm">

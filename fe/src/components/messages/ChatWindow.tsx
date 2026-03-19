@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { useAuth } from '@/contexts/AuthContext'
 import { chatApi } from '@/api/chat.api'
 import { authService } from '@/services/authService'
+import { cn } from '@/lib/utils'
 import { createChatSocketClient, type ChatSocketClient } from '@/sockets/chat.stomp'
 import {
   appendLiveMessage,
@@ -272,6 +273,7 @@ export function ChatWindow({ conversation, onBack }: ChatWindowProps) {
   }
 
   const partnerInitial = partner.name.slice(0, 1).toUpperCase()
+  const shouldAnchorMessagesToBottom = !loading && messages.length > 0
 
   return (
     <div className="flex h-full flex-col">
@@ -313,7 +315,12 @@ export function ChatWindow({ conversation, onBack }: ChatWindowProps) {
       )}
 
       <ScrollArea className="flex-1 p-4" viewportRef={scrollRef}>
-        <div className="mx-auto flex max-w-3xl flex-col gap-4 pb-4">
+        <div
+          className={cn(
+            'mx-auto flex w-full max-w-5xl flex-col gap-4 pb-4',
+            shouldAnchorMessagesToBottom && 'min-h-full justify-end',
+          )}
+        >
           <div className="my-4 flex justify-center">
             <span className="rounded-full bg-muted px-2 py-1 text-xs text-muted-foreground">Hôm nay</span>
           </div>
@@ -357,8 +364,8 @@ export function ChatWindow({ conversation, onBack }: ChatWindowProps) {
         </div>
       </ScrollArea>
 
-      <div className="mt-auto border-t bg-background p-4">
-        <form onSubmit={handleSend} className="mx-auto flex max-w-3xl items-center gap-2">
+      <div className="border-t bg-background p-4">
+        <form onSubmit={handleSend} className="mx-auto flex w-full max-w-5xl items-center gap-2">
           <Input
             placeholder={isSocketReady ? 'Nhập tin nhắn...' : 'Đang chờ kết nối realtime...'}
             className="flex-1 rounded-full border-transparent bg-muted/50 transition-colors focus-visible:bg-background focus-visible:ring-1 focus-visible:ring-primary"

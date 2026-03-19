@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import {
-  CreditCard, MapPin, Shield, MessageCircle, Heart, Share2, ChevronLeft, ChevronRight,
+  ArrowLeft, CreditCard, MapPin, Shield, MessageCircle, Heart, Share2, ChevronLeft, ChevronRight,
   Star, Clock, AlertTriangle, Loader2, ExternalLink,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -209,6 +209,9 @@ export default function BikeDetailPage() {
 
   const isOwnListing = Boolean(user?.id && product?.seller?.id && user.id === product.seller.id)
   const isLockedForTransaction = Boolean(product?.lockedForTransaction)
+  const isAdminDetailView = user?.role === 'admin'
+  const listPageHref = isAdminDetailView ? ROUTES.ADMIN_LISTINGS : ROUTES.MARKET
+  const listPageLabel = isAdminDetailView ? 'Duyá»‡t tin Ä‘Äƒng' : 'Mua xe'
 
   const handleOpenOrderDialog = () => {
     if (!product) {
@@ -310,7 +313,7 @@ export default function BikeDetailPage() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center space-y-3">
           <p className="text-destructive">{error ?? 'Không tìm thấy sản phẩm.'}</p>
-          <Button variant="outline" onClick={() => navigate(-1)}>Quay lại</Button>
+          <Button variant="outline" onClick={() => navigate(listPageHref)}>Quay lại</Button>
         </div>
       </div>
     )
@@ -320,11 +323,22 @@ export default function BikeDetailPage() {
     <div className="min-h-screen bg-background">
       {/* Breadcrumb */}
       <div className="border-b bg-muted/40">
-        <div className="container mx-auto px-4 py-3">
+        <div className="container mx-auto space-y-3 px-4 py-3">
+          {isAdminDetailView && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-2 px-0 text-muted-foreground hover:text-foreground"
+              onClick={() => navigate(ROUTES.ADMIN_LISTINGS)}
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Quay lại duyệt tin đăng
+            </Button>
+          )}
           <nav className="flex items-center gap-2 text-sm text-muted-foreground">
             <Link to={ROUTES.HOME} className="hover:text-foreground">Trang chủ</Link>
             <span>/</span>
-            <Link to={ROUTES.MARKET} className="hover:text-foreground">Mua xe</Link>
+            <Link to={listPageHref} className="hover:text-foreground">{listPageLabel}</Link>
             <span>/</span>
             <span className="text-foreground line-clamp-1">{product.title}</span>
           </nav>

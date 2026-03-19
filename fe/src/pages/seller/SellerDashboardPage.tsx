@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react'
-import { StatCard } from '@/components/dashboard/StatCard'
-import { Package, ShoppingBag, Eye, TrendingUp, Clock, Loader2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Clock, Eye, Loader2, Package, ShoppingBag, TrendingUp } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { productsApi } from '@/api/products.api'
+import { StatCard } from '@/components/dashboard/StatCard'
 import { ordersApi } from '@/api/orders.api'
+import { productsApi } from '@/api/products.api'
 import { useAuth } from '@/contexts/AuthContext'
 import { ROUTES } from '@/constants/routes'
 import type { Order } from '@/types/order'
@@ -11,16 +11,27 @@ import type { Product } from '@/types/product'
 import { getSellerListingStatusPresentation } from './seller-listing-visibility'
 
 function formatPrice(amount: number): string {
-  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(amount)
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND',
+    maximumFractionDigits: 0,
+  }).format(amount)
 }
 
 function formatDate(dateStr: string): string {
-  const d = new Date(dateStr)
+  const date = new Date(dateStr)
   const now = new Date()
-  const diff = Math.floor((now.getTime() - d.getTime()) / 60000) // minutes
-  if (diff < 60) return `${diff} phút trước`
-  if (diff < 1440) return `${Math.floor(diff / 60)} giờ trước`
-  return `${Math.floor(diff / 1440)} ngày trước`
+  const diffMinutes = Math.floor((now.getTime() - date.getTime()) / 60000)
+
+  if (diffMinutes < 60) {
+    return `${diffMinutes} phút trước`
+  }
+
+  if (diffMinutes < 1440) {
+    return `${Math.floor(diffMinutes / 60)} giờ trước`
+  }
+
+  return `${Math.floor(diffMinutes / 1440)} ngày trước`
 }
 
 export default function SellerDashboardPage() {
@@ -31,29 +42,28 @@ export default function SellerDashboardPage() {
 
   useEffect(() => {
     const sellerId = user?.id
-    Promise.all([
-      productsApi.getMine(0, 50),
-      ordersApi.getMine(),
-    ])
+
+    Promise.all([productsApi.getMine(0, 50), ordersApi.getMine()])
       .then(([productsPage, allOrders]) => {
         setProducts(productsPage.content)
-        // Only seller's orders
-        setOrders(allOrders.filter((o) => o.sellerId === sellerId))
+        setOrders(allOrders.filter((order) => order.sellerId === sellerId))
       })
-      .catch(() => {})
+      .catch(() => {
+        setProducts([])
+        setOrders([])
+      })
       .finally(() => setIsLoading(false))
   }, [user?.id])
 
-  // Derived stats
-  const activeListings = products.filter((p) => getSellerListingStatusPresentation(p).isPubliclyVisible).length
-  const pendingListings = products.filter((p) => p.status === 'pending').length
-  const pendingOrders = orders.filter((o) => o.status === 'pending')
-  const completedOrders = orders.filter((o) => o.status === 'completed')
-  const totalRevenue = completedOrders.reduce((sum, o) => sum + o.totalAmount, 0)
+  const activeListings = products.filter((product) => getSellerListingStatusPresentation(product).isPubliclyVisible).length
+  const pendingListings = products.filter((product) => product.status === 'pending').length
+  const pendingOrders = orders.filter((order) => order.status === 'pending')
+  const completedOrders = orders.filter((order) => order.status === 'completed')
+  const totalRevenue = completedOrders.reduce((sum, order) => sum + order.totalAmount, 0)
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex h-64 items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     )
@@ -68,7 +78,6 @@ export default function SellerDashboardPage() {
         </p>
       </div>
 
-      {/* Stats */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Đơn chờ xử lý"
@@ -81,7 +90,7 @@ export default function SellerDashboardPage() {
           title="Tin đang bật"
           value={String(activeListings)}
           icon={Package}
-          description={`${pendingListings} tin đang chờ duyệt`}
+          description={`${pendingListings} tin đăng chờ duyệt`}
         />
         <StatCard
           title="Đơn hoàn thành"
@@ -98,70 +107,79 @@ export default function SellerDashboardPage() {
         />
       </div>
 
-      {/* Detail panels */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        {/* Recent listings */}
         <div className="col-span-4 rounded-xl border bg-card text-card-foreground shadow">
-          <div className="p-6 flex flex-row items-center justify-between space-y-0 pb-2">
-            <h3 className="tracking-tight text-lg font-medium">Tin đăng gần đây</h3>
-            <Link to={ROUTES.SELLER_LISTINGS} className="text-sm text-primary hover:underline">Xem tất cả</Link>
+          <div className="flex flex-row items-center justify-between p-6 pb-2">
+            <h3 className="text-lg font-medium tracking-tight">Tin đăng gần đây</h3>
+            <Link to={ROUTES.SELLER_LISTINGS} className="text-sm text-primary hover:underline">
+              Xem tất cả
+            </Link>
           </div>
-          <div className="p-6 pt-2 space-y-3">
+          <div className="space-y-3 p-6 pt-2">
             {products.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">Chưa có tin đăng nào.</p>
+              <p className="py-8 text-center text-sm text-muted-foreground">Chưa có tin đăng nào.</p>
             ) : (
-              products.slice(0, 5).map((p) => (
-                <div key={p.id} className="flex items-center gap-3">
-                  {p.images?.[0]?.url ? (
-                    <img
-                      src={p.images[0].url}
-                      alt={p.title}
-                      className="h-10 w-10 rounded-md object-cover border bg-muted shrink-0"
-                      onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
-                    />
-                  ) : (
-                    <div className="h-10 w-10 rounded-md bg-muted shrink-0 flex items-center justify-center text-muted-foreground text-xs">🚲</div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{p.title}</p>
-                    <p className="text-xs text-muted-foreground">{formatDate(p.createdAt)}</p>
+              products.slice(0, 5).map((product) => {
+                const statusPresentation = getSellerListingStatusPresentation(product)
+
+                return (
+                  <div key={product.id} className="flex items-center gap-3">
+                    {product.images?.[0]?.url ? (
+                      <img
+                        src={product.images[0].url}
+                        alt={product.title}
+                        className="h-10 w-10 shrink-0 rounded-md border bg-muted object-cover"
+                        onError={(event) => {
+                          event.currentTarget.style.display = 'none'
+                        }}
+                      />
+                    ) : (
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-muted text-xs text-muted-foreground">
+                        🚲
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{product.title}</p>
+                      <p className="text-xs text-muted-foreground">{formatDate(product.createdAt)}</p>
+                    </div>
+                    <span
+                      className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${statusPresentation.className}`}
+                    >
+                      {statusPresentation.label}
+                    </span>
                   </div>
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium shrink-0 ${
-                    p.status === 'active' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                    p.status === 'pending' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' :
-                    'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
-                  }`}>
-                    {p.status === 'active' ? 'Đang bán' : p.status === 'pending' ? 'Chờ duyệt' : p.status === 'hidden' ? 'Đã ẩn' : p.status}
-                  </span>
-                </div>
-              ))
+                )
+              })
             )}
           </div>
         </div>
 
-        {/* Pending orders */}
         <div className="col-span-3 rounded-xl border bg-card text-card-foreground shadow">
-          <div className="p-6 flex flex-row items-center justify-between space-y-0 pb-2">
-            <h3 className="tracking-tight text-lg font-medium">Việc cần làm ngay</h3>
-            <Link to={ROUTES.SELLER_ORDERS} className="text-sm text-primary hover:underline">Xem đơn</Link>
+          <div className="flex flex-row items-center justify-between p-6 pb-2">
+            <h3 className="text-lg font-medium tracking-tight">Việc cần làm ngay</h3>
+            <Link to={ROUTES.SELLER_ORDERS} className="text-sm text-primary hover:underline">
+              Xem đơn
+            </Link>
           </div>
-          <div className="p-6 pt-2 space-y-4">
+          <div className="space-y-4 p-6 pt-2">
             {pendingOrders.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-8 gap-2 text-center text-muted-foreground">
+              <div className="flex flex-col items-center justify-center gap-2 py-8 text-center text-muted-foreground">
                 <Clock className="h-8 w-8 opacity-40" />
                 <p className="text-sm">Không có đơn hàng chờ xử lý</p>
               </div>
             ) : (
               pendingOrders.slice(0, 4).map((order) => (
                 <div key={order.id} className="flex items-center gap-4">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-900/20 shrink-0">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-900/20">
                     <ShoppingBag className="h-4 w-4 text-orange-600 dark:text-orange-400" />
                   </div>
-                  <div className="flex-1 space-y-1 min-w-0">
-                    <p className="text-sm font-medium leading-none truncate">
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <p className="truncate text-sm font-medium leading-none">
                       {order.buyerName} muốn mua {order.productTitle}
                     </p>
-                    <p className="text-sm text-muted-foreground">{formatDate(order.createdAt)} · Chờ xác nhận</p>
+                    <p className="text-sm text-muted-foreground">
+                      {formatDate(order.createdAt)} · Chờ xác nhận
+                    </p>
                   </div>
                 </div>
               ))

@@ -140,6 +140,7 @@ export default function AppRouter() {
                 <Route element={<ProtectedRoute allowedRoles={['seller']}><SellerLayout /></ProtectedRoute>}>
                     <Route path={ROUTES.SELLER} element={<SellerDashboardPage />} />
                     <Route path={ROUTES.SELLER_LISTINGS} element={<SellerListingsPage />} />
+                    <Route path={ROUTES.SELLER_NEW_PRODUCT} element={<SellBikePage />} />
                     <Route path={ROUTES.SELLER_EDIT_PRODUCT} element={<SellerEditProductPage />} />
                     <Route path={ROUTES.SELLER_ORDERS} element={<SellerOrdersPage />} />
                 </Route>

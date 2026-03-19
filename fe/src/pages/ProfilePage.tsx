@@ -543,7 +543,7 @@ export default function ProfilePage() {
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle>Tin đăng của tôi</CardTitle>
                   <Button size="sm" asChild>
-                    <Link to={ROUTES.SELL}>
+                    <Link to={ROUTES.SELLER_NEW_PRODUCT}>
                       <PlusCircle className="mr-2 h-4 w-4" />
                       Đăng tin mới
                     </Link>
@@ -560,7 +560,7 @@ export default function ProfilePage() {
                       <Package className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
                       <p className="text-muted-foreground">Chưa có tin đăng nào.</p>
                       <Button asChild variant="outline" className="mt-4" size="sm">
-                        <Link to={ROUTES.SELL}>Đăng tin đầu tiên</Link>
+                        <Link to={ROUTES.SELLER_NEW_PRODUCT}>Đăng tin đầu tiên</Link>
                       </Button>
                     </div>
                   ) : (

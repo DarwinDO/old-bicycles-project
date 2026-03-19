@@ -111,7 +111,7 @@ export default function SellerListingsPage() {
             Mọi tin đăng đều phải qua admin và inspection trước khi hiển thị công khai.
           </p>
         </div>
-        <Link to={ROUTES.SELL}>
+        <Link to={ROUTES.SELLER_NEW_PRODUCT}>
           <Button className="w-full gap-2 sm:w-auto">
             <PlusCircle className="h-4 w-4" /> Đăng tin mới
           </Button>

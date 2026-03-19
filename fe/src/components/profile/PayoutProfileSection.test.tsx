@@ -34,13 +34,12 @@ describe('PayoutProfileSection', () => {
 
     render(<PayoutProfileSection />)
 
-    expect(await screen.findByDisplayValue('TPBank')).toBeInTheDocument()
-    expect(screen.getByDisplayValue('970423')).toBeInTheDocument()
+    expect(await screen.findByLabelText('Ngân hàng')).toHaveValue('970423')
     expect(screen.getByDisplayValue('00000645722')).toBeInTheDocument()
     expect(screen.getByDisplayValue('NGUYEN HOANG VIET DO')).toBeInTheDocument()
   })
 
-  it('submits the payout profile to the API', async () => {
+  it('submits the payout profile with bank name and bank bin auto-filled from the selected bank', async () => {
     const user = userEvent.setup()
 
     getMyProfileMock.mockResolvedValue(null)
@@ -56,9 +55,8 @@ describe('PayoutProfileSection', () => {
 
     render(<PayoutProfileSection />)
 
-    const bankCodeInput = await screen.findByPlaceholderText('Ví dụ: TPBank')
-    await user.type(bankCodeInput, 'TPBank')
-    await user.type(screen.getByPlaceholderText('Ví dụ: 970423'), '970423')
+    const bankSelect = await screen.findByLabelText('Ngân hàng')
+    await user.selectOptions(bankSelect, '970423')
     await user.type(screen.getByPlaceholderText('Ví dụ: 00000645722'), '00000645722')
     await user.type(screen.getByPlaceholderText('Ví dụ: NGUYEN HOANG VIET DO'), 'NGUYEN HOANG VIET DO')
     await user.click(screen.getByRole('button', { name: 'Lưu payout profile' }))

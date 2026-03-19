@@ -1,290 +1,399 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Search, MapPin, Shield, Award, Users, ArrowRight, Bike, ChevronRight } from 'lucide-react'
+import {
+  ArrowRight,
+  Award,
+  Bike,
+  ChevronRight,
+  MapPin,
+  Search,
+  Shield,
+  Users,
+} from 'lucide-react'
+import { productsApi } from '@/api/products.api'
+import { referenceDataApi } from '@/api/reference-data.api'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardFooter } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { ROUTES } from '@/constants/routes'
+import { ROUTES, buildRoute } from '@/constants/routes'
+import type { Category } from '@/types/reference-data'
+import type { Product } from '@/types/product'
+import { useAuth } from '@/contexts/AuthContext'
+import { getSellEntryHref } from '@/layouts/app-header-visibility'
 
-const featuredBikes = [
-    {
-        id: 1,
-        name: 'Giant TCR Advanced Pro',
-        price: 25000000,
-        location: 'Hồ Chí Minh',
-        condition: 'Như mới',
-        image: 'https://images.unsplash.com/photo-1576435728678-68d0fbf94e91?w=400',
-        verified: true
-    },
-    {
-        id: 2,
-        name: 'Specialized Tarmac SL6',
-        price: 35000000,
-        location: 'Hà Nội',
-        condition: 'Đã qua sử dụng',
-        image: 'https://images.unsplash.com/photo-1571333250630-f0230c320b6d?w=400',
-        verified: false
-    },
-    {
-        id: 3,
-        name: 'Trek Domane SL5',
-        price: 28000000,
-        location: 'Đà Nẵng',
-        condition: 'Tốt',
-        image: 'https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=400',
-        verified: true
-    },
-    {
-        id: 4,
-        name: 'Canyon Ultimate CF SL',
-        price: 32000000,
-        location: 'Hồ Chí Minh',
-        condition: 'Như mới',
-        image: 'https://images.unsplash.com/photo-1507035895480-2b3156c31fc8?w=400',
-        verified: false
-    },
-]
+const CATEGORY_ICONS: Record<string, string> = {
+  bicycles: '🚲',
+  'road-bikes': '🚴',
+  'mountain-bikes': '🚵',
+  'gravel-bikes': '🛤️',
+  'city-bikes': '🏙️',
+}
 
-const categories = [
-    { name: 'Xe Đua Đường Trường', count: 156, icon: '🚴', href: ROUTES.MARKET },
-    { name: 'Xe Địa Hình MTB', count: 203, icon: '🚵', href: ROUTES.MARKET },
-    { name: 'Xe Touring', count: 89, icon: '🚲', href: ROUTES.MARKET },
-    { name: 'Xe Gravel', count: 67, icon: '🛤️', href: ROUTES.MARKET },
-]
-
-const trustFeatures = [
-    {
-        icon: Shield,
-        title: 'Giao Dịch An Toàn',
-        description: 'Đảm bảo thông tin minh bạch, xác thực người dùng'
-    },
-    {
-        icon: Award,
-        title: 'Chất Lượng Đảm Bảo',
-        description: 'Kiểm định xe đạp kỹ thuật, đánh giá chuyên nghiệp'
-    },
-    {
-        icon: Users,
-        title: 'Cộng Đồng Lớn',
-        description: 'Kết nối hàng ngàn người đam mê xe đạp'
-    },
-]
+const TRUST_FEATURES = [
+  {
+    icon: Shield,
+    title: 'Kiểm duyệt trước khi public',
+    description: 'Tin đăng phải qua admin và inspection trước khi hiển thị công khai.',
+  },
+  {
+    icon: Award,
+    title: 'Thông tin xe rõ ràng',
+    description: 'Người mua xem được mô tả, ảnh, trạng thái kiểm định và lịch sử giao dịch liên quan.',
+  },
+  {
+    icon: Users,
+    title: 'Luồng mua bán có kiểm soát',
+    description: 'Đơn mua, đặt cọc, hoàn tiền và giải ngân đều đi qua các bước xác nhận rõ ràng.',
+  },
+] as const
 
 function formatPrice(price: number): string {
-    return new Intl.NumberFormat('vi-VN', {
-        style: 'currency',
-        currency: 'VND',
-        maximumFractionDigits: 0
-    }).format(price)
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND',
+    maximumFractionDigits: 0,
+  }).format(price)
+}
+
+function getPrimaryImage(product: Product): string {
+  const primaryImage = product.images.find((image) => image.isPrimary)
+  return (
+    primaryImage?.url ??
+    product.images[0]?.url ??
+    'https://images.unsplash.com/photo-1576435728678-68d0fbf94e91?w=800'
+  )
+}
+
+function getCategoryIcon(category: Category) {
+  return CATEGORY_ICONS[category.slug] ?? CATEGORY_ICONS[category.name.toLowerCase().replace(/\s+/g, '-')] ?? '🚲'
+}
+
+function FeaturedBikeSkeleton() {
+  return (
+    <Card className="overflow-hidden">
+      <div className="aspect-[4/3] animate-pulse bg-muted" />
+      <CardContent className="space-y-3 p-4">
+        <div className="h-4 w-2/3 animate-pulse rounded bg-muted" />
+        <div className="h-6 w-1/2 animate-pulse rounded bg-muted" />
+      </CardContent>
+      <CardFooter className="border-t px-4 py-3">
+        <div className="h-3 w-24 animate-pulse rounded bg-muted" />
+      </CardFooter>
+    </Card>
+  )
+}
+
+function CategorySkeleton() {
+  return (
+    <Card className="overflow-hidden">
+      <CardContent className="flex items-center gap-4 p-6">
+        <div className="h-12 w-12 animate-pulse rounded-xl bg-muted" />
+        <div className="flex-1 space-y-2">
+          <div className="h-4 w-2/3 animate-pulse rounded bg-muted" />
+          <div className="h-3 w-1/2 animate-pulse rounded bg-muted" />
+        </div>
+      </CardContent>
+    </Card>
+  )
 }
 
 export default function HomePage() {
-    const [searchQuery, setSearchQuery] = useState('')
-    const [location, setLocation] = useState('')
-    const navigate = useNavigate()
+  const navigate = useNavigate()
+  const { isAuthenticated, user } = useAuth()
+  const [searchKeyword, setSearchKeyword] = useState('')
+  const [searchProvince, setSearchProvince] = useState('')
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
+  const [featuredLoading, setFeaturedLoading] = useState(true)
+  const [categoriesLoading, setCategoriesLoading] = useState(true)
 
-    const handleSearch = () => {
-        navigate(`${ROUTES.MARKET}?q=${searchQuery}&location=${location}`)
+  const sellerEntryHref = useMemo(
+    () => getSellEntryHref(user?.role, isAuthenticated),
+    [isAuthenticated, user?.role],
+  )
+
+  useEffect(() => {
+    let ignore = false
+
+    async function loadFeaturedProducts() {
+      setFeaturedLoading(true)
+
+      try {
+        const result = await productsApi.search({
+          page: 0,
+          size: 4,
+          sortBy: 'createdAt,desc',
+        })
+
+        if (!ignore) {
+          setFeaturedProducts(result.content)
+        }
+      } catch {
+        if (!ignore) {
+          setFeaturedProducts([])
+        }
+      } finally {
+        if (!ignore) {
+          setFeaturedLoading(false)
+        }
+      }
     }
 
-    return (
-        <div className="flex flex-col">
-            {/* Hero Section */}
-            <section className="relative bg-gradient-to-br from-primary/90 via-primary to-primary/80 dark:from-primary/80 dark:via-primary/70 dark:to-primary/60">
-                <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1541625602330-2277a4c46182?w=1920')] bg-cover bg-center opacity-10" />
-                <div className="container relative mx-auto px-4 py-20 md:py-28">
-                    <div className="mx-auto max-w-3xl text-center">
-                        <h1 className="text-3xl font-bold tracking-tight text-white md:text-5xl lg:text-6xl">
-                            Nền Tảng Mua Bán Xe Đạp Thể Thao Cũ Uy Tín
-                        </h1>
-                        <p className="mt-6 text-lg text-white/90 md:text-xl">
-                            Kết nối người mua và người bán xe đạp thể thao đã qua sử dụng một cách an toàn, minh bạch và chuyên nghiệp
-                        </p>
+    void loadFeaturedProducts()
 
-                        {/* Search Box */}
-                        <Card className="mt-10 p-2">
-                            <CardContent className="p-0">
-                                <div className="flex flex-col gap-2 md:flex-row">
-                                    <div className="relative flex-1">
-                                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                                        <Input
-                                            placeholder="Tìm kiếm xe đạp (thương hiệu, model...)"
-                                            className="h-12 pl-10"
-                                            value={searchQuery}
-                                            onChange={(e) => setSearchQuery(e.target.value)}
-                                            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                                        />
-                                    </div>
-                                    <div className="relative md:w-48">
-                                        <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                                        <Input
-                                            placeholder="Địa điểm"
-                                            className="h-12 pl-10"
-                                            value={location}
-                                            onChange={(e) => setLocation(e.target.value)}
-                                        />
-                                    </div>
-                                    <Button size="lg" className="h-12 px-8" onClick={handleSearch}>
-                                        <Search className="mr-2 h-4 w-4" />
-                                        Tìm kiếm
-                                    </Button>
-                                </div>
-                            </CardContent>
-                        </Card>
+    return () => {
+      ignore = true
+    }
+  }, [])
 
-                        {/* Quick Stats */}
-                        <div className="mt-10 flex flex-wrap items-center justify-center gap-8 text-white/90">
-                            <div className="text-center">
-                                <div className="text-2xl font-bold">1,500+</div>
-                                <div className="text-sm">Xe đang bán</div>
-                            </div>
-                            <div className="h-8 w-px bg-white/30" />
-                            <div className="text-center">
-                                <div className="text-2xl font-bold">5,000+</div>
-                                <div className="text-sm">Thành viên</div>
-                            </div>
-                            <div className="h-8 w-px bg-white/30" />
-                            <div className="text-center">
-                                <div className="text-2xl font-bold">2,000+</div>
-                                <div className="text-sm">Giao dịch thành công</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
+  useEffect(() => {
+    let ignore = false
 
-            {/* Trust Features */}
-            <section className="border-b bg-muted/40 py-12">
-                <div className="container mx-auto px-4">
-                    <div className="grid gap-8 md:grid-cols-3">
-                        {trustFeatures.map((feature) => (
-                            <div key={feature.title} className="flex items-start gap-4">
-                                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-                                    <feature.icon className="h-6 w-6 text-primary" />
-                                </div>
-                                <div>
-                                    <h3 className="font-semibold text-foreground">{feature.title}</h3>
-                                    <p className="mt-1 text-sm text-muted-foreground">{feature.description}</p>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </section>
+    async function loadCategories() {
+      setCategoriesLoading(true)
 
-            {/* Featured Bikes */}
-            <section className="py-16">
-                <div className="container mx-auto px-4">
-                    <div className="mb-8 flex items-center justify-between">
-                        <div>
-                            <h2 className="text-2xl font-bold text-foreground md:text-3xl">Xe Đạp Nổi Bật</h2>
-                            <p className="mt-1 text-muted-foreground">Những chiếc xe đạp được quan tâm nhiều nhất</p>
-                        </div>
-                        <Button variant="ghost" asChild className="hidden md:inline-flex">
-                            <Link to={ROUTES.MARKET}>
-                                Xem tất cả <ArrowRight className="ml-2 h-4 w-4" />
-                            </Link>
-                        </Button>
-                    </div>
+      try {
+        const result = await referenceDataApi.getCategories()
+        const primaryCategories = result.filter((category) => !category.parentId).slice(0, 4)
 
-                    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                        {featuredBikes.map((bike) => (
-                            <Link key={bike.id} to={`/bikes/${bike.id}`}>
-                                <Card className="group overflow-hidden transition-all hover:shadow-lg cursor-pointer">
-                                    <div className="relative aspect-[4/3] overflow-hidden">
-                                        <img
-                                            src={bike.image}
-                                            alt={bike.name}
-                                            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                                        />
-                                        <div className="absolute left-3 top-3 flex gap-2">
-                                            <Badge variant="success">{bike.condition}</Badge>
-                                            {bike.verified && (
-                                                <Badge variant="secondary" className="gap-1">
-                                                    <Shield className="h-3 w-3" /> Đã kiểm định
-                                                </Badge>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <CardContent className="p-4">
-                                        <h3 className="font-semibold text-foreground line-clamp-1 group-hover:text-primary transition-colors">
-                                            {bike.name}
-                                        </h3>
-                                        <p className="mt-2 text-lg font-bold text-primary">
-                                            {formatPrice(bike.price)}
-                                        </p>
-                                    </CardContent>
-                                    <CardFooter className="border-t px-4 py-3">
-                                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                                            <MapPin className="h-3.5 w-3.5" />
-                                            {bike.location}
-                                        </div>
-                                    </CardFooter>
-                                </Card>
-                            </Link>
-                        ))}
-                    </div>
+        if (!ignore) {
+          setCategories(primaryCategories)
+        }
+      } catch {
+        if (!ignore) {
+          setCategories([])
+        }
+      } finally {
+        if (!ignore) {
+          setCategoriesLoading(false)
+        }
+      }
+    }
 
-                    <div className="mt-8 text-center md:hidden">
-                        <Button variant="outline" asChild>
-                            <Link to={ROUTES.MARKET}>
-                                Xem tất cả xe đạp <ArrowRight className="ml-2 h-4 w-4" />
-                            </Link>
-                        </Button>
-                    </div>
-                </div>
-            </section>
+    void loadCategories()
 
-            {/* Categories */}
-            <section className="bg-muted/40 py-16">
-                <div className="container mx-auto px-4">
-                    <h2 className="mb-8 text-center text-2xl font-bold text-foreground md:text-3xl">
-                        Danh Mục Xe Đạp
-                    </h2>
-                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                        {categories.map((category) => (
-                            <Link key={category.name} to={category.href}>
-                                <Card className="group cursor-pointer transition-all hover:shadow-md hover:border-primary/50">
-                                    <CardContent className="flex items-center gap-4 p-6">
-                                        <span className="text-4xl">{category.icon}</span>
-                                        <div className="flex-1">
-                                            <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
-                                                {category.name}
-                                            </h3>
-                                            <p className="text-sm text-muted-foreground">{category.count} xe đang bán</p>
-                                        </div>
-                                        <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
-                                    </CardContent>
-                                </Card>
-                            </Link>
-                        ))}
-                    </div>
-                </div>
-            </section>
+    return () => {
+      ignore = true
+    }
+  }, [])
 
-            {/* CTA Section */}
-            <section className="bg-gradient-to-r from-secondary/90 to-secondary py-16">
-                <div className="container mx-auto px-4 text-center">
-                    <div className="mx-auto max-w-2xl">
-                        <Bike className="mx-auto h-12 w-12 text-white/90" />
-                        <h2 className="mt-6 text-2xl font-bold text-white md:text-3xl">
-                            Bạn muốn bán xe đạp của mình?
-                        </h2>
-                        <p className="mt-4 text-lg text-white/90">
-                            Đăng tin miễn phí, tiếp cận hàng nghìn người mua tiềm năng
-                        </p>
-                        <Button
-                            size="lg"
-                            variant="outline"
-                            className="mt-8 bg-white text-secondary hover:bg-white/90 border-white"
-                            onClick={() => navigate(ROUTES.SELL)}
-                        >
-                            Đăng tin bán xe ngay <ArrowRight className="ml-2 h-4 w-4" />
-                        </Button>
-                    </div>
-                </div>
-            </section>
-        </div>
+  function handleSearch() {
+    navigate(
+      buildRoute.market({
+        keyword: searchKeyword,
+        province: searchProvince,
+      }),
     )
+  }
+
+  return (
+    <div className="flex flex-col">
+      <section className="relative overflow-hidden bg-gradient-to-br from-primary/90 via-primary to-primary/80">
+        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1541625602330-2277a4c46182?w=1920')] bg-cover bg-center opacity-10" />
+        <div className="container relative mx-auto px-4 py-20 md:py-28">
+          <div className="mx-auto max-w-4xl text-center">
+            <h1 className="text-3xl font-bold tracking-tight text-white md:text-5xl lg:text-6xl">
+              Nền tảng mua bán xe đạp thể thao cũ có kiểm định
+            </h1>
+            <p className="mt-6 text-lg text-white/90 md:text-xl">
+              Tìm xe theo từ khóa và khu vực, xem tin đã qua admin và inspection trước khi hiển thị công khai.
+            </p>
+
+            <Card className="mt-10 p-2 shadow-xl">
+              <CardContent className="p-0">
+                <div className="grid gap-2 md:grid-cols-[1.4fr_0.8fr_auto]">
+                  <div className="relative">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      placeholder="Tìm theo tên xe, thương hiệu hoặc model"
+                      className="h-12 pl-10"
+                      value={searchKeyword}
+                      onChange={(event) => setSearchKeyword(event.target.value)}
+                      onKeyDown={(event) => event.key === 'Enter' && handleSearch()}
+                    />
+                  </div>
+
+                  <div className="relative">
+                    <MapPin className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      placeholder="Tỉnh / thành phố"
+                      className="h-12 pl-10"
+                      value={searchProvince}
+                      onChange={(event) => setSearchProvince(event.target.value)}
+                      onKeyDown={(event) => event.key === 'Enter' && handleSearch()}
+                    />
+                  </div>
+
+                  <Button size="lg" className="h-12 px-8" onClick={handleSearch}>
+                    <Search className="mr-2 h-4 w-4" />
+                    Tìm kiếm
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+              <Badge variant="secondary" className="px-3 py-1.5 text-sm">
+                Tin đăng public đều đã qua inspection
+              </Badge>
+              <Badge variant="secondary" className="px-3 py-1.5 text-sm">
+                Đặt cọc và xác nhận giao dịch theo từng bước
+              </Badge>
+              <Badge variant="secondary" className="px-3 py-1.5 text-sm">
+                Hoàn tiền và giải ngân có đối soát thủ công
+              </Badge>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="border-b bg-muted/40 py-12">
+        <div className="container mx-auto px-4">
+          <div className="grid gap-8 md:grid-cols-3">
+            {TRUST_FEATURES.map((feature) => (
+              <div key={feature.title} className="flex items-start gap-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                  <feature.icon className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground">{feature.title}</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">{feature.description}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="py-16">
+        <div className="container mx-auto px-4">
+          <div className="mb-8 flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold text-foreground md:text-3xl">Xe mới cập nhật</h2>
+              <p className="mt-1 text-muted-foreground">Dữ liệu lấy trực tiếp từ marketplace công khai, không còn dùng mock.</p>
+            </div>
+            <Button variant="ghost" asChild className="hidden md:inline-flex">
+              <Link to={ROUTES.MARKET}>
+                Xem tất cả <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
+
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {featuredLoading ? (
+              Array.from({ length: 4 }).map((_, index) => <FeaturedBikeSkeleton key={index} />)
+            ) : featuredProducts.length === 0 ? (
+              <div className="col-span-full rounded-xl border border-dashed bg-muted/30 px-6 py-12 text-center text-muted-foreground">
+                Hiện chưa có xe công khai nào phù hợp để hiển thị ở trang chủ.
+              </div>
+            ) : (
+              featuredProducts.map((product) => (
+                <Link key={product.id} to={buildRoute.bikeDetail(product.id)}>
+                  <Card className="group h-full cursor-pointer overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-lg">
+                    <div className="relative aspect-[4/3] overflow-hidden">
+                      <img
+                        src={getPrimaryImage(product)}
+                        alt={product.title}
+                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                      <div className="absolute left-3 top-3 flex flex-wrap gap-2">
+                        {product.condition && (
+                          <Badge variant="success">
+                            {product.condition === 'new_90'
+                              ? 'Như mới'
+                              : product.condition === 'used'
+                                ? 'Đã qua sử dụng'
+                                : 'Cần sửa chữa'}
+                          </Badge>
+                        )}
+                        {product.isVerified && (
+                          <Badge variant="secondary" className="gap-1">
+                            <Shield className="h-3 w-3" />
+                            Đã kiểm định
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+
+                    <CardContent className="p-4">
+                      <h3 className="line-clamp-1 font-semibold text-foreground transition-colors group-hover:text-primary">
+                        {product.title}
+                      </h3>
+                      <p className="mt-2 text-lg font-bold text-primary">{formatPrice(product.price)}</p>
+                    </CardContent>
+
+                    <CardFooter className="border-t px-4 py-3">
+                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                        <MapPin className="h-3.5 w-3.5" />
+                        {[product.district, product.province].filter(Boolean).join(', ') || 'Chưa cập nhật địa điểm'}
+                      </div>
+                    </CardFooter>
+                  </Card>
+                </Link>
+              ))
+            )}
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-muted/40 py-16">
+        <div className="container mx-auto px-4">
+          <div className="mb-8 text-center">
+            <h2 className="text-2xl font-bold text-foreground md:text-3xl">Danh mục xe đạp</h2>
+            <p className="mt-2 text-muted-foreground">Danh sách danh mục đang lấy từ reference data thật của hệ thống.</p>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {categoriesLoading ? (
+              Array.from({ length: 4 }).map((_, index) => <CategorySkeleton key={index} />)
+            ) : categories.length === 0 ? (
+              <div className="col-span-full rounded-xl border border-dashed bg-card px-6 py-12 text-center text-muted-foreground">
+                Chưa tải được danh mục. Bạn vẫn có thể xem toàn bộ xe ở trang mua xe.
+              </div>
+            ) : (
+              categories.map((category) => (
+                <Link key={category.id} to={buildRoute.market({ categoryId: category.id })}>
+                  <Card className="group cursor-pointer transition-all hover:border-primary/50 hover:shadow-md">
+                    <CardContent className="flex items-center gap-4 p-6">
+                      <span className="text-4xl">{getCategoryIcon(category)}</span>
+                      <div className="min-w-0 flex-1">
+                        <h3 className="line-clamp-1 font-semibold text-foreground transition-colors group-hover:text-primary">
+                          {category.name}
+                        </h3>
+                        <p className="text-sm text-muted-foreground">Mở bộ lọc và xem các xe thuộc danh mục này</p>
+                      </div>
+                      <ChevronRight className="h-5 w-5 text-muted-foreground transition-colors group-hover:text-primary" />
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))
+            )}
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-gradient-to-r from-secondary/90 to-secondary py-16">
+        <div className="container mx-auto px-4 text-center">
+          <div className="mx-auto max-w-2xl">
+            <Bike className="mx-auto h-12 w-12 text-white/90" />
+            <h2 className="mt-6 text-2xl font-bold text-white md:text-3xl">
+              Bạn muốn bán xe đạp của mình?
+            </h2>
+            <p className="mt-4 text-lg text-white/90">
+              Tạo tin mới, chờ admin chuyển qua inspection, rồi chỉ lên public khi xe đạt kiểm định.
+            </p>
+            <Button
+              size="lg"
+              variant="outline"
+              className="mt-8 border-white bg-white text-secondary hover:bg-white/90"
+              onClick={() => navigate(sellerEntryHref)}
+            >
+              Đăng tin bán xe ngay <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </section>
+    </div>
+  )
 }

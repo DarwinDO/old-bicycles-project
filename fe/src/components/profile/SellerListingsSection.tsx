@@ -1,12 +1,4 @@
-import {
-  Eye,
-  EyeOff,
-  Loader2,
-  Package,
-  Pencil,
-  PlusCircle,
-  Trash2,
-} from 'lucide-react'
+import { Eye, EyeOff, Loader2, Package, Pencil, PlusCircle, Trash2 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -44,7 +36,7 @@ export function SellerListingsSection({
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Tin đăng của tôi</CardTitle>
         <Button size="sm" asChild>
-          <Link to={ROUTES.SELL}>
+          <Link to={ROUTES.SELLER_NEW_PRODUCT}>
             <PlusCircle className="mr-2 h-4 w-4" />
             Đăng tin mới
           </Link>
@@ -61,7 +53,7 @@ export function SellerListingsSection({
             <Package className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
             <p className="text-muted-foreground">Chưa có tin đăng nào.</p>
             <Button asChild variant="outline" className="mt-4" size="sm">
-              <Link to={ROUTES.SELL}>Đăng tin đầu tiên</Link>
+              <Link to={ROUTES.SELLER_NEW_PRODUCT}>Đăng tin đầu tiên</Link>
             </Button>
           </div>
         ) : (

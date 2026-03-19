@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { ROUTES } from '@/constants/routes'
 import type { Order } from '@/types/order'
 import type { Product } from '@/types/product'
+import { getSellerListingStatusPresentation } from './seller-listing-visibility'
 
 function formatPrice(amount: number): string {
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(amount)
@@ -44,7 +45,7 @@ export default function SellerDashboardPage() {
   }, [user?.id])
 
   // Derived stats
-  const activeListings = products.filter((p) => p.status === 'active').length
+  const activeListings = products.filter((p) => getSellerListingStatusPresentation(p).isPubliclyVisible).length
   const pendingListings = products.filter((p) => p.status === 'pending').length
   const pendingOrders = orders.filter((o) => o.status === 'pending')
   const completedOrders = orders.filter((o) => o.status === 'completed')

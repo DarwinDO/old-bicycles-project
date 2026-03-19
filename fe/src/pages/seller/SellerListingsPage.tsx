@@ -12,33 +12,14 @@ import {
   Trash2,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { productsApi } from '@/api/products.api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ROUTES, buildRoute } from '@/constants/routes'
-import { productsApi } from '@/api/products.api'
-import type { Product, ProductStatus } from '@/types/product'
+import type { Product } from '@/types/product'
+import { getSellerListingStatusPresentation } from './seller-listing-visibility'
 
 const PAGE_SIZE = 10
-
-const STATUS_LABEL: Record<ProductStatus, string> = {
-  pending: 'Chờ admin duyệt và chuyển kiểm định',
-  active: 'Đang bán công khai',
-  hidden: 'Đã ẩn',
-  sold: 'Đã bán',
-  pending_inspection: 'Đang chờ inspector kiểm định',
-  inspected_passed: 'Đã kiểm định đạt (legacy)',
-  inspected_failed: 'Kiểm định không đạt',
-}
-
-const STATUS_CLASS: Record<ProductStatus, string> = {
-  pending: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
-  active: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-  hidden: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400',
-  sold: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-  pending_inspection: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-  inspected_passed: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400',
-  inspected_failed: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-}
 
 function formatPrice(price: number): string {
   return new Intl.NumberFormat('vi-VN', {
@@ -50,21 +31,6 @@ function formatPrice(price: number): string {
 
 function formatDate(dateStr: string): string {
   return new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short' }).format(new Date(dateStr))
-}
-
-function getStatusHint(product: Product) {
-  switch (product.status) {
-    case 'pending':
-      return 'Admin sẽ kiểm duyệt sơ bộ rồi chuyển tin sang kiểm định trước khi public.'
-    case 'pending_inspection':
-      return 'Inspector đang xử lý đánh giá kỹ thuật cho tin đăng này.'
-    case 'inspected_failed':
-      return 'Bạn cần chỉnh sửa tin đăng rồi chờ admin chuyển kiểm định lại.'
-    case 'hidden':
-      return 'Hiện lại sẽ đưa tin về trạng thái chờ duyệt và kiểm định lại.'
-    default:
-      return null
-  }
 }
 
 export default function SellerListingsPage() {
@@ -217,9 +183,11 @@ export default function SellerListingsPage() {
                 filteredProducts.map((product) => {
                   const isActing = actionLoading === product.id
                   const canEdit = product.status !== 'sold'
-                  const canHide = product.status === 'active' || product.status === 'inspected_passed'
+                  const statusPresentation = getSellerListingStatusPresentation(product)
+                  const canHide =
+                    (product.status === 'active' || product.status === 'inspected_passed') &&
+                    statusPresentation.isPubliclyVisible
                   const canShow = product.status === 'hidden'
-                  const statusHint = getStatusHint(product)
 
                   return (
                     <tr key={product.id} className="border-b transition-colors hover:bg-muted/50">
@@ -241,8 +209,10 @@ export default function SellerListingsPage() {
                             <p className="truncate text-xs text-muted-foreground">
                               #{product.id.slice(0, 8)}
                             </p>
-                            {statusHint && (
-                              <p className="mt-1 text-xs text-muted-foreground">{statusHint}</p>
+                            {statusPresentation.hint && (
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                {statusPresentation.hint}
+                              </p>
                             )}
                           </div>
                         </div>
@@ -252,9 +222,9 @@ export default function SellerListingsPage() {
                       </td>
                       <td className="p-4 align-middle">
                         <span
-                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_CLASS[product.status]}`}
+                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusPresentation.className}`}
                         >
-                          {STATUS_LABEL[product.status]}
+                          {statusPresentation.label}
                         </span>
                       </td>
                       <td className="hidden whitespace-nowrap p-4 align-middle text-muted-foreground md:table-cell">

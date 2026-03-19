@@ -34,12 +34,14 @@ import { ROUTES, buildRoute } from '@/constants/routes'
 import { cn } from '@/lib/utils'
 import { BuyerOrdersView } from '@/components/profile/BuyerOrdersView'
 import { PayoutProfileSection } from '@/components/profile/PayoutProfileSection'
+import { SellerListingsSection } from '@/components/profile/SellerListingsSection'
 import { useAuth } from '@/contexts/AuthContext'
 import { authService } from '@/services/authService'
 import { wishlistApi } from '@/api/wishlist.api'
 import { productsApi } from '@/api/products.api'
 import type { WishlistItem } from '@/types/wishlist'
 import type { Product } from '@/types/product'
+import { getSellerListingStatusPresentation } from '@/pages/seller/seller-listing-visibility'
 
 function formatPrice(price: number): string {
   return new Intl.NumberFormat('vi-VN', {
@@ -174,11 +176,14 @@ export default function ProfilePage() {
     }
   }
 
-  const handleToggleVisibility = async (item: Product) => {
+  const handleToggleVisibility = async (item: Product, action?: 'hide' | 'show') => {
     setTogglingId(item.id)
 
     try {
-      if (item.status === 'active') {
+      const nextAction =
+        action ?? (item.status === 'active' || item.status === 'inspected_passed' ? 'hide' : 'show')
+
+      if (nextAction === 'hide') {
         await productsApi.hide(item.id)
         setListings((currentListings) =>
           currentListings.map((product) =>
@@ -524,6 +529,16 @@ export default function ProfilePage() {
             {activeTab === 'orders' && <BuyerOrdersView />}
 
             {activeTab === 'listings' && (
+              <SellerListingsSection
+                listings={listings}
+                listingsLoading={listingsLoading}
+                togglingId={togglingId}
+                onToggleVisibility={handleToggleVisibility}
+                onDeleteListing={handleDeleteListing}
+              />
+            )}
+
+            {false && activeTab === 'listings' && (
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle>Tin đăng của tôi</CardTitle>
@@ -554,6 +569,7 @@ export default function ProfilePage() {
                         const thumb = item.images?.find((image) => image.isPrimary)?.url ?? item.images?.[0]?.url
                         const isActive = item.status === 'active'
                         const isToggling = togglingId === item.id
+                        const statusPresentation = getSellerListingStatusPresentation(item)
 
                         return (
                           <div
@@ -576,7 +592,10 @@ export default function ProfilePage() {
                               </Link>
                               <p className="mt-0.5 font-bold text-primary">{formatPrice(item.price)}</p>
                               <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                                <Badge variant={isActive ? 'default' : 'secondary'} className="text-xs">
+                                <Badge
+                                  variant="secondary"
+                                  className={cn('border-transparent text-xs', statusPresentation.className)}
+                                >
                                   {isActive
                                     ? 'Đang hiển thị'
                                     : item.status === 'hidden'

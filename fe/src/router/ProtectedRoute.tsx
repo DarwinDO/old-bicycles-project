@@ -1,24 +1,30 @@
-import { Navigate, useLocation } from 'react-router-dom';
-import { ROUTES } from '../constants/routes';
+import type { ReactNode } from 'react'
+import { Navigate, useLocation } from 'react-router-dom'
+import type { AppRole } from '@/types/auth'
+import BikeLoader from '../components/common/BikeLoader'
+import { ROUTES } from '../constants/routes'
+import { useAuth } from '../contexts/AuthContext'
 
 interface ProtectedRouteProps {
-    children: React.ReactNode;
+  children: ReactNode
+  allowedRoles?: AppRole[]
 }
 
-/**
- * Protects routes that require authentication.
- * Redirects to login page if user is not authenticated.
- */
-export default function ProtectedRoute({ children }: ProtectedRouteProps) {
-    const location = useLocation();
+export default function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
+  const location = useLocation()
+  const { hasRole, isAuthenticated, isLoading } = useAuth()
 
-    // TODO: Replace with actual auth check from your auth context/store
-    const isAuthenticated = Boolean(localStorage.getItem('authToken'));
+  if (isLoading) {
+    return <BikeLoader />
+  }
 
-    if (!isAuthenticated) {
-        // Redirect to login, but save the attempted URL
-        return <Navigate to={ROUTES.LOGIN} state={{ from: location }} replace />;
-    }
+  if (!isAuthenticated) {
+    return <Navigate to={ROUTES.LOGIN} state={{ from: location }} replace />
+  }
 
-    return <>{children}</>;
+  if (allowedRoles?.length && !hasRole(...allowedRoles)) {
+    return <Navigate to={ROUTES.HOME} replace />
+  }
+
+  return <>{children}</>
 }

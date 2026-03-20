@@ -5,6 +5,11 @@ import MainLayout from '../layouts/MainLayout';
 import AdminLayout from '../layouts/AdminLayout';
 import InspectorLayout from '../layouts/InspectorLayout';
 import ProtectedRoute from './ProtectedRoute';
+
+// Auth pages (lazy loaded)
+const ForgotPasswordPage = lazy(() => import('../pages/ForgotPasswordPage'));
+const ResetPasswordPage = lazy(() => import('../pages/ResetPasswordPage'));
+import SellerLayout from '../layouts/SellerLayout';
 import {
     HomePage,
     BikeListingPage,
@@ -12,10 +17,18 @@ import {
     SellBikePage,
     LoginPage,
     RegisterPage,
+    VerifyEmailPage,
     ProfilePage,
     GuidePage,
 } from './lazyPages';
 import NotFoundPage from '../pages/NotFoundPage';
+
+// Messages pages (lazy loaded)
+const MessagesPage = lazy(() => import('../pages/messages/MessagesPage'));
+
+// User utility pages (lazy loaded)
+const NotificationsPage = lazy(() => import('../pages/NotificationsPage'));
+const MyReportsPage = lazy(() => import('../pages/MyReportsPage'));
 
 // Admin pages (lazy loaded)
 const AdminDashboardPage = lazy(() => import('../pages/admin/AdminDashboardPage'));
@@ -25,24 +38,29 @@ const AdminReportsPage = lazy(() => import('../pages/admin/AdminReportsPage'));
 const AdminCategoriesPage = lazy(() => import('../pages/admin/AdminCategoriesPage'));
 const AdminDisputesPage = lazy(() => import('../pages/admin/AdminDisputesPage'));
 
+// Seller pages (lazy loaded)
+const SellerDashboardPage = lazy(() => import('../pages/seller/SellerDashboardPage'));
+const SellerListingsPage = lazy(() => import('../pages/seller/SellerListingsPage'));
+const SellerEditProductPage = lazy(() => import('../pages/seller/SellerEditProductPage'));
+const SellerOrdersPage = lazy(() => import('../pages/seller/SellerOrdersPage'));
+
+// User pages (lazy loaded)
+const WishlistPage = lazy(() => import('../pages/WishlistPage'));
+
 // Inspector pages (lazy loaded)
 const InspectorDashboardPage = lazy(() => import('../pages/inspector/InspectorDashboardPage'));
 const InspectionRequestsPage = lazy(() => import('../pages/inspector/InspectionRequestsPage'));
 const InspectionFormPage = lazy(() => import('../pages/inspector/InspectionFormPage'));
 const InspectionHistoryPage = lazy(() => import('../pages/inspector/InspectionHistoryPage'));
 
+import BikeLoader from '../components/common/BikeLoader';
+
 // Loading fallback component
-function PageLoader() {
-    return (
-        <div className="page-loader">
-            <div className="loader-spinner"></div>
-        </div>
-    );
-}
+
 
 export default function AppRouter() {
     return (
-        <Suspense fallback={<PageLoader />}>
+        <Suspense fallback={<BikeLoader />}>
             <Routes>
                 {/* Main layout routes */}
                 <Route element={<MainLayout />}>
@@ -53,12 +71,15 @@ export default function AppRouter() {
                     <Route path={ROUTES.GUIDE} element={<GuidePage />} />
                     <Route path={ROUTES.LOGIN} element={<LoginPage />} />
                     <Route path={ROUTES.REGISTER} element={<RegisterPage />} />
+                    <Route path={ROUTES.VERIFY_EMAIL} element={<VerifyEmailPage />} />
+                    <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                    <Route path="/reset-password" element={<ResetPasswordPage />} />
 
                     {/* Protected routes - require authentication */}
                     <Route
                         path={ROUTES.SELL}
                         element={
-                            <ProtectedRoute>
+                            <ProtectedRoute allowedRoles={['seller']}>
                                 <SellBikePage />
                             </ProtectedRoute>
                         }
@@ -71,10 +92,42 @@ export default function AppRouter() {
                             </ProtectedRoute>
                         }
                     />
+                    <Route
+                        path={ROUTES.MESSAGES}
+                        element={
+                            <ProtectedRoute>
+                                <MessagesPage />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/notifications"
+                        element={
+                            <ProtectedRoute>
+                                <NotificationsPage />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/my-reports"
+                        element={
+                            <ProtectedRoute>
+                                <MyReportsPage />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path={ROUTES.WISHLIST}
+                        element={
+                            <ProtectedRoute>
+                                <WishlistPage />
+                            </ProtectedRoute>
+                        }
+                    />
                 </Route>
 
                 {/* Admin layout routes */}
-                <Route element={<AdminLayout />}>
+                <Route element={<ProtectedRoute allowedRoles={['admin']}><AdminLayout /></ProtectedRoute>}>
                     <Route path={ROUTES.ADMIN} element={<AdminDashboardPage />} />
                     <Route path={ROUTES.ADMIN_USERS} element={<AdminUsersPage />} />
                     <Route path={ROUTES.ADMIN_LISTINGS} element={<AdminListingsPage />} />
@@ -83,8 +136,16 @@ export default function AppRouter() {
                     <Route path={ROUTES.ADMIN_DISPUTES} element={<AdminDisputesPage />} />
                 </Route>
 
+                {/* Seller layout routes (Protected) */}
+                <Route element={<ProtectedRoute allowedRoles={['seller']}><SellerLayout /></ProtectedRoute>}>
+                    <Route path={ROUTES.SELLER} element={<SellerDashboardPage />} />
+                    <Route path={ROUTES.SELLER_LISTINGS} element={<SellerListingsPage />} />
+                    <Route path={ROUTES.SELLER_EDIT_PRODUCT} element={<SellerEditProductPage />} />
+                    <Route path={ROUTES.SELLER_ORDERS} element={<SellerOrdersPage />} />
+                </Route>
+
                 {/* Inspector layout routes */}
-                <Route element={<InspectorLayout />}>
+                <Route element={<ProtectedRoute allowedRoles={['inspector', 'admin']}><InspectorLayout /></ProtectedRoute>}>
                     <Route path={ROUTES.INSPECTOR} element={<InspectorDashboardPage />} />
                     <Route path={ROUTES.INSPECTOR_REQUESTS} element={<InspectionRequestsPage />} />
                     <Route path={ROUTES.INSPECTOR_FORM} element={<InspectionFormPage />} />

@@ -6,7 +6,9 @@ export const ROUTES = {
   SELL: '/sell',
   LOGIN: '/login',
   REGISTER: '/register',
+  VERIFY_EMAIL: '/verify-email',
   PROFILE: '/profile',
+  MESSAGES: '/messages',
   GUIDE: '/guide',
   // Admin routes
   ADMIN: '/admin',
@@ -20,9 +22,17 @@ export const ROUTES = {
   INSPECTOR_REQUESTS: '/inspector/requests',
   INSPECTOR_FORM: '/inspector/inspect/:id',
   INSPECTOR_HISTORY: '/inspector/history',
+  // Seller routes
+  SELLER: '/seller',
+  SELLER_LISTINGS: '/seller/listings',
+  SELLER_EDIT_PRODUCT: '/seller/listings/:id/edit',
+  SELLER_ORDERS: '/seller/orders',
+  // User routes
+  WISHLIST: '/wishlist',
 } as const;
 
 // Helper function to build dynamic routes
 export const buildRoute = {
   bikeDetail: (id: string | number) => `/bikes/${id}`,
+  sellerEditProduct: (id: string | number) => `/seller/listings/${id}/edit`,
 };

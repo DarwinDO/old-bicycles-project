@@ -1,27 +1,44 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { Bike, Mail, Lock, Eye, EyeOff } from 'lucide-react'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
+import { Bike, Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { ROUTES } from '@/constants/routes'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function LoginPage() {
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [showPassword, setShowPassword] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
+    const [error, setError] = useState<string | null>(null)
+    const { login } = useAuth()
     const navigate = useNavigate()
+    const location = useLocation()
+
+    // After login, redirect to the page they were trying to access (or home)
+    const fromLocation = (location.state as { from?: { pathname: string; search?: string } })?.from
+    const from = fromLocation
+        ? `${fromLocation.pathname}${fromLocation.search ?? ''}`
+        : ROUTES.HOME
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
+        setError(null)
         setIsLoading(true)
-        // Simulate login
-        setTimeout(() => {
+        try {
+            await login({ email, password })
+            navigate(from, { replace: true })
+        } catch (err: unknown) {
+            const message =
+                (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+                'Email hoặc mật khẩu không đúng. Vui lòng thử lại.'
+            setError(message)
+        } finally {
             setIsLoading(false)
-            navigate(ROUTES.HOME)
-        }, 1000)
+        }
     }
 
     return (
@@ -46,15 +63,22 @@ export default function LoginPage() {
                     </CardHeader>
                     <CardContent>
                         <form onSubmit={handleSubmit} className="space-y-4">
+                            {error && (
+                                <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                                    <AlertCircle className="h-4 w-4 shrink-0" />
+                                    {error}
+                                </div>
+                            )}
+
                             <div className="space-y-2">
                                 <label htmlFor="email" className="text-sm font-medium">
-                                    Email hoặc số điện thoại
+                                    Email
                                 </label>
                                 <div className="relative">
                                     <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                                     <Input
                                         id="email"
-                                        type="text"
+                                        type="email"
                                         placeholder="example@email.com"
                                         className="pl-10"
                                         value={email}

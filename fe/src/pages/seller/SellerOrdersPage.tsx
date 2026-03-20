@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { CheckCircle, Loader2, ShoppingBag, Truck, Wallet, XCircle } from 'lucide-react'
 import { ordersApi } from '@/api/orders.api'
 import { Badge } from '@/components/ui/badge'
@@ -286,6 +287,12 @@ export default function SellerOrdersPage() {
                             Không có thao tác thêm
                           </Button>
                         )}
+
+                      {order.fundingStatus === 'seller_payout_pending' && (
+                        <Button variant="outline" asChild>
+                          <Link to="/profile?tab=payout">Cập nhật tài khoản nhận tiền</Link>
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </div>

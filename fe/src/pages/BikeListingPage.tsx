@@ -1,20 +1,36 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
-import { Link } from 'react-router-dom'
-import { Search, MapPin, SlidersHorizontal, Grid3X3, List, Shield, X, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardFooter } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
-import { cn } from '@/lib/utils'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
+import {
+  ChevronLeft,
+  ChevronRight,
+  Grid3X3,
+  List,
+  Loader2,
+  MapPin,
+  Search,
+  Shield,
+  SlidersHorizontal,
+  X,
+} from 'lucide-react'
 import { productsApi } from '@/api/products.api'
 import { referenceDataApi } from '@/api/reference-data.api'
+import { vietnamProvincesApi } from '@/api/vietnam-provinces.api'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardFooter } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Separator } from '@/components/ui/separator'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
+import { buildRoute } from '@/constants/routes'
+import { buildMarketSearchParams, readMarketSearchState } from '@/lib/market-search'
+import { findAdministrativeOptionByName, type AdministrativeOption } from '@/lib/vietnamese-provinces'
+import { cn } from '@/lib/utils'
 import type { Product, ProductFilterRequest } from '@/types/product'
 import type { Brand, Category } from '@/types/reference-data'
-import { buildRoute } from '@/constants/routes'
 
 const PAGE_SIZE = 6
+const ALL_LOCATION_VALUE = '__all__'
 
 const CONDITIONS = [
   { value: 'new_90', label: 'Như mới (90%+)' },
@@ -31,8 +47,12 @@ function formatPrice(price: number): string {
 }
 
 function getPrimaryImage(product: Product): string {
-  const primary = product.images?.find((img) => img.isPrimary)
-  return primary?.url ?? product.images?.[0]?.url ?? 'https://images.unsplash.com/photo-1576435728678-68d0fbf94e91?w=400'
+  const primaryImage = product.images.find((image) => image.isPrimary)
+  return (
+    primaryImage?.url ??
+    product.images[0]?.url ??
+    'https://images.unsplash.com/photo-1576435728678-68d0fbf94e91?w=800'
+  )
 }
 
 interface FilterSectionProps {
@@ -51,21 +71,24 @@ function FilterSection({ title, children }: FilterSectionProps) {
 
 function ProductCardSkeleton() {
   return (
-    <div className="rounded-lg border bg-card overflow-hidden animate-pulse">
-      <div className="aspect-[4/3] bg-muted" />
-      <div className="p-4 space-y-2">
-        <div className="h-3 bg-muted rounded w-2/3" />
-        <div className="h-4 bg-muted rounded w-full" />
-        <div className="h-5 bg-muted rounded w-1/2" />
+    <div className="overflow-hidden rounded-lg border bg-card">
+      <div className="aspect-[4/3] animate-pulse bg-muted" />
+      <div className="space-y-2 p-4">
+        <div className="h-3 w-2/3 animate-pulse rounded bg-muted" />
+        <div className="h-4 w-full animate-pulse rounded bg-muted" />
+        <div className="h-5 w-1/2 animate-pulse rounded bg-muted" />
       </div>
-      <div className="px-4 py-3 border-t">
-        <div className="h-3 bg-muted rounded w-1/3" />
+      <div className="border-t px-4 py-3">
+        <div className="h-3 w-1/3 animate-pulse rounded bg-muted" />
       </div>
     </div>
   )
 }
 
 export default function BikeListingPage() {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const initialSearchState = useMemo(() => readMarketSearchState(searchParams), [searchParams])
+
   const [products, setProducts] = useState<Product[]>([])
   const [brands, setBrands] = useState<Brand[]>([])
   const [categories, setCategories] = useState<Category[]>([])
@@ -74,29 +97,173 @@ export default function BikeListingPage() {
   const [page, setPage] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
   const [totalElements, setTotalElements] = useState(0)
-
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
-  const [keyword, setKeyword] = useState('')
-  const [searchInput, setSearchInput] = useState('')
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const [selectedBrandId, setSelectedBrandId] = useState<string>('')
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('')
-  const [selectedCondition, setSelectedCondition] = useState<string>('')
+
+  const [keyword, setKeyword] = useState(initialSearchState.keyword)
+  const [searchInput, setSearchInput] = useState(initialSearchState.keyword)
+  const [province, setProvince] = useState(initialSearchState.province)
+  const [district, setDistrict] = useState(initialSearchState.district)
+  const [ward, setWard] = useState(initialSearchState.ward)
+  const [provinceOptions, setProvinceOptions] = useState<AdministrativeOption[]>([])
+  const [districtOptions, setDistrictOptions] = useState<AdministrativeOption[]>([])
+  const [wardOptions, setWardOptions] = useState<AdministrativeOption[]>([])
+  const [provinceOptionsLoading, setProvinceOptionsLoading] = useState(true)
+  const [districtOptionsLoading, setDistrictOptionsLoading] = useState(false)
+  const [wardOptionsLoading, setWardOptionsLoading] = useState(false)
+  const [selectedBrandId, setSelectedBrandId] = useState('')
+  const [selectedCategoryId, setSelectedCategoryId] = useState(initialSearchState.categoryId)
+  const [selectedCondition, setSelectedCondition] = useState('')
   const [verifiedOnly, setVerifiedOnly] = useState(false)
   const [minPrice, setMinPrice] = useState('')
   const [maxPrice, setMaxPrice] = useState('')
 
-  // Load reference data (brands, categories) once
   useEffect(() => {
     Promise.all([referenceDataApi.getBrands(), referenceDataApi.getCategories()])
-      .then(([b, c]) => {
-        setBrands(b)
-        setCategories(c)
+      .then(([loadedBrands, loadedCategories]) => {
+        setBrands(loadedBrands)
+        setCategories(loadedCategories)
       })
       .catch(() => {
-        // non-critical, filters still work without them
+        setBrands([])
+        setCategories([])
       })
   }, [])
+
+  useEffect(() => {
+    const nextState = readMarketSearchState(searchParams)
+    setKeyword(nextState.keyword)
+    setSearchInput(nextState.keyword)
+    setProvince(nextState.province)
+    setDistrict(nextState.district)
+    setWard(nextState.ward)
+    setSelectedCategoryId(nextState.categoryId)
+    setPage(0)
+  }, [searchParams])
+
+  useEffect(() => {
+    let ignore = false
+
+    async function loadProvinceOptions() {
+      setProvinceOptionsLoading(true)
+
+      try {
+        const result = await vietnamProvincesApi.getAll()
+
+        if (!ignore) {
+          setProvinceOptions(result)
+        }
+      } catch {
+        if (!ignore) {
+          setProvinceOptions([])
+        }
+      } finally {
+        if (!ignore) {
+          setProvinceOptionsLoading(false)
+        }
+      }
+    }
+
+    void loadProvinceOptions()
+
+    return () => {
+      ignore = true
+    }
+  }, [])
+
+  useEffect(() => {
+    const selectedProvince = findAdministrativeOptionByName(provinceOptions, province)
+
+    if (!selectedProvince) {
+      setDistrictOptions([])
+      setWardOptions([])
+      setDistrictOptionsLoading(false)
+      setWardOptionsLoading(false)
+      return
+    }
+
+    const selectedProvinceCode = selectedProvince.code
+    let ignore = false
+
+    async function loadDistrictOptions() {
+      setDistrictOptionsLoading(true)
+
+      try {
+        const result = await vietnamProvincesApi.getDistricts(selectedProvinceCode)
+
+        if (!ignore) {
+          setDistrictOptions(result)
+        }
+      } catch {
+        if (!ignore) {
+          setDistrictOptions([])
+        }
+      } finally {
+        if (!ignore) {
+          setDistrictOptionsLoading(false)
+        }
+      }
+    }
+
+    void loadDistrictOptions()
+
+    return () => {
+      ignore = true
+    }
+  }, [province, provinceOptions])
+
+  useEffect(() => {
+    const selectedDistrict = findAdministrativeOptionByName(districtOptions, district)
+
+    if (!selectedDistrict) {
+      setWardOptions([])
+      setWardOptionsLoading(false)
+      return
+    }
+
+    const selectedDistrictCode = selectedDistrict.code
+    let ignore = false
+
+    async function loadWardOptions() {
+      setWardOptionsLoading(true)
+
+      try {
+        const result = await vietnamProvincesApi.getWards(selectedDistrictCode)
+
+        if (!ignore) {
+          setWardOptions(result)
+        }
+      } catch {
+        if (!ignore) {
+          setWardOptions([])
+        }
+      } finally {
+        if (!ignore) {
+          setWardOptionsLoading(false)
+        }
+      }
+    }
+
+    void loadWardOptions()
+
+    return () => {
+      ignore = true
+    }
+  }, [district, districtOptions])
+
+  const updateSearchUrl = useCallback(
+    (nextState: Partial<{ keyword: string; province: string; district: string; ward: string; categoryId: string }>) => {
+      const params = buildMarketSearchParams({
+        keyword: nextState.keyword ?? keyword,
+        province: nextState.province ?? province,
+        district: nextState.district ?? district,
+        ward: nextState.ward ?? ward,
+        categoryId: nextState.categoryId ?? selectedCategoryId,
+      })
+
+      setSearchParams(params, { replace: true })
+    },
+    [district, keyword, province, selectedCategoryId, setSearchParams, ward],
+  )
 
   const fetchProducts = useCallback(async () => {
     setIsLoading(true)
@@ -106,7 +273,11 @@ export default function BikeListingPage() {
       page,
       size: PAGE_SIZE,
     }
+
     if (keyword) filters.keyword = keyword
+    if (province) filters.province = province
+    if (district) filters.district = district
+    if (ward) filters.ward = ward
     if (selectedBrandId) filters.brandId = selectedBrandId
     if (selectedCategoryId) filters.categoryId = selectedCategoryId
     if (selectedCondition) filters.condition = selectedCondition as ProductFilterRequest['condition']
@@ -124,31 +295,31 @@ export default function BikeListingPage() {
     } finally {
       setIsLoading(false)
     }
-  }, [page, keyword, selectedBrandId, selectedCategoryId, selectedCondition, verifiedOnly, minPrice, maxPrice])
+  }, [district, keyword, maxPrice, minPrice, page, province, selectedBrandId, selectedCategoryId, selectedCondition, verifiedOnly, ward])
 
   useEffect(() => {
-    fetchProducts()
+    void fetchProducts()
   }, [fetchProducts])
 
-  const handleSearch = useCallback((value: string) => {
-    setKeyword(value)
+  function handleSearchSubmit() {
+    const nextKeyword = searchInput.trim()
     setPage(0)
-  }, [])
-
-  const handleSearchInputChange = (value: string) => {
-    setSearchInput(value)
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-    if (value === '') {
-      // Reset ngay khi xóa hết
-      handleSearch('')
-      return
-    }
-    debounceRef.current = setTimeout(() => {
-      handleSearch(value)
-    }, 500)
+    setKeyword(nextKeyword)
+    updateSearchUrl({ keyword: nextKeyword, province, district, ward })
   }
 
-  const clearFilters = () => {
+  function handleCategoryChange(categoryId: string) {
+    setPage(0)
+    setSelectedCategoryId(categoryId)
+    updateSearchUrl({ categoryId })
+  }
+
+  function clearFilters() {
+    setSearchInput('')
+    setKeyword('')
+    setProvince('')
+    setDistrict('')
+    setWard('')
     setSelectedBrandId('')
     setSelectedCategoryId('')
     setSelectedCondition('')
@@ -156,9 +327,14 @@ export default function BikeListingPage() {
     setMinPrice('')
     setMaxPrice('')
     setPage(0)
+    setSearchParams(new URLSearchParams(), { replace: true })
   }
 
   const activeFiltersCount =
+    (keyword ? 1 : 0) +
+    (province ? 1 : 0) +
+    (district ? 1 : 0) +
+    (ward ? 1 : 0) +
     (selectedBrandId ? 1 : 0) +
     (selectedCategoryId ? 1 : 0) +
     (selectedCondition ? 1 : 0) +
@@ -166,29 +342,45 @@ export default function BikeListingPage() {
     (minPrice ? 1 : 0) +
     (maxPrice ? 1 : 0)
 
-  const FilterContent = () => (
+  const selectedCategory = categories.find((category) => category.id === selectedCategoryId)
+  const selectedBrand = brands.find((brand) => brand.id === selectedBrandId)
+  const selectedConditionLabel = CONDITIONS.find((condition) => condition.value === selectedCondition)?.label
+  const selectedProvinceOption = useMemo(
+    () => findAdministrativeOptionByName(provinceOptions, province),
+    [province, provinceOptions],
+  )
+  const selectedDistrictOption = useMemo(
+    () => findAdministrativeOptionByName(districtOptions, district),
+    [district, districtOptions],
+  )
+  const selectedWardOption = useMemo(
+    () => findAdministrativeOptionByName(wardOptions, ward),
+    [ward, wardOptions],
+  )
+
+  const filterContent = (
     <div className="space-y-6">
       <FilterSection title="Danh mục">
         <div className="space-y-1">
           <button
             className={cn(
-              'w-full text-left px-2 py-1.5 rounded text-sm transition-colors',
+              'w-full rounded px-2 py-1.5 text-left text-sm transition-colors',
               !selectedCategoryId ? 'bg-primary text-primary-foreground' : 'hover:bg-muted',
             )}
-            onClick={() => { setSelectedCategoryId(''); setPage(0) }}
+            onClick={() => handleCategoryChange('')}
           >
             Tất cả
           </button>
-          {categories.map((cat) => (
+          {categories.map((category) => (
             <button
-              key={cat.id}
+              key={category.id}
               className={cn(
-                'w-full text-left px-2 py-1.5 rounded text-sm transition-colors',
-                selectedCategoryId === cat.id ? 'bg-primary text-primary-foreground' : 'hover:bg-muted',
+                'w-full rounded px-2 py-1.5 text-left text-sm transition-colors',
+                selectedCategoryId === category.id ? 'bg-primary text-primary-foreground' : 'hover:bg-muted',
               )}
-              onClick={() => { setSelectedCategoryId(cat.id); setPage(0) }}
+              onClick={() => handleCategoryChange(category.id)}
             >
-              {cat.name}
+              {category.name}
             </button>
           ))}
         </div>
@@ -197,13 +389,16 @@ export default function BikeListingPage() {
       <Separator />
 
       <FilterSection title="Thương hiệu">
-        <div className="space-y-1 max-h-48 overflow-y-auto">
+        <div className="max-h-48 space-y-1 overflow-y-auto">
           {brands.map((brand) => (
-            <label key={brand.id} className="flex items-center gap-2 cursor-pointer py-0.5">
+            <label key={brand.id} className="flex cursor-pointer items-center gap-2 py-0.5">
               <input
                 type="checkbox"
                 checked={selectedBrandId === brand.id}
-                onChange={() => { setSelectedBrandId(prev => prev === brand.id ? '' : brand.id); setPage(0) }}
+                onChange={() => {
+                  setSelectedBrandId((current) => (current === brand.id ? '' : brand.id))
+                  setPage(0)
+                }}
                 className="h-4 w-4 rounded border-input text-primary focus:ring-primary"
               />
               <span className="text-sm">{brand.name}</span>
@@ -216,15 +411,18 @@ export default function BikeListingPage() {
 
       <FilterSection title="Tình trạng">
         <div className="space-y-1">
-          {CONDITIONS.map((c) => (
-            <label key={c.value} className="flex items-center gap-2 cursor-pointer py-0.5">
+          {CONDITIONS.map((condition) => (
+            <label key={condition.value} className="flex cursor-pointer items-center gap-2 py-0.5">
               <input
                 type="checkbox"
-                checked={selectedCondition === c.value}
-                onChange={() => { setSelectedCondition(prev => prev === c.value ? '' : c.value); setPage(0) }}
+                checked={selectedCondition === condition.value}
+                onChange={() => {
+                  setSelectedCondition((current) => (current === condition.value ? '' : condition.value))
+                  setPage(0)
+                }}
                 className="h-4 w-4 rounded border-input text-primary focus:ring-primary"
               />
-              <span className="text-sm">{c.label}</span>
+              <span className="text-sm">{condition.label}</span>
             </label>
           ))}
         </div>
@@ -233,12 +431,12 @@ export default function BikeListingPage() {
       <Separator />
 
       <FilterSection title="Khoảng giá (VNĐ)">
-        <div className="flex gap-2 items-center">
+        <div className="flex items-center gap-2">
           <Input
             type="number"
             placeholder="Từ"
             value={minPrice}
-            onChange={(e) => setMinPrice(e.target.value)}
+            onChange={(event) => setMinPrice(event.target.value)}
             className="text-sm"
           />
           <span className="text-muted-foreground">—</span>
@@ -246,11 +444,19 @@ export default function BikeListingPage() {
             type="number"
             placeholder="Đến"
             value={maxPrice}
-            onChange={(e) => setMaxPrice(e.target.value)}
+            onChange={(event) => setMaxPrice(event.target.value)}
             className="text-sm"
           />
         </div>
-        <Button size="sm" variant="outline" className="w-full" onClick={() => { setPage(0); fetchProducts() }}>
+        <Button
+          size="sm"
+          variant="outline"
+          className="w-full"
+          onClick={() => {
+            setPage(0)
+            void fetchProducts()
+          }}
+        >
           Áp dụng
         </Button>
       </FilterSection>
@@ -258,14 +464,17 @@ export default function BikeListingPage() {
       <Separator />
 
       <FilterSection title="Khác">
-        <label className="flex items-center gap-2 cursor-pointer">
+        <label className="flex cursor-pointer items-center gap-2">
           <input
             type="checkbox"
             checked={verifiedOnly}
-            onChange={(e) => { setVerifiedOnly(e.target.checked); setPage(0) }}
+            onChange={(event) => {
+              setVerifiedOnly(event.target.checked)
+              setPage(0)
+            }}
             className="h-4 w-4 rounded border-input text-primary focus:ring-primary"
           />
-          <span className="text-sm flex items-center gap-1">
+          <span className="flex items-center gap-1 text-sm">
             <Shield className="h-3.5 w-3.5 text-primary" />
             Chỉ xe đã kiểm định
           </span>
@@ -276,16 +485,15 @@ export default function BikeListingPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Page Header */}
       <div className="border-b bg-muted/40">
         <div className="container mx-auto px-4 py-8">
-          <h1 className="text-2xl font-bold text-foreground md:text-3xl">Tất cả Xe Đạp</h1>
+          <h1 className="text-2xl font-bold text-foreground md:text-3xl">Tất cả xe đạp</h1>
           <p className="mt-2 text-muted-foreground">
             {isLoading ? (
               'Đang tải...'
             ) : (
               <>
-                Tìm thấy <span className="font-medium text-foreground">{totalElements}</span> xe đạp
+                Tìm thấy <span className="font-medium text-foreground">{totalElements}</span> xe đạp công khai
               </>
             )}
           </p>
@@ -294,10 +502,9 @@ export default function BikeListingPage() {
 
       <div className="container mx-auto px-4 py-6">
         <div className="flex gap-8">
-          {/* Desktop Sidebar Filters */}
           <aside className="hidden w-64 shrink-0 lg:block">
             <div className="sticky top-24">
-              <div className="flex items-center justify-between mb-4">
+              <div className="mb-4 flex items-center justify-between">
                 <h3 className="font-semibold text-foreground">Bộ lọc</h3>
                 {activeFiltersCount > 0 && (
                   <Button variant="ghost" size="sm" onClick={clearFilters}>
@@ -305,54 +512,157 @@ export default function BikeListingPage() {
                   </Button>
                 )}
               </div>
-              <FilterContent />
+              {filterContent}
             </div>
           </aside>
 
-          {/* Main Content */}
-          <div className="flex-1 min-w-0">
-            {/* Search and Controls */}
-            <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="relative flex-1 max-w-md flex gap-2">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <div className="min-w-0 flex-1">
+            <div className="mb-6 flex flex-col gap-4">
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(0,1.2fr)_repeat(3,minmax(0,0.8fr))_auto]">
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     placeholder="Tìm kiếm xe đạp..."
-                    className="pl-10"
+                    className="h-11 pl-10"
                     value={searchInput}
-                    onChange={(e) => handleSearchInputChange(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSearch(searchInput)}
+                    onChange={(event) => setSearchInput(event.target.value)}
+                    onKeyDown={(event) => event.key === 'Enter' && handleSearchSubmit()}
                   />
                 </div>
-                <Button onClick={() => handleSearch(searchInput)} size="sm">Tìm</Button>
+
+                <div className="relative">
+                  <MapPin className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Select
+                    value={selectedProvinceOption?.name ?? ALL_LOCATION_VALUE}
+                    onValueChange={(value) => {
+                      const nextProvince = value === ALL_LOCATION_VALUE ? '' : value
+                      setPage(0)
+                      setProvince(nextProvince)
+                      setDistrict('')
+                      setWard('')
+                      setDistrictOptions([])
+                      setWardOptions([])
+                      updateSearchUrl({
+                        province: nextProvince,
+                        district: '',
+                        ward: '',
+                      })
+                    }}
+                    disabled={provinceOptionsLoading}
+                  >
+                    <SelectTrigger className="h-11 pl-10 text-left">
+                      <SelectValue
+                        placeholder={
+                          provinceOptionsLoading ? 'Đang tải tỉnh / thành phố...' : 'Tỉnh / thành phố'
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-72">
+                      <SelectItem value={ALL_LOCATION_VALUE}>Tất cả tỉnh / thành</SelectItem>
+                      {provinceOptions.map((option) => (
+                        <SelectItem key={option.code} value={option.name}>
+                          {option.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="relative">
+                  <MapPin className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Select
+                    value={selectedDistrictOption?.name ?? ALL_LOCATION_VALUE}
+                    onValueChange={(value) => {
+                      const nextDistrict = value === ALL_LOCATION_VALUE ? '' : value
+                      setPage(0)
+                      setDistrict(nextDistrict)
+                      setWard('')
+                      setWardOptions([])
+                      updateSearchUrl({
+                        district: nextDistrict,
+                        ward: '',
+                      })
+                    }}
+                    disabled={!selectedProvinceOption || districtOptionsLoading}
+                  >
+                    <SelectTrigger className="h-11 pl-10 text-left">
+                      <SelectValue
+                        placeholder={
+                          !selectedProvinceOption
+                            ? 'Quận / huyện'
+                            : districtOptionsLoading
+                              ? 'Đang tải quận / huyện...'
+                              : 'Quận / huyện'
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-72">
+                      <SelectItem value={ALL_LOCATION_VALUE}>Tất cả quận / huyện</SelectItem>
+                      {districtOptions.map((option) => (
+                        <SelectItem key={option.code} value={option.name}>
+                          {option.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="relative">
+                  <MapPin className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Select
+                    value={selectedWardOption?.name ?? ALL_LOCATION_VALUE}
+                    onValueChange={(value) => {
+                      const nextWard = value === ALL_LOCATION_VALUE ? '' : value
+                      setPage(0)
+                      setWard(nextWard)
+                      updateSearchUrl({ ward: nextWard })
+                    }}
+                    disabled={!selectedDistrictOption || wardOptionsLoading}
+                  >
+                    <SelectTrigger className="h-11 pl-10 text-left">
+                      <SelectValue
+                        placeholder={
+                          !selectedDistrictOption
+                            ? 'Phường / xã'
+                            : wardOptionsLoading
+                              ? 'Đang tải phường / xã...'
+                              : 'Phường / xã'
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-72">
+                      <SelectItem value={ALL_LOCATION_VALUE}>Tất cả phường / xã</SelectItem>
+                      {wardOptions.map((option) => (
+                        <SelectItem key={option.code} value={option.name}>
+                          {option.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <Button className="h-11 sm:col-span-2 xl:col-span-1" onClick={handleSearchSubmit}>
+                  Tìm kiếm
+                </Button>
               </div>
 
-              <div className="flex items-center gap-2">
-                {/* Mobile Filter Button */}
+              <div className="flex items-center justify-between gap-3">
                 <Sheet>
                   <SheetTrigger asChild>
                     <Button variant="outline" className="lg:hidden">
                       <SlidersHorizontal className="mr-2 h-4 w-4" />
                       Bộ lọc
-                      {activeFiltersCount > 0 && (
-                        <Badge variant="secondary" className="ml-2">
-                          {activeFiltersCount}
-                        </Badge>
-                      )}
                     </Button>
                   </SheetTrigger>
                   <SheetContent side="left" className="w-[300px] overflow-y-auto">
                     <SheetHeader>
                       <SheetTitle>Bộ lọc</SheetTitle>
                     </SheetHeader>
-                    <div className="mt-6">
-                      <FilterContent />
-                    </div>
+                    <div className="mt-6">{filterContent}</div>
                   </SheetContent>
                 </Sheet>
 
-                {/* View Mode Toggle */}
-                <div className="hidden sm:flex items-center border rounded-lg">
+                <div className="hidden items-center rounded-lg border sm:ml-auto sm:flex">
                   <Button
                     variant="ghost"
                     size="icon"
@@ -371,110 +681,182 @@ export default function BikeListingPage() {
                   </Button>
                 </div>
               </div>
+
+              {activeFiltersCount > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {keyword && (
+                    <Badge variant="secondary" className="gap-1">
+                      Từ khóa: {keyword}
+                      <X
+                        className="h-3 w-3 cursor-pointer"
+                        onClick={() => {
+                          setSearchInput('')
+                          setKeyword('')
+                          setPage(0)
+                          updateSearchUrl({ keyword: '' })
+                        }}
+                      />
+                    </Badge>
+                  )}
+
+                  {province && (
+                    <Badge variant="secondary" className="gap-1">
+                      Khu vực: {province}
+                      <X
+                        className="h-3 w-3 cursor-pointer"
+                        onClick={() => {
+                          setProvince('')
+                          setDistrict('')
+                          setWard('')
+                          setPage(0)
+                          updateSearchUrl({ province: '', district: '', ward: '' })
+                        }}
+                      />
+                    </Badge>
+                  )}
+
+                  {district && (
+                    <Badge variant="secondary" className="gap-1">
+                      Quận / huyện: {district}
+                      <X
+                        className="h-3 w-3 cursor-pointer"
+                        onClick={() => {
+                          setDistrict('')
+                          setWard('')
+                          setPage(0)
+                          updateSearchUrl({ district: '', ward: '' })
+                        }}
+                      />
+                    </Badge>
+                  )}
+
+                  {ward && (
+                    <Badge variant="secondary" className="gap-1">
+                      Phường / xã: {ward}
+                      <X
+                        className="h-3 w-3 cursor-pointer"
+                        onClick={() => {
+                          setWard('')
+                          setPage(0)
+                          updateSearchUrl({ ward: '' })
+                        }}
+                      />
+                    </Badge>
+                  )}
+
+                  {selectedCategory && (
+                    <Badge variant="secondary" className="gap-1">
+                      Danh mục: {selectedCategory.name}
+                      <X className="h-3 w-3 cursor-pointer" onClick={() => handleCategoryChange('')} />
+                    </Badge>
+                  )}
+
+                  {selectedBrand && (
+                    <Badge variant="secondary" className="gap-1">
+                      Thương hiệu: {selectedBrand.name}
+                      <X className="h-3 w-3 cursor-pointer" onClick={() => setSelectedBrandId('')} />
+                    </Badge>
+                  )}
+
+                  {selectedConditionLabel && (
+                    <Badge variant="secondary" className="gap-1">
+                      Tình trạng: {selectedConditionLabel}
+                      <X className="h-3 w-3 cursor-pointer" onClick={() => setSelectedCondition('')} />
+                    </Badge>
+                  )}
+
+                  {verifiedOnly && (
+                    <Badge variant="secondary" className="gap-1">
+                      Đã kiểm định
+                      <X className="h-3 w-3 cursor-pointer" onClick={() => setVerifiedOnly(false)} />
+                    </Badge>
+                  )}
+
+                  {(minPrice || maxPrice) && (
+                    <Badge variant="secondary" className="gap-1">
+                      Giá: {minPrice ? formatPrice(Number(minPrice)) : '0'} — {maxPrice ? formatPrice(Number(maxPrice)) : '∞'}
+                      <X
+                        className="h-3 w-3 cursor-pointer"
+                        onClick={() => {
+                          setMinPrice('')
+                          setMaxPrice('')
+                        }}
+                      />
+                    </Badge>
+                  )}
+                </div>
+              )}
             </div>
 
-            {/* Active Filter Tags */}
-            {activeFiltersCount > 0 && (
-              <div className="mb-4 flex flex-wrap gap-2">
-                {selectedBrandId && (
-                  <Badge variant="secondary" className="gap-1">
-                    {brands.find(b => b.id === selectedBrandId)?.name ?? selectedBrandId}
-                    <X className="h-3 w-3 cursor-pointer" onClick={() => { setSelectedBrandId(''); setPage(0) }} />
-                  </Badge>
-                )}
-                {selectedCategoryId && (
-                  <Badge variant="secondary" className="gap-1">
-                    {categories.find(c => c.id === selectedCategoryId)?.name ?? selectedCategoryId}
-                    <X className="h-3 w-3 cursor-pointer" onClick={() => { setSelectedCategoryId(''); setPage(0) }} />
-                  </Badge>
-                )}
-                {selectedCondition && (
-                  <Badge variant="secondary" className="gap-1">
-                    {CONDITIONS.find(c => c.value === selectedCondition)?.label ?? selectedCondition}
-                    <X className="h-3 w-3 cursor-pointer" onClick={() => { setSelectedCondition(''); setPage(0) }} />
-                  </Badge>
-                )}
-                {verifiedOnly && (
-                  <Badge variant="secondary" className="gap-1">
-                    Đã kiểm định
-                    <X className="h-3 w-3 cursor-pointer" onClick={() => { setVerifiedOnly(false); setPage(0) }} />
-                  </Badge>
-                )}
-                {(minPrice || maxPrice) && (
-                  <Badge variant="secondary" className="gap-1">
-                    Giá: {minPrice ? formatPrice(Number(minPrice)) : '0'} — {maxPrice ? formatPrice(Number(maxPrice)) : '∞'}
-                    <X className="h-3 w-3 cursor-pointer" onClick={() => { setMinPrice(''); setMaxPrice(''); setPage(0) }} />
-                  </Badge>
-                )}
-              </div>
-            )}
-
-            {/* Error State */}
             {error && !isLoading && (
               <div className="py-8 text-center">
                 <p className="text-destructive">{error}</p>
-                <Button variant="outline" className="mt-4" onClick={fetchProducts}>Thử lại</Button>
+                <Button variant="outline" className="mt-4" onClick={() => void fetchProducts()}>
+                  Thử lại
+                </Button>
               </div>
             )}
 
-            {/* Loading Skeleton */}
-            {isLoading && (
-              <div className={cn(
-                'grid gap-6',
-                viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-3' : 'grid-cols-1',
-              )}>
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <ProductCardSkeleton key={i} />
+            {isLoading ? (
+              <div
+                className={cn(
+                  'grid gap-6',
+                  viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-3' : 'grid-cols-1',
+                )}
+              >
+                {Array.from({ length: 6 }).map((_, index) => (
+                  <ProductCardSkeleton key={index} />
                 ))}
               </div>
-            )}
+            ) : null}
 
-            {/* Product Grid/List */}
             {!isLoading && !error && products.length > 0 && (
-              <div className={cn(
-                'grid gap-6',
-                viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-3' : 'grid-cols-1',
-              )}>
+              <div
+                className={cn(
+                  'grid gap-6',
+                  viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-3' : 'grid-cols-1',
+                )}
+              >
                 {products.map((product) => (
                   <Link key={product.id} to={buildRoute.bikeDetail(product.id)}>
-                    <Card className={cn(
-                      'group overflow-hidden transition-all hover:shadow-lg cursor-pointer',
-                      viewMode === 'list' && 'flex',
-                    )}>
-                      <div className={cn(
-                        'relative overflow-hidden',
-                        viewMode === 'grid' ? 'aspect-[4/3]' : 'w-48 shrink-0',
-                      )}>
+                    <Card className={cn('group cursor-pointer overflow-hidden transition-all hover:shadow-lg', viewMode === 'list' && 'flex')}>
+                      <div className={cn('relative overflow-hidden', viewMode === 'grid' ? 'aspect-[4/3]' : 'w-48 shrink-0')}>
                         <img
                           src={getPrimaryImage(product)}
                           alt={product.title}
                           className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                         />
-                        <div className="absolute left-3 top-3 flex gap-2 flex-wrap">
+
+                        <div className="absolute left-3 top-3 flex flex-wrap gap-2">
                           {product.condition && (
                             <Badge variant="success">
-                              {CONDITIONS.find(c => c.value === product.condition)?.label ?? product.condition}
+                              {product.condition === 'new_90'
+                                ? 'Như mới'
+                                : product.condition === 'used'
+                                  ? 'Đã qua sử dụng'
+                                  : 'Cần sửa chữa'}
                             </Badge>
                           )}
                           {product.isVerified && (
                             <Badge variant="secondary" className="gap-1">
                               <Shield className="h-3 w-3" />
+                              Đã kiểm định
                             </Badge>
                           )}
                         </div>
                       </div>
+
                       <div className={cn(viewMode === 'list' && 'flex flex-1 flex-col')}>
                         <CardContent className="p-4">
-                          <div className="text-xs text-muted-foreground mb-1">
+                          <div className="mb-1 text-xs text-muted-foreground">
                             {[product.categoryName, product.brandName].filter(Boolean).join(' • ')}
                           </div>
-                          <h3 className="font-semibold text-foreground line-clamp-1 group-hover:text-primary transition-colors">
+                          <h3 className="line-clamp-1 font-semibold text-foreground transition-colors group-hover:text-primary">
                             {product.title}
                           </h3>
-                          <p className="mt-2 text-lg font-bold text-primary">
-                            {formatPrice(product.price)}
-                          </p>
+                          <p className="mt-2 text-lg font-bold text-primary">{formatPrice(product.price)}</p>
                         </CardContent>
+
                         <CardFooter className={cn('border-t px-4 py-3', viewMode === 'list' && 'mt-auto')}>
                           <div className="flex items-center gap-1 text-sm text-muted-foreground">
                             <MapPin className="h-3.5 w-3.5" />
@@ -488,10 +870,9 @@ export default function BikeListingPage() {
               </div>
             )}
 
-            {/* Empty State */}
             {!isLoading && !error && products.length === 0 && (
               <div className="py-16 text-center">
-                <div className="mx-auto h-24 w-24 rounded-full bg-muted flex items-center justify-center mb-4">
+                <div className="mx-auto mb-4 flex h-24 w-24 items-center justify-center rounded-full bg-muted">
                   <Search className="h-10 w-10 text-muted-foreground" />
                 </div>
                 <h3 className="text-lg font-medium text-foreground">Không tìm thấy xe đạp</h3>
@@ -504,36 +885,34 @@ export default function BikeListingPage() {
               </div>
             )}
 
-            {/* Pagination */}
             {!isLoading && totalPages > 1 && (
               <div className="mt-8 flex items-center justify-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setPage(p => Math.max(0, p - 1))}
+                  onClick={() => setPage((currentPage) => Math.max(0, currentPage - 1))}
                   disabled={page === 0}
                 >
-                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  <ChevronLeft className="mr-1 h-4 w-4" />
                   Trước
                 </Button>
-                <span className="text-sm text-muted-foreground px-4">
+                <span className="px-4 text-sm text-muted-foreground">
                   Trang {page + 1} / {totalPages}
                 </span>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+                  onClick={() => setPage((currentPage) => Math.min(totalPages - 1, currentPage + 1))}
                   disabled={page >= totalPages - 1}
                 >
                   Tiếp
-                  <ChevronRight className="h-4 w-4 ml-1" />
+                  <ChevronRight className="ml-1 h-4 w-4" />
                 </Button>
               </div>
             )}
 
-            {/* Loading indicator for page change */}
             {isLoading && products.length > 0 && (
-              <div className="flex justify-center mt-4">
+              <div className="mt-4 flex justify-center">
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
             )}

@@ -55,6 +55,7 @@ export interface Product {
   frameMaterialName?: string | null
   images: ProductImage[]
   isVerified: boolean
+  lockedForTransaction: boolean
   inspection?: ProductInspectionInfo | null
 }
 
@@ -71,6 +72,8 @@ export interface ProductFilterRequest {
   minPrice?: number
   maxPrice?: number
   province?: string
+  district?: string
+  ward?: string
   hasInspection?: boolean
   sortBy?: string
 }

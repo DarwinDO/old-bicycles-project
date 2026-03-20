@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { Bell, Bike, ChevronDown, LayoutDashboard, LogIn, LogOut, Menu, MessageCircle, Plus, User } from 'lucide-react'
+import { Bike, ChevronDown, LayoutDashboard, LogIn, LogOut, Menu, MessageCircle, Plus, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -16,17 +16,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { NotificationBellButton } from '@/components/notifications/NotificationBellButton'
 import { authService } from '@/services/authService'
 import { clearStoredChatUnreadCount, getStoredChatUnreadCount, incrementStoredChatUnreadCount } from '@/lib/chat-unread'
+import { useNotificationUnreadCount } from '@/lib/use-notification-unread-count'
 import { createChatSocketClient, type ChatSocketClient } from '@/sockets/chat.stomp'
-
-const navigation = [
-  { name: 'Trang chủ', href: ROUTES.HOME },
-  { name: 'Mua xe', href: ROUTES.MARKET },
-  { name: 'Bán xe', href: ROUTES.SELL },
-  { name: 'Tin nhắn', href: ROUTES.MESSAGES },
-  { name: 'Hướng dẫn', href: ROUTES.GUIDE },
-]
+import {
+  canAccessSellerEntry,
+  getAppHeaderNavigation,
+  getSellEntryHref,
+} from './app-header-visibility'
 
 function ChatUnreadDot({ unreadCount }: { unreadCount: number }) {
   if (unreadCount <= 0) {
@@ -46,6 +45,10 @@ export default function AppHeader() {
   const location = useLocation()
   const navigate = useNavigate()
   const { user, isAuthenticated, logout } = useAuth()
+  const navigation = getAppHeaderNavigation(user?.role, isAuthenticated)
+  const showSellerEntry = canAccessSellerEntry(user?.role, isAuthenticated)
+  const sellEntryHref = getSellEntryHref(user?.role, isAuthenticated)
+  const notificationUnreadCount = useNotificationUnreadCount()
   const socketRef = useRef<ChatSocketClient | null>(null)
   const activePathRef = useRef(location.pathname)
 
@@ -72,7 +75,6 @@ export default function AppHeader() {
     }
 
     const socketToken = token
-
     let cancelled = false
     let unsubscribeInbox: (() => void) | null = null
 
@@ -141,16 +143,16 @@ export default function AppHeader() {
           <span className="text-xl font-bold text-foreground">BikeExchange</span>
         </Link>
 
-        <div className="hidden md:flex md:gap-1">
+        <div className="hidden gap-1 md:flex">
           {navigation.map((item) => (
             <Link
               key={item.name}
               to={item.href}
               className={cn(
-                'flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors',
+                'flex items-center rounded-lg px-4 py-2 text-sm font-medium transition-colors',
                 isActive(item.href)
                   ? 'bg-primary/10 text-primary'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted',
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground',
               )}
             >
               <span>{item.name}</span>
@@ -159,25 +161,32 @@ export default function AppHeader() {
           ))}
         </div>
 
-        <div className="hidden md:flex md:items-center md:gap-2">
+        <div className="hidden items-center gap-2 md:flex">
           <ThemeToggle />
           {isAuthenticated && user ? (
             <>
-              <Button size="sm" onClick={() => navigate(ROUTES.SELL)}>
-                <Plus className="mr-2 h-4 w-4" />
-                Đăng tin
-              </Button>
-              <Button variant="ghost" size="icon" className="relative" onClick={() => navigate('/notifications')}>
-                <Bell className="h-5 w-5 text-muted-foreground hover:text-foreground" />
-              </Button>
+              {showSellerEntry && (
+                <Button size="sm" onClick={() => navigate(sellEntryHref)}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Đăng tin
+                </Button>
+              )}
+              <NotificationBellButton
+                unreadCount={notificationUnreadCount}
+                onClick={() => navigate(ROUTES.NOTIFICATIONS)}
+              />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-muted transition-colors">
+                  <button className="flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-muted">
                     <Avatar className="h-8 w-8">
                       <AvatarImage src={user.avatar ?? undefined} />
-                      <AvatarFallback className="text-sm">{(user.firstName || user.email)?.[0]?.toUpperCase()}</AvatarFallback>
+                      <AvatarFallback className="text-sm">
+                        {(user.firstName || user.email)?.[0]?.toUpperCase()}
+                      </AvatarFallback>
                     </Avatar>
-                    <span className="text-sm font-medium max-w-[120px] truncate">{user.name || user.email}</span>
+                    <span className="max-w-[120px] truncate text-sm font-medium">
+                      {user.name || user.email}
+                    </span>
                     <ChevronDown className="h-4 w-4 text-muted-foreground" />
                   </button>
                 </DropdownMenuTrigger>
@@ -192,7 +201,6 @@ export default function AppHeader() {
                     <User className="mr-2 h-4 w-4" />
                     Trang cá nhân
                   </DropdownMenuItem>
-
                   {user.role === 'admin' && (
                     <DropdownMenuItem onClick={() => navigate(ROUTES.ADMIN)}>
                       <LayoutDashboard className="mr-2 h-4 w-4" />
@@ -225,7 +233,7 @@ export default function AppHeader() {
                 <LogIn className="mr-2 h-4 w-4" />
                 Đăng nhập
               </Button>
-              <Button size="sm" onClick={() => navigate(ROUTES.SELL)}>
+              <Button size="sm" onClick={() => navigate(sellEntryHref)}>
                 <Plus className="mr-2 h-4 w-4" />
                 Đăng tin
               </Button>
@@ -251,6 +259,7 @@ export default function AppHeader() {
                   BikeExchange
                 </SheetTitle>
               </SheetHeader>
+
               <div className="mt-6 flex flex-col gap-2">
                 {isAuthenticated && user && (
                   <div className="mb-2 flex items-center justify-between rounded-lg bg-muted px-3 py-2">
@@ -261,12 +270,18 @@ export default function AppHeader() {
                       </Avatar>
                       <div className="flex flex-col">
                         <span className="text-sm font-medium">{user.name || user.email}</span>
-                        <span className="text-xs text-muted-foreground truncate max-w-[150px]">{user.email}</span>
+                        <span className="max-w-[150px] truncate text-xs text-muted-foreground">
+                          {user.email}
+                        </span>
                       </div>
                     </div>
-                    <Button variant="ghost" size="icon" onClick={() => { navigate('/notifications'); setMobileMenuOpen(false) }}>
-                      <Bell className="h-5 w-5" />
-                    </Button>
+                    <NotificationBellButton
+                      unreadCount={notificationUnreadCount}
+                      onClick={() => {
+                        navigate(ROUTES.NOTIFICATIONS)
+                        setMobileMenuOpen(false)
+                      }}
+                    />
                   </div>
                 )}
 
@@ -276,10 +291,10 @@ export default function AppHeader() {
                     to={item.href}
                     onClick={() => setMobileMenuOpen(false)}
                     className={cn(
-                      'flex items-center justify-between px-4 py-3 text-base font-medium rounded-lg transition-colors',
+                      'flex items-center justify-between rounded-lg px-4 py-3 text-base font-medium transition-colors',
                       isActive(item.href)
                         ? 'bg-primary/10 text-primary'
-                        : 'text-muted-foreground hover:text-foreground hover:bg-muted',
+                        : 'text-muted-foreground hover:bg-muted hover:text-foreground',
                     )}
                   >
                     <span>{item.name}</span>
@@ -299,17 +314,22 @@ export default function AppHeader() {
                     <Button
                       variant="outline"
                       className="justify-start"
-                      onClick={() => { navigate(ROUTES.PROFILE); setMobileMenuOpen(false) }}
+                      onClick={() => {
+                        navigate(ROUTES.PROFILE)
+                        setMobileMenuOpen(false)
+                      }}
                     >
                       <User className="mr-2 h-4 w-4" />
                       Trang cá nhân
                     </Button>
-
                     {user?.role === 'admin' && (
                       <Button
                         variant="outline"
                         className="justify-start"
-                        onClick={() => { navigate(ROUTES.ADMIN); setMobileMenuOpen(false) }}
+                        onClick={() => {
+                          navigate(ROUTES.ADMIN)
+                          setMobileMenuOpen(false)
+                        }}
                       >
                         <LayoutDashboard className="mr-2 h-4 w-4" />
                         Trang quản trị
@@ -319,7 +339,10 @@ export default function AppHeader() {
                       <Button
                         variant="outline"
                         className="justify-start"
-                        onClick={() => { navigate(ROUTES.INSPECTOR); setMobileMenuOpen(false) }}
+                        onClick={() => {
+                          navigate(ROUTES.INSPECTOR)
+                          setMobileMenuOpen(false)
+                        }}
                       >
                         <LayoutDashboard className="mr-2 h-4 w-4" />
                         Trang kiểm định
@@ -329,7 +352,10 @@ export default function AppHeader() {
                       <Button
                         variant="outline"
                         className="justify-start"
-                        onClick={() => { navigate(ROUTES.SELLER); setMobileMenuOpen(false) }}
+                        onClick={() => {
+                          navigate(ROUTES.SELLER)
+                          setMobileMenuOpen(false)
+                        }}
                       >
                         <LayoutDashboard className="mr-2 h-4 w-4" />
                         Trang bán hàng
@@ -338,7 +364,10 @@ export default function AppHeader() {
                     <Button
                       variant="destructive"
                       className="justify-start"
-                      onClick={() => { void handleLogout(); setMobileMenuOpen(false) }}
+                      onClick={() => {
+                        void handleLogout()
+                        setMobileMenuOpen(false)
+                      }}
                     >
                       <LogOut className="mr-2 h-4 w-4" />
                       Đăng xuất
@@ -349,18 +378,26 @@ export default function AppHeader() {
                     <Button
                       variant="outline"
                       className="justify-start"
-                      onClick={() => { navigate(ROUTES.LOGIN); setMobileMenuOpen(false) }}
+                      onClick={() => {
+                        navigate(ROUTES.LOGIN)
+                        setMobileMenuOpen(false)
+                      }}
                     >
                       <User className="mr-2 h-4 w-4" />
                       Đăng nhập
                     </Button>
-                    <Button
-                      className="justify-start"
-                      onClick={() => { navigate(ROUTES.SELL); setMobileMenuOpen(false) }}
-                    >
-                      <Plus className="mr-2 h-4 w-4" />
-                      Đăng tin bán xe
-                    </Button>
+                    {showSellerEntry && (
+                      <Button
+                        className="justify-start"
+                        onClick={() => {
+                          navigate(sellEntryHref)
+                          setMobileMenuOpen(false)
+                        }}
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Đăng tin bán xe
+                      </Button>
+                    )}
                   </>
                 )}
               </div>

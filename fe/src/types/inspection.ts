@@ -55,6 +55,7 @@ export interface InspectionHistoryItem {
   inspectorName?: string | null
   overallScore?: number | null
   passed?: boolean | null
+  reportFileUrl?: string | null
   requestedAt: string
   evaluatedAt?: string | null
   validUntil?: string | null

@@ -48,10 +48,19 @@ export function getPaymentOptionLabel(order: Order) {
 }
 
 export function getOrderStatusMeta(order: Order): OrderStatusMeta {
+  if (order.status === 'completed' && order.fundingStatus === 'seller_payout_pending') {
+    return {
+      label: 'Chờ giải ngân cho người bán',
+      helperText:
+        'Người mua đã xác nhận nhận xe. Hệ thống đang chờ admin chuyển khoản thủ công tiền cọc cho người bán. Nếu người bán chưa khai tài khoản nhận tiền, họ cần cập nhật payout profile.',
+      tone: 'warning',
+    }
+  }
+
   if (order.status === 'completed') {
     return {
       label: 'Hoàn tất',
-      helperText: 'Giao dịch đã hoàn tất và tiền đã được giải ngân cho người bán.',
+      helperText: 'Giao dịch đã hoàn tất và tiền cọc đã được giải ngân cho người bán.',
       tone: 'success',
     }
   }
@@ -59,7 +68,19 @@ export function getOrderStatusMeta(order: Order): OrderStatusMeta {
   if (order.status === 'awaiting_buyer_confirmation' && order.fundingStatus === 'held') {
     return {
       label: 'Chờ người mua xác nhận',
-      helperText: 'Người bán đã báo giao xe. Người mua cần xác nhận đã nhận xe để hệ thống giải ngân.',
+      helperText: 'Người bán đã báo giao xe. Người mua cần xác nhận đã nhận xe để hệ thống chuyển sang bước giải ngân.',
+      tone: 'warning',
+    }
+  }
+
+  if (
+    (order.status === 'deposited' || order.status === 'awaiting_buyer_confirmation') &&
+    order.fundingStatus === 'refund_pending_transfer'
+  ) {
+    return {
+      label: 'Chờ chuyển khoản hoàn tiền',
+      helperText:
+        'Admin đã duyệt yêu cầu hoàn tiền. Hệ thống đang chờ chuyển khoản thủ công lại cho người mua. Nếu chưa khai tài khoản nhận hoàn tiền, hãy cập nhật payout profile.',
       tone: 'warning',
     }
   }

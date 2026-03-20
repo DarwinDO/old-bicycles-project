@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, CheckCircle, Loader2, ShieldCheck, XCircle } from 'lucide-react'
+import { ArrowLeft, CheckCircle, ExternalLink, Loader2, Paperclip, ShieldCheck, XCircle } from 'lucide-react'
 import { inspectionsApi } from '@/api/inspections.api'
 import { productsApi } from '@/api/products.api'
 import { Button } from '@/components/ui/button'
@@ -83,6 +83,7 @@ export default function InspectionFormPage() {
   const [scores, setScores] = useState<ScoreItem[]>(INITIAL_SCORES)
   const [wearPercentage, setWearPercentage] = useState('10')
   const [notes, setNotes] = useState('')
+  const [reportFile, setReportFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -110,8 +111,8 @@ export default function InspectionFormPage() {
         setProduct(productResult)
         setInspection(inspectionResult)
         setScores(buildScoresFromInspection(inspectionResult))
-        setWearPercentage(String(inspectionResult.wearPercentage ?? 10))
-        setNotes(inspectionResult.expertNotes ?? '')
+        setWearPercentage(String(inspectionResult?.wearPercentage ?? 10))
+        setNotes(inspectionResult?.expertNotes ?? '')
         setError(null)
       } catch (requestError) {
         if (ignore) {
@@ -155,6 +156,11 @@ export default function InspectionFormPage() {
     setError(null)
 
     try {
+      if (reportFile) {
+        const uploadedInspection = await inspectionsApi.uploadReport(id, reportFile)
+        setInspection(uploadedInspection)
+      }
+
       const payload: InspectionEvaluationRequest = {
         frameScore: scores.find((item) => item.id === 'frameScore')!.score,
         forkScore: scores.find((item) => item.id === 'forkScore')!.score,
@@ -295,6 +301,40 @@ export default function InspectionFormPage() {
               placeholder="Ghi nhận các lỗi quan trọng, khuyến nghị sửa chữa hoặc điểm mạnh của xe..."
               className="mt-4 h-36 w-full rounded-lg border border-border bg-muted p-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             />
+
+            <div className="mt-6 space-y-3 border-t border-border pt-4">
+              <div>
+                <h4 className="font-medium text-foreground">Báo cáo đính kèm</h4>
+                <p className="text-sm text-muted-foreground">
+                  Có thể tải lên file PDF hoặc tài liệu scan để seller xem lại sau khi có kết quả kiểm định.
+                </p>
+              </div>
+
+              <Input
+                type="file"
+                accept=".pdf,.doc,.docx,image/*"
+                onChange={(event) => setReportFile(event.target.files?.[0] ?? null)}
+              />
+
+              {reportFile && (
+                <div className="flex items-center gap-2 text-sm text-primary">
+                  <Paperclip className="h-4 w-4" />
+                  <span>{reportFile.name}</span>
+                </div>
+              )}
+
+              {inspection?.reportFileUrl && !reportFile && (
+                <a
+                  href={inspection.reportFileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  Xem báo cáo hiện tại
+                </a>
+              )}
+            </div>
           </div>
 
           <div className="flex flex-col gap-3 sm:flex-row">

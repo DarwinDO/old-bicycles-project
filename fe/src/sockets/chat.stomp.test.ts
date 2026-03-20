@@ -15,6 +15,7 @@ const {
   class MockStompClient {
     connected = false
     active = false
+    options: { webSocketFactory?: () => unknown }
     subscriptions: MockSubscription[] = []
     onConnect?: () => void
     onStompError?: (frame: { headers: Record<string, string> }) => void
@@ -23,6 +24,7 @@ const {
     onDisconnect?: () => void
     activate = vi.fn(() => {
       this.active = true
+      this.options.webSocketFactory?.()
     })
     deactivate = vi.fn(async () => {
       this.active = false
@@ -39,7 +41,8 @@ const {
     })
     publish = vi.fn()
 
-    constructor() {
+    constructor(options: { webSocketFactory?: () => unknown } = {}) {
+      this.options = options
       mockClients.push(this)
     }
 
@@ -69,12 +72,13 @@ vi.mock('sockjs-client/dist/sockjs', () => ({
   default: mockSockJsFactory,
 }))
 
-import { createChatSocketClient } from './chat.stomp'
+import { createChatSocketClient, getSocketBaseUrl } from './chat.stomp'
 
 describe('createChatSocketClient', () => {
   beforeEach(() => {
     mockClients.length = 0
     mockSockJsFactory.mockReset()
+    vi.unstubAllEnvs()
   })
 
   it('resubscribes desired destinations after reconnect', async () => {
@@ -120,5 +124,45 @@ describe('createChatSocketClient', () => {
     unsubscribeListener()
 
     expect(states).toEqual([false, true, false])
+  })
+
+  it('publishes chat messages as JSON payloads', async () => {
+    const socketClient = createChatSocketClient('token-123')
+    const connectPromise = socketClient.connect()
+    const mockClient = mockClients[0]
+
+    mockClient.simulateConnect()
+    await connectPromise
+
+    socketClient.sendMessage({
+      conversationId: 'conversation-1',
+      content: 'Xin chào',
+    })
+
+    expect(mockClient.publish).toHaveBeenCalledWith({
+      destination: '/app/chat.sendMessage',
+      headers: {
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        conversationId: 'conversation-1',
+        content: 'Xin chào',
+      }),
+    })
+  })
+
+  it('uses direct backend websocket target during local development', async () => {
+    vi.stubEnv('VITE_DEV_PROXY_TARGET', 'http://localhost:8080')
+
+    expect(getSocketBaseUrl()).toBe('http://localhost:8080')
+
+    const socketClient = createChatSocketClient('token-123')
+    const connectPromise = socketClient.connect()
+    const mockClient = mockClients[0]
+
+    expect(mockSockJsFactory).toHaveBeenCalledWith('http://localhost:8080/ws')
+
+    mockClient.simulateConnect()
+    await connectPromise
   })
 })

@@ -2,6 +2,21 @@
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
+## Environment
+
+This FE repo does not require a committed `.env` file to run locally.
+
+- Copy [`.env.example`](/e:/Old_bicycle_system/old-bicycles-project/fe/.env.example) to `.env` only if you need custom targets.
+- If `VITE_API_BASE_URL` is empty, frontend requests stay relative like `/api/...`.
+- In local dev, Vite proxy forwards `/api` and `/ws` to `VITE_DEV_PROXY_TARGET`.
+- The default proxy target in [vite.config.ts](/e:/Old_bicycle_system/old-bicycles-project/fe/vite.config.ts) is `http://localhost:8080`.
+
+This means the usual local setup is:
+
+1. Start Spring Boot backend on `localhost:8080`
+2. Start Vite frontend on `localhost:5173`
+3. Let Vite proxy handle `/api` and `/ws`
+
 Currently, two official plugins are available:
 
 - [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh

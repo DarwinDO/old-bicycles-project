@@ -9,6 +9,7 @@ import {
   formatConversationTimestamp,
   getConversationPartner,
   getConversationPreview,
+  shouldShowConversationInList,
   sortConversationsNewestFirst,
 } from '@/lib/chat-display'
 import { cn } from '@/lib/utils'
@@ -70,6 +71,10 @@ export function ConversationList({ selectedId, onSelect }: ConversationListProps
     }
   }, [user])
 
+  const visibleConversations = useMemo(() => {
+    return conversations.filter((conversation) => shouldShowConversationInList(conversation, selectedId))
+  }, [conversations, selectedId])
+
   const filteredConversations = useMemo(() => {
     if (!user) {
       return []
@@ -78,17 +83,17 @@ export function ConversationList({ selectedId, onSelect }: ConversationListProps
     const normalizedQuery = searchQuery.trim().toLowerCase()
 
     if (!normalizedQuery) {
-      return conversations
+      return visibleConversations
     }
 
-    return conversations.filter((conversation) => {
+    return visibleConversations.filter((conversation) => {
       const partner = getConversationPartner(conversation, user.id)
       return [partner.name, conversation.productTitle, getConversationPreview(conversation)]
         .join(' ')
         .toLowerCase()
         .includes(normalizedQuery)
     })
-  }, [conversations, searchQuery, user])
+  }, [searchQuery, user, visibleConversations])
 
   return (
     <div className="flex h-full flex-col">

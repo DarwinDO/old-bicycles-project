@@ -4,6 +4,7 @@ export const ROUTES = {
   MARKET: '/market',
   BIKE_DETAIL: '/bikes/:id',
   SELL: '/sell',
+  NOTIFICATIONS: '/notifications',
   LOGIN: '/login',
   REGISTER: '/register',
   VERIFY_EMAIL: '/verify-email',
@@ -17,6 +18,7 @@ export const ROUTES = {
   ADMIN_REPORTS: '/admin/reports',
   ADMIN_CATEGORIES: '/admin/categories',
   ADMIN_DISPUTES: '/admin/disputes',
+  ADMIN_PAYOUTS: '/admin/payouts',
   // Inspector routes
   INSPECTOR: '/inspector',
   INSPECTOR_REQUESTS: '/inspector/requests',
@@ -25,6 +27,7 @@ export const ROUTES = {
   // Seller routes
   SELLER: '/seller',
   SELLER_LISTINGS: '/seller/listings',
+  SELLER_NEW_PRODUCT: '/seller/listings/new',
   SELLER_EDIT_PRODUCT: '/seller/listings/:id/edit',
   SELLER_ORDERS: '/seller/orders',
   // User routes
@@ -34,5 +37,24 @@ export const ROUTES = {
 // Helper function to build dynamic routes
 export const buildRoute = {
   bikeDetail: (id: string | number) => `/bikes/${id}`,
+  market: (params?: Record<string, string | number | null | undefined>) => {
+    if (!params) {
+      return ROUTES.MARKET
+    }
+
+    const nextParams = new URLSearchParams()
+
+    Object.entries(params).forEach(([key, value]) => {
+      if (value === null || value === undefined || value === '') {
+        return
+      }
+
+      nextParams.set(key, String(value))
+    })
+
+    const queryString = nextParams.toString()
+    return queryString ? `${ROUTES.MARKET}?${queryString}` : ROUTES.MARKET
+  },
+  sellerNewProduct: () => ROUTES.SELLER_NEW_PRODUCT,
   sellerEditProduct: (id: string | number) => `/seller/listings/${id}/edit`,
 };

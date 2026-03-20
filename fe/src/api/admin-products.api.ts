@@ -17,6 +17,10 @@ export const adminProductsApi = {
     })
   },
 
+  getById(productId: string) {
+    return getResult<Product>(`/api/admin/products/${productId}`)
+  },
+
   updateStatus(productId: string, status: ProductStatus) {
     return patchResult<Product>(`/api/admin/products/${productId}/status`, undefined, {
       params: { status },
@@ -25,6 +29,10 @@ export const adminProductsApi = {
 
   approve(productId: string) {
     return patchResult<Product>(`/api/admin/products/${productId}/approve`)
+  },
+
+  routeToInspection(productId: string) {
+    return patchResult<unknown>(`/api/admin/products/${productId}/send-to-inspection`)
   },
 
   hide(productId: string) {

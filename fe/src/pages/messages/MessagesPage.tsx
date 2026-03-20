@@ -60,7 +60,7 @@ export default function MessagesPage() {
   }, [isAuthenticated, productId, setSearchParams])
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] w-full overflow-hidden bg-background">
+    <div className="flex h-[calc(100vh-4rem)] min-h-0 w-full overflow-hidden bg-background">
       {bootstrapError && (
         <div className="absolute inset-x-0 top-0 z-20 border-b border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">
           {bootstrapError}
@@ -70,7 +70,7 @@ export default function MessagesPage() {
       <div
         className={`
           ${selectedConversation ? 'hidden md:flex' : 'flex'}
-          w-full md:w-80 lg:w-96 flex-col border-r bg-muted/20
+          min-h-0 w-full md:w-80 lg:w-96 flex-col border-r bg-muted/20
         `}
       >
         <ConversationList
@@ -82,7 +82,7 @@ export default function MessagesPage() {
       <div
         className={`
           ${selectedConversation ? 'flex' : 'hidden md:flex'}
-          relative flex-1 flex-col bg-background
+          relative min-h-0 flex-1 flex-col bg-background
         `}
       >
         {isBootstrappingConversation && !selectedConversation && (

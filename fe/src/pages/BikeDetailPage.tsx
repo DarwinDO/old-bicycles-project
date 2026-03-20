@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import {
-  CreditCard, MapPin, Shield, MessageCircle, Heart, Share2, ChevronLeft, ChevronRight,
+  ArrowLeft, CreditCard, MapPin, Shield, MessageCircle, Heart, Share2, ChevronLeft, ChevronRight,
   Star, Clock, AlertTriangle, Loader2, ExternalLink,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ROUTES } from '@/constants/routes'
 import { cn } from '@/lib/utils'
+import { adminProductsApi } from '@/api/admin-products.api'
 import { ordersApi } from '@/api/orders.api'
 import { productsApi } from '@/api/products.api'
 import { wishlistApi } from '@/api/wishlist.api'
@@ -65,6 +66,9 @@ function parseCurrencyInput(rawValue: string): number | null {
   return Number.isFinite(parsedValue) ? parsedValue : null
 }
 
+const ORDER_CREATED_NOTICE =
+  'Đơn mua đã được tạo. Sau khi người bán chấp nhận đơn, bạn mới có thể lấy mã QR hoặc thông tin chuyển khoản ở mục Đơn mua.'
+
 function StarRating({ rating }: { rating: number }) {
   return (
     <div className="flex items-center gap-0.5">
@@ -80,7 +84,7 @@ function StarRating({ rating }: { rating: number }) {
 
 export default function BikeDetailPage() {
   const { id } = useParams<{ id: string }>()
-  const { isAuthenticated, user } = useAuth()
+  const { isAuthenticated, isLoading: isAuthLoading, user } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
 
@@ -102,24 +106,22 @@ export default function BikeDetailPage() {
   const [upfrontAmount, setUpfrontAmount] = useState('')
 
   useEffect(() => {
-    if (!id) return
+    if (!id || isAuthLoading) return
 
     const fetchAll = async () => {
       setIsLoading(true)
       setError(null)
 
       try {
-        const p = await productsApi.getById(id)
+        const p = user?.role === 'admin'
+          ? await adminProductsApi.getById(id)
+          : await productsApi.getById(id)
         setProduct(p)
 
         // Load inspection, reviews, and wishlist status in parallel (non-critical)
         const extras: Promise<unknown>[] = []
 
-        extras.push(
-          inspectionsApi.getByProduct(id)
-            .then(setInspection)
-            .catch(() => { /* not all products have inspection */ }),
-        )
+        extras.push(inspectionsApi.getByProduct(id).then(setInspection))
 
         if (p.seller?.id) {
           extras.push(
@@ -147,7 +149,7 @@ export default function BikeDetailPage() {
     }
 
     fetchAll()
-  }, [id, isAuthenticated])
+  }, [id, isAuthenticated, isAuthLoading, user?.role])
 
   const handleWishlistToggle = async () => {
     if (!isAuthenticated) {
@@ -206,6 +208,11 @@ export default function BikeDetailPage() {
     : null
 
   const isOwnListing = Boolean(user?.id && product?.seller?.id && user.id === product.seller.id)
+  const isLockedForTransaction = Boolean(product?.lockedForTransaction)
+  const isOrderActionDisabled = isLockedForTransaction || isOwnListing
+  const isAdminDetailView = user?.role === 'admin'
+  const listPageHref = isAdminDetailView ? ROUTES.ADMIN_LISTINGS : ROUTES.MARKET
+  const listPageLabel = isAdminDetailView ? 'Duyá»‡t tin Ä‘Äƒng' : 'Mua xe'
 
   const handleOpenOrderDialog = () => {
     if (!product) {
@@ -224,6 +231,11 @@ export default function BikeDetailPage() {
 
     if (isOwnListing) {
       setOrderError('Bạn không thể tạo đơn cho tin đăng của chính mình.')
+      return
+    }
+
+    if (isLockedForTransaction) {
+      setOrderError('Xe này đang có giao dịch đang xử lý. Bạn chưa thể tạo thêm đơn mua mới.')
       return
     }
 
@@ -247,7 +259,7 @@ export default function BikeDetailPage() {
     setOrderError(null)
 
     try {
-      await ordersApi.create({
+      const createdOrder = await ordersApi.create({
         productId: product.id,
         paymentMethod,
         paymentOption,
@@ -256,7 +268,12 @@ export default function BikeDetailPage() {
 
       setIsOrderDialogOpen(false)
       setUpfrontAmount('')
-      navigate(`${ROUTES.PROFILE}?tab=orders`)
+      navigate(`${ROUTES.PROFILE}?tab=orders`, {
+        state: {
+          orderCreatedNotice: ORDER_CREATED_NOTICE,
+          createdOrderId: createdOrder.id,
+        },
+      })
     } catch (requestError) {
       if (
         requestError &&
@@ -297,7 +314,7 @@ export default function BikeDetailPage() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center space-y-3">
           <p className="text-destructive">{error ?? 'Không tìm thấy sản phẩm.'}</p>
-          <Button variant="outline" onClick={() => navigate(-1)}>Quay lại</Button>
+          <Button variant="outline" onClick={() => navigate(listPageHref)}>Quay lại</Button>
         </div>
       </div>
     )
@@ -307,11 +324,22 @@ export default function BikeDetailPage() {
     <div className="min-h-screen bg-background">
       {/* Breadcrumb */}
       <div className="border-b bg-muted/40">
-        <div className="container mx-auto px-4 py-3">
+        <div className="container mx-auto space-y-3 px-4 py-3">
+          {isAdminDetailView && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-2 px-0 text-muted-foreground hover:text-foreground"
+              onClick={() => navigate(ROUTES.ADMIN_LISTINGS)}
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Quay lại duyệt tin đăng
+            </Button>
+          )}
           <nav className="flex items-center gap-2 text-sm text-muted-foreground">
             <Link to={ROUTES.HOME} className="hover:text-foreground">Trang chủ</Link>
             <span>/</span>
-            <Link to={ROUTES.MARKET} className="hover:text-foreground">Mua xe</Link>
+            <Link to={listPageHref} className="hover:text-foreground">{listPageLabel}</Link>
             <span>/</span>
             <span className="text-foreground line-clamp-1">{product.title}</span>
           </nav>
@@ -402,7 +430,7 @@ export default function BikeDetailPage() {
                 <CardTitle>Thông số kỹ thuật</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid gap-0 sm:grid-cols-2">
+                <div className="grid gap-y-0 sm:grid-cols-2 sm:gap-x-10">
                   {[
                     ['Thương hiệu', product.brandName],
                     ['Danh mục', product.categoryName],
@@ -415,9 +443,12 @@ export default function BikeDetailPage() {
                   ]
                     .filter(([, v]) => v)
                     .map(([label, value]) => (
-                      <div key={label} className="flex justify-between py-2 border-b last:border-0">
-                        <span className="text-muted-foreground">{label}</span>
-                        <span className="font-medium text-foreground">{value}</span>
+                      <div
+                        key={label}
+                        className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-4 border-b py-3 last:border-0"
+                      >
+                        <span className="min-w-0 text-muted-foreground">{label}</span>
+                        <span className="min-w-0 break-words text-right font-medium text-foreground">{value}</span>
                       </div>
                     ))}
                 </div>
@@ -551,7 +582,7 @@ export default function BikeDetailPage() {
           {/* Right Column - Price & Seller */}
           <div className="space-y-6">
             {/* Price Card */}
-            <Card className="sticky top-24">
+            <Card className="lg:sticky lg:top-24">
               <CardContent className="p-6">
                 <h1 className="text-xl font-bold text-foreground">{product.title}</h1>
 
@@ -582,20 +613,40 @@ export default function BikeDetailPage() {
                   </div>
                 </div>
 
+                {isLockedForTransaction && (
+                  <div className="mt-4 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-3 text-sm text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                    Xe này đang có giao dịch đang xử lý. Tạm thời hệ thống không nhận thêm đơn mua mới cho xe này.
+                  </div>
+                )}
+
                 <Separator className="my-6" />
 
-                <div className="space-y-3">
-                  <Link to={`${ROUTES.MESSAGES}?productId=${product.id}`}>
-                    <Button className="w-full" size="lg" disabled={isOwnListing}>
+                <div className="grid gap-4">
+                  {isOwnListing ? (
+                    <Button className="w-full" size="lg" disabled>
                       <MessageCircle className="mr-2 h-4 w-4" />
-                      {isOwnListing ? 'Đây là tin đăng của bạn' : 'Chat với người bán'}
+                      Đây là tin đăng của bạn
                     </Button>
-                  </Link>
-                  <Button className="w-full" size="lg" variant="secondary" onClick={handleOpenOrderDialog}>
+                  ) : (
+                    <Button asChild className="w-full" size="lg">
+                      <Link to={`${ROUTES.MESSAGES}?productId=${product.id}`}>
+                        <MessageCircle className="mr-2 h-4 w-4" />
+                        Chat với người bán
+                      </Link>
+                    </Button>
+                  )}
+                  <Button
+                    className="w-full"
+                    size="lg"
+                    variant="secondary"
+                    onClick={handleOpenOrderDialog}
+                    disabled={isOrderActionDisabled}
+                  >
                     <CreditCard className="mr-2 h-4 w-4" />
-                    Tạo yêu cầu mua
+                    {isOwnListing ? 'Không thể tạo yêu cầu mua' : 'Tạo yêu cầu mua'}
                   </Button>
-                  <div className="flex gap-2">
+                  <div className="grid grid-cols-2 gap-3">
                     <Button
                       variant="outline"
                       className="flex-1"
@@ -655,22 +706,6 @@ export default function BikeDetailPage() {
               </CardContent>
             </Card>
 
-            {/* Safety Tips */}
-            <Card className="bg-muted/50">
-              <CardContent className="p-4">
-                <div className="flex items-start gap-3">
-                  <AlertTriangle className="h-5 w-5 text-yellow-500 shrink-0 mt-0.5" />
-                  <div>
-                    <div className="font-medium text-foreground">Mua bán an toàn</div>
-                    <ul className="mt-2 text-sm text-muted-foreground space-y-1">
-                      <li>• Kiểm tra xe kỹ trước khi mua</li>
-                      <li>• Gặp mặt trực tiếp tại nơi công cộng</li>
-                      <li>• Không chuyển tiền trước khi xem xe</li>
-                    </ul>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
           </div>
         </div>
       </div>

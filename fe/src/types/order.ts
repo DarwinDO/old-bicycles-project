@@ -13,8 +13,10 @@ export type OrderFundingStatus =
   | 'unpaid'
   | 'awaiting_payment'
   | 'held'
+  | 'seller_payout_pending'
   | 'released'
   | 'refund_pending'
+  | 'refund_pending_transfer'
   | 'refunded'
 
 export interface Order {

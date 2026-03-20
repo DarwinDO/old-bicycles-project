@@ -5,6 +5,7 @@ import {
   getConversationPreview,
   isOwnMessage,
   normalizeMessagesChronologically,
+  shouldShowConversationInList,
   sortConversationsNewestFirst,
 } from '@/lib/chat-display'
 import type { ChatMessage, Conversation } from '@/types/chat'
@@ -59,6 +60,18 @@ describe('chat-display helpers', () => {
         lastMessage: '',
       }),
     ).toBe('Chưa có tin nhắn nào.')
+  })
+
+  it('hides empty conversations from the list unless they are currently selected', () => {
+    const emptyConversation: Conversation = {
+      ...sampleConversation,
+      id: 'conversation-empty',
+      lastMessage: null,
+    }
+
+    expect(shouldShowConversationInList(sampleConversation, null)).toBe(true)
+    expect(shouldShowConversationInList(emptyConversation, null)).toBe(false)
+    expect(shouldShowConversationInList(emptyConversation, 'conversation-empty')).toBe(true)
   })
 
   it('sorts conversations from newest to oldest', () => {

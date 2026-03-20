@@ -1,4 +1,9 @@
-import type { OrderFundingStatus, OrderStatus, PaymentMethod } from '@/types/order'
+import type {
+  OrderEvidenceSubmission,
+  OrderFundingStatus,
+  OrderStatus,
+  PaymentMethod,
+} from '@/types/order'
 
 export type RefundStatus = 'pending' | 'approved' | 'rejected' | 'completed'
 
@@ -41,6 +46,8 @@ export interface AdminRefund extends Refund {
   productId?: string | null
   productTitle?: string | null
   hasInspection: boolean
+  sellerHandoverEvidence?: OrderEvidenceSubmission | null
+  buyerReceiptEvidence?: OrderEvidenceSubmission | null
   orderStatus?: OrderStatus | null
   fundingStatus?: OrderFundingStatus | null
   paymentMethod?: PaymentMethod | null

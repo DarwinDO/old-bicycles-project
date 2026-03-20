@@ -52,6 +52,9 @@ This file is the Codex-facing adapter for the frontend repository.
   - what changed in code
   - how the request/event moves through the FE
 - Prefer concrete examples over abstract theory.
+- Whenever an accepted FE or cross-domain change modifies user flows, feature scope, role visibility, business rules, route behavior, status semantics, or any other product-facing behavior, update the repository SRS reference `../SRS-Old-Bicycles-Marketplace (1).md` in the same slice of work.
+- If that accepted change also introduces or depends on new backend tables or schema concepts, ensure the SRS database listings and relevant feature sections are updated clearly instead of leaving them stale.
+- Do not treat a substantive FE slice as fully done if the behavior changed in code but the corresponding SRS Markdown was not synchronized.
 
 ## FE Default Routing For Codex
 

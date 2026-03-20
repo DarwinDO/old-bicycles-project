@@ -13,6 +13,7 @@ import {
 import { refundsApi } from '@/api/refunds.api'
 import { DataTable } from '@/components/dashboard/DataTable'
 import { StatusBadge } from '@/components/dashboard/StatusBadge'
+import { OrderEvidenceSection } from '@/components/profile/OrderEvidenceSection'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import {
@@ -417,11 +418,11 @@ export default function AdminDisputesPage() {
       </div>
 
       <Dialog open={detailDialog.open} onOpenChange={(open) => setDetailDialog((current) => ({ ...current, open }))}>
-        <DialogContent className="max-w-xl">
+        <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>Chi tiết yêu cầu hoàn tiền</DialogTitle>
             <DialogDescription>
-              Xem nhanh thông tin giao dịch, lý do tranh chấp và lịch sử xử lý của admin.
+              Xem nhanh thông tin giao dịch, lý do tranh chấp, chứng cứ bàn giao và lịch sử xử lý của admin.
             </DialogDescription>
           </DialogHeader>
 
@@ -453,6 +454,17 @@ export default function AdminDisputesPage() {
                   <span className="max-w-[60%] text-right font-medium text-foreground">{value}</span>
                 </div>
               ))}
+
+              <div className="grid gap-4 lg:grid-cols-2">
+                <OrderEvidenceSection
+                  title="Ảnh seller bàn giao xe"
+                  evidence={detailDialog.refund.sellerHandoverEvidence}
+                />
+                <OrderEvidenceSection
+                  title="Ảnh buyer xác nhận đã nhận"
+                  evidence={detailDialog.refund.buyerReceiptEvidence}
+                />
+              </div>
             </div>
           )}
         </DialogContent>

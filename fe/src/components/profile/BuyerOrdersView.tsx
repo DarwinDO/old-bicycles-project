@@ -13,7 +13,10 @@ import {
 import { ordersApi } from '@/api/orders.api'
 import { paymentsApi } from '@/api/payments.api'
 import { refundsApi } from '@/api/refunds.api'
+import { reviewsApi } from '@/api/reviews.api'
 import { DisputeModal, type RefundFormValues } from '@/components/profile/DisputeModal'
+import { OrderEvidenceDialog } from '@/components/profile/OrderEvidenceDialog'
+import { OrderEvidenceSection } from '@/components/profile/OrderEvidenceSection'
 import { ReviewOrderDialog, type ReviewOrderFormValues } from '@/components/profile/ReviewOrderDialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -31,8 +34,7 @@ import {
   getPaymentMethodLabel,
   getPaymentOptionLabel,
 } from '@/lib/order-display'
-import { reviewsApi } from '@/api/reviews.api'
-import type { Order } from '@/types/order'
+import type { Order, OrderEvidenceInput } from '@/types/order'
 import type { PaymentRequestResponse } from '@/types/payment'
 
 function getErrorMessage(error: unknown, fallback: string) {
@@ -70,8 +72,10 @@ export function BuyerOrdersView() {
   const [paymentRequests, setPaymentRequests] = useState<Record<string, PaymentRequestResponse>>({})
   const [selectedOrderForRefund, setSelectedOrderForRefund] = useState<Order | null>(null)
   const [selectedOrderForReview, setSelectedOrderForReview] = useState<Order | null>(null)
+  const [selectedOrderForReceipt, setSelectedOrderForReceipt] = useState<Order | null>(null)
   const [refundError, setRefundError] = useState<string | null>(null)
   const [reviewError, setReviewError] = useState<string | null>(null)
+  const [receiptError, setReceiptError] = useState<string | null>(null)
   const buyerOrders = user ? orders.filter((order) => order.buyerId === user.id) : []
 
   useEffect(() => {
@@ -163,15 +167,19 @@ export function BuyerOrdersView() {
     }
   }
 
-  async function handleConfirmReceived(order: Order) {
+  async function handleConfirmReceived(order: Order, values: OrderEvidenceInput) {
     setActionLoadingKey(`confirmReceived:${order.id}`)
 
     try {
-      const updatedOrder = await ordersApi.confirmReceived(order.id)
+      const updatedOrder = await ordersApi.confirmReceived(order.id, values)
       replaceOrder(updatedOrder)
+      setSelectedOrderForReceipt(null)
+      setReceiptError(null)
       setError(null)
     } catch (requestError) {
-      setError(getErrorMessage(requestError, 'Không thể xác nhận đã nhận xe lúc này.'))
+      const message = getErrorMessage(requestError, 'Không thể xác nhận đã nhận xe lúc này.')
+      setReceiptError(message)
+      setError(message)
     } finally {
       setActionLoadingKey(null)
     }
@@ -289,7 +297,7 @@ export function BuyerOrdersView() {
             const reviewActionLoading = actionLoadingKey === `review:${order.id}`
 
             return (
-              <div key={order.id} className="rounded-xl border bg-card p-5 text-card-foreground shadow-sm">
+              <div key={order.id} className="space-y-4 rounded-xl border bg-card p-5 text-card-foreground shadow-sm">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                   <div className="flex gap-4">
                     <div className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary/50 text-muted-foreground">
@@ -373,7 +381,10 @@ export function BuyerOrdersView() {
                       {canBuyerConfirmReceived(order) && (
                         <Button
                           className="gap-1.5 bg-green-600 text-white hover:bg-green-700"
-                          onClick={() => void handleConfirmReceived(order)}
+                          onClick={() => {
+                            setSelectedOrderForReceipt(order)
+                            setReceiptError(null)
+                          }}
                           disabled={confirmReceivedLoading}
                         >
                           {confirmReceivedLoading ? (
@@ -444,7 +455,7 @@ export function BuyerOrdersView() {
                 </div>
 
                 {paymentRequest && (
-                  <div className="mt-4 rounded-xl border border-primary/20 bg-primary/5 p-4">
+                  <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
                     <div className="flex flex-col gap-4 lg:flex-row">
                       {paymentRequest.qrCodeUrl && (
                         <div className="w-full max-w-[180px] shrink-0 overflow-hidden rounded-lg border bg-white p-2">
@@ -525,6 +536,17 @@ export function BuyerOrdersView() {
                     </div>
                   </div>
                 )}
+
+                <div className="grid gap-3 lg:grid-cols-2">
+                  <OrderEvidenceSection
+                    title="Chứng cứ bàn giao từ người bán"
+                    evidence={order.sellerHandoverEvidence}
+                  />
+                  <OrderEvidenceSection
+                    title="Chứng cứ đã nhận xe từ người mua"
+                    evidence={order.buyerReceiptEvidence}
+                  />
+                </div>
               </div>
             )
           })}
@@ -554,6 +576,26 @@ export function BuyerOrdersView() {
           setReviewError(null)
         }}
         onSubmit={handleSubmitReview}
+      />
+
+      <OrderEvidenceDialog
+        open={Boolean(selectedOrderForReceipt)}
+        title="Xác nhận đã nhận xe"
+        description="Tải thêm ảnh nếu bạn muốn lưu lại bằng chứng tình trạng xe sau khi nhận cho đơn hàng"
+        noteLabel="Ghi chú khi nhận xe"
+        notePlaceholder="Ví dụ: xe đúng mô tả, đủ phụ kiện và đã kiểm tra tình trạng tổng thể."
+        submitLabel="Xác nhận đã nhận xe"
+        orderTitle={selectedOrderForReceipt?.productTitle ?? ''}
+        helperText="Nếu xe có vấn đề, đừng xác nhận. Hãy quay lại đơn hàng và chọn yêu cầu hoàn tiền hoặc tranh chấp."
+        loading={Boolean(selectedOrderForReceipt) && actionLoadingKey === `confirmReceived:${selectedOrderForReceipt?.id}`}
+        error={receiptError}
+        onClose={() => {
+          setSelectedOrderForReceipt(null)
+          setReceiptError(null)
+        }}
+        onSubmit={(values) =>
+          selectedOrderForReceipt ? handleConfirmReceived(selectedOrderForReceipt, values) : undefined
+        }
       />
     </div>
   )

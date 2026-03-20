@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { vietnamProvincesApi } from '@/api/vietnam-provinces.api'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { findAdministrativeOptionByName, type AdministrativeOption } from '@/lib/vietnamese-provinces'
+import { cn } from '@/lib/utils'
 
 const EMPTY_LOCATION_VALUE = '__empty_location__'
 
@@ -11,6 +12,7 @@ interface AdministrativeLocationFieldsProps {
   onProvinceChange: (value: string) => void
   onDistrictChange: (value: string) => void
   provinceRequired?: boolean
+  provinceError?: string
 }
 
 export function AdministrativeLocationFields({
@@ -19,6 +21,7 @@ export function AdministrativeLocationFields({
   onProvinceChange,
   onDistrictChange,
   provinceRequired = false,
+  provinceError,
 }: AdministrativeLocationFieldsProps) {
   const [provinceOptions, setProvinceOptions] = useState<AdministrativeOption[]>([])
   const [districtOptions, setDistrictOptions] = useState<AdministrativeOption[]>([])
@@ -119,7 +122,7 @@ export function AdministrativeLocationFields({
           }}
           disabled={provinceOptionsLoading}
         >
-          <SelectTrigger className="h-10 text-left">
+          <SelectTrigger className={cn('h-10 text-left', provinceError && 'border-destructive')}>
             <SelectValue
               placeholder={provinceOptionsLoading ? 'Đang tải tỉnh / thành phố...' : 'Chọn tỉnh / thành phố'}
             />
@@ -136,6 +139,7 @@ export function AdministrativeLocationFields({
             ))}
           </SelectContent>
         </Select>
+        {provinceError ? <p className="text-sm text-destructive">{provinceError}</p> : null}
       </div>
 
       <div className="space-y-2">

@@ -9,6 +9,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
 import { ROUTES } from '@/constants/routes'
+import {
+  validateSellBikeForm,
+  validateSellBikeStep,
+  type SellBikeStep,
+  type SellBikeValidationErrors,
+} from '@/lib/sell-bike-form'
 import { cn } from '@/lib/utils'
 import type { ProductMutationInput } from '@/types/product'
 import type { Brand, Category, ReferenceValue } from '@/types/reference-data'
@@ -77,6 +83,7 @@ interface SelectFieldProps {
   placeholder: string
   required?: boolean
   loading: boolean
+  error?: string
 }
 
 function SelectField({
@@ -87,6 +94,7 @@ function SelectField({
   placeholder,
   required,
   loading,
+  error,
 }: SelectFieldProps) {
   return (
     <div className="space-y-2">
@@ -95,13 +103,21 @@ function SelectField({
       </label>
 
       {loading ? (
-        <div className="flex h-10 w-full items-center rounded-md border border-input bg-muted px-3 text-sm text-muted-foreground">
+        <div
+          className={cn(
+            'flex h-10 w-full items-center rounded-md border border-input bg-muted px-3 text-sm text-muted-foreground',
+            error && 'border-destructive',
+          )}
+        >
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           Đang tải...
         </div>
       ) : (
         <select
-          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+          className={cn(
+            'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring',
+            error && 'border-destructive focus:ring-destructive',
+          )}
           value={value}
           onChange={(event) => onChange(event.target.value)}
         >
@@ -113,6 +129,7 @@ function SelectField({
           ))}
         </select>
       )}
+      {error ? <p className="text-sm text-destructive">{error}</p> : null}
     </div>
   )
 }
@@ -123,6 +140,7 @@ export default function SellBikePage() {
   const [step, setStep] = useState(1)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [formErrors, setFormErrors] = useState<SellBikeValidationErrors>({})
   const [formData, setFormData] = useState<FormState>(EMPTY_FORM)
 
   const [brands, setBrands] = useState<Brand[]>([])
@@ -166,6 +184,11 @@ export default function SellBikePage() {
 
   function handleChange<K extends keyof FormState>(name: K, value: FormState[K]) {
     setFormData((current) => ({ ...current, [name]: value }))
+    setFormErrors((current) => {
+      const nextErrors = { ...current }
+      delete nextErrors[name as keyof SellBikeValidationErrors]
+      return nextErrors
+    })
   }
 
   function handleImageUpload(
@@ -187,6 +210,11 @@ export default function SellBikePage() {
       ...current,
       images: [...current.images.filter((image) => type === 'other' || image.type !== type), ...newImages],
     }))
+    setFormErrors((current) => {
+      const nextErrors = { ...current }
+      delete nextErrors.images
+      return nextErrors
+    })
   }
 
   function removeImage(index: number) {
@@ -196,7 +224,33 @@ export default function SellBikePage() {
     })
   }
 
+  function validateCurrentStep(currentStep: SellBikeStep) {
+    const nextErrors = validateSellBikeStep(currentStep, formData)
+    setFormErrors(nextErrors)
+    return Object.keys(nextErrors).length === 0
+  }
+
+  function handleNextStep() {
+    const currentStep = step as SellBikeStep
+
+    if (!validateCurrentStep(currentStep)) {
+      return
+    }
+
+    setSubmitError(null)
+    setStep((currentStepValue) => Math.min(4, currentStepValue + 1))
+  }
+
   async function handleSubmit() {
+    const validationResult = validateSellBikeForm(formData)
+
+    if (validationResult) {
+      setFormErrors(validationResult.errors)
+      setStep(validationResult.step)
+      setSubmitError('Vui lòng hoàn thành các mục bắt buộc trước khi đăng tin.')
+      return
+    }
+
     setIsSubmitting(true)
     setSubmitError(null)
 
@@ -292,9 +346,11 @@ export default function SellBikePage() {
                 </label>
                 <Input
                   placeholder="VD: Giant TCR Advanced Pro 2023 - Size M"
+                  className={cn(formErrors.title && 'border-destructive focus-visible:ring-destructive')}
                   value={formData.title}
                   onChange={(event) => handleChange('title', event.target.value)}
                 />
+                {formErrors.title ? <p className="text-sm text-destructive">{formErrors.title}</p> : null}
               </div>
 
               <SelectField
@@ -305,6 +361,7 @@ export default function SellBikePage() {
                 placeholder="Chọn danh mục"
                 required
                 loading={referenceLoading}
+                error={formErrors.categoryId}
               />
 
               <SelectField
@@ -315,6 +372,7 @@ export default function SellBikePage() {
                 placeholder="Chọn thương hiệu"
                 required
                 loading={referenceLoading}
+                error={formErrors.brandId}
               />
 
               <div className="space-y-2">
@@ -334,6 +392,7 @@ export default function SellBikePage() {
                     </Button>
                   ))}
                 </div>
+                {formErrors.condition ? <p className="text-sm text-destructive">{formErrors.condition}</p> : null}
               </div>
 
               <div className="space-y-2">
@@ -479,6 +538,7 @@ export default function SellBikePage() {
                   )
                 })}
               </div>
+              {formErrors.images ? <p className="text-sm text-destructive">{formErrors.images}</p> : null}
 
               <Separator />
 
@@ -534,9 +594,11 @@ export default function SellBikePage() {
                   <Input
                     type="number"
                     placeholder="VD: 25000000"
+                    className={cn(formErrors.price && 'border-destructive focus-visible:ring-destructive')}
                     value={formData.price}
                     onChange={(event) => handleChange('price', event.target.value)}
                   />
+                  {formErrors.price ? <p className="text-sm text-destructive">{formErrors.price}</p> : null}
                 </div>
 
                 <div className="space-y-2">
@@ -558,6 +620,7 @@ export default function SellBikePage() {
                 onProvinceChange={(value) => handleChange('province', value)}
                 onDistrictChange={(value) => handleChange('district', value)}
                 provinceRequired
+                provinceError={formErrors.province}
               />
 
               {submitError && (
@@ -579,7 +642,7 @@ export default function SellBikePage() {
           </Button>
 
           {step < 4 ? (
-            <Button onClick={() => setStep((currentStep) => currentStep + 1)}>Tiếp tục</Button>
+            <Button onClick={handleNextStep}>Tiếp tục</Button>
           ) : (
             <Button onClick={() => void handleSubmit()} disabled={isSubmitting}>
               {isSubmitting ? (

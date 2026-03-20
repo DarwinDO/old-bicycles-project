@@ -1,6 +1,8 @@
 export interface MarketSearchState {
   keyword: string
   province: string
+  district: string
+  ward: string
   categoryId: string
 }
 
@@ -8,6 +10,8 @@ export function readMarketSearchState(searchParams: URLSearchParams): MarketSear
   return {
     keyword: searchParams.get('keyword') ?? '',
     province: searchParams.get('province') ?? '',
+    district: searchParams.get('district') ?? '',
+    ward: searchParams.get('ward') ?? '',
     categoryId: searchParams.get('categoryId') ?? '',
   }
 }
@@ -21,6 +25,14 @@ export function buildMarketSearchParams(state: Partial<MarketSearchState>) {
 
   if (state.province?.trim()) {
     nextParams.set('province', state.province.trim())
+  }
+
+  if (state.district?.trim()) {
+    nextParams.set('district', state.district.trim())
+  }
+
+  if (state.ward?.trim()) {
+    nextParams.set('ward', state.ward.trim())
   }
 
   if (state.categoryId?.trim()) {

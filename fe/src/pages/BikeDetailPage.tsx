@@ -209,6 +209,7 @@ export default function BikeDetailPage() {
 
   const isOwnListing = Boolean(user?.id && product?.seller?.id && user.id === product.seller.id)
   const isLockedForTransaction = Boolean(product?.lockedForTransaction)
+  const isOrderActionDisabled = isLockedForTransaction || isOwnListing
   const isAdminDetailView = user?.role === 'admin'
   const listPageHref = isAdminDetailView ? ROUTES.ADMIN_LISTINGS : ROUTES.MARKET
   const listPageLabel = isAdminDetailView ? 'Duyá»‡t tin Ä‘Äƒng' : 'Mua xe'
@@ -429,7 +430,7 @@ export default function BikeDetailPage() {
                 <CardTitle>Thông số kỹ thuật</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid gap-0 sm:grid-cols-2">
+                <div className="grid gap-y-0 sm:grid-cols-2 sm:gap-x-10">
                   {[
                     ['Thương hiệu', product.brandName],
                     ['Danh mục', product.categoryName],
@@ -442,9 +443,12 @@ export default function BikeDetailPage() {
                   ]
                     .filter(([, v]) => v)
                     .map(([label, value]) => (
-                      <div key={label} className="flex justify-between py-2 border-b last:border-0">
-                        <span className="text-muted-foreground">{label}</span>
-                        <span className="font-medium text-foreground">{value}</span>
+                      <div
+                        key={label}
+                        className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-4 border-b py-3 last:border-0"
+                      >
+                        <span className="min-w-0 text-muted-foreground">{label}</span>
+                        <span className="min-w-0 break-words text-right font-medium text-foreground">{value}</span>
                       </div>
                     ))}
                 </div>
@@ -578,7 +582,7 @@ export default function BikeDetailPage() {
           {/* Right Column - Price & Seller */}
           <div className="space-y-6">
             {/* Price Card */}
-            <Card className="sticky top-24">
+            <Card className="lg:sticky lg:top-24">
               <CardContent className="p-6">
                 <h1 className="text-xl font-bold text-foreground">{product.title}</h1>
 
@@ -618,24 +622,31 @@ export default function BikeDetailPage() {
 
                 <Separator className="my-6" />
 
-                <div className="space-y-3">
-                  <Link to={`${ROUTES.MESSAGES}?productId=${product.id}`}>
-                    <Button className="w-full" size="lg" disabled={isOwnListing}>
+                <div className="grid gap-4">
+                  {isOwnListing ? (
+                    <Button className="w-full" size="lg" disabled>
                       <MessageCircle className="mr-2 h-4 w-4" />
-                      {isOwnListing ? 'Đây là tin đăng của bạn' : 'Chat với người bán'}
+                      Đây là tin đăng của bạn
                     </Button>
-                  </Link>
+                  ) : (
+                    <Button asChild className="w-full" size="lg">
+                      <Link to={`${ROUTES.MESSAGES}?productId=${product.id}`}>
+                        <MessageCircle className="mr-2 h-4 w-4" />
+                        Chat với người bán
+                      </Link>
+                    </Button>
+                  )}
                   <Button
                     className="w-full"
                     size="lg"
                     variant="secondary"
                     onClick={handleOpenOrderDialog}
-                    disabled={isLockedForTransaction}
+                    disabled={isOrderActionDisabled}
                   >
                     <CreditCard className="mr-2 h-4 w-4" />
-                    Tạo yêu cầu mua
+                    {isOwnListing ? 'Không thể tạo yêu cầu mua' : 'Tạo yêu cầu mua'}
                   </Button>
-                  <div className="flex gap-2">
+                  <div className="grid grid-cols-2 gap-3">
                     <Button
                       variant="outline"
                       className="flex-1"
@@ -695,22 +706,6 @@ export default function BikeDetailPage() {
               </CardContent>
             </Card>
 
-            {/* Safety Tips */}
-            <Card className="bg-muted/50">
-              <CardContent className="p-4">
-                <div className="flex items-start gap-3">
-                  <AlertTriangle className="h-5 w-5 text-yellow-500 shrink-0 mt-0.5" />
-                  <div>
-                    <div className="font-medium text-foreground">Mua bán an toàn</div>
-                    <ul className="mt-2 text-sm text-muted-foreground space-y-1">
-                      <li>• Kiểm tra xe kỹ trước khi mua</li>
-                      <li>• Gặp mặt trực tiếp tại nơi công cộng</li>
-                      <li>• Không chuyển tiền trước khi xem xe</li>
-                    </ul>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
           </div>
         </div>
       </div>

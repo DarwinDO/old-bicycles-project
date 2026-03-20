@@ -72,6 +72,8 @@ export interface ProductFilterRequest {
   minPrice?: number
   maxPrice?: number
   province?: string
+  district?: string
+  ward?: string
   hasInspection?: boolean
   sortBy?: string
 }

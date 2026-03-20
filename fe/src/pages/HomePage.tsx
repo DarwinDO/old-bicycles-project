@@ -12,11 +12,17 @@ import {
 } from 'lucide-react'
 import { productsApi } from '@/api/products.api'
 import { referenceDataApi } from '@/api/reference-data.api'
+import { vietnamProvincesApi } from '@/api/vietnam-provinces.api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ROUTES, buildRoute } from '@/constants/routes'
+import {
+  findAdministrativeOptionByName,
+  type AdministrativeOption,
+} from '@/lib/vietnamese-provinces'
 import type { Category } from '@/types/reference-data'
 import type { Product } from '@/types/product'
 import { useAuth } from '@/contexts/AuthContext'
@@ -47,6 +53,8 @@ const TRUST_FEATURES = [
     description: 'Đơn mua, đặt cọc, hoàn tiền và giải ngân đều đi qua các bước xác nhận rõ ràng.',
   },
 ] as const
+
+const ALL_LOCATION_VALUE = '__all__'
 
 function formatPrice(price: number): string {
   return new Intl.NumberFormat('vi-VN', {
@@ -103,10 +111,18 @@ export default function HomePage() {
   const { isAuthenticated, user } = useAuth()
   const [searchKeyword, setSearchKeyword] = useState('')
   const [searchProvince, setSearchProvince] = useState('')
+  const [searchDistrict, setSearchDistrict] = useState('')
+  const [searchWard, setSearchWard] = useState('')
+  const [provinceOptions, setProvinceOptions] = useState<AdministrativeOption[]>([])
+  const [districtOptions, setDistrictOptions] = useState<AdministrativeOption[]>([])
+  const [wardOptions, setWardOptions] = useState<AdministrativeOption[]>([])
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [featuredLoading, setFeaturedLoading] = useState(true)
   const [categoriesLoading, setCategoriesLoading] = useState(true)
+  const [provinceOptionsLoading, setProvinceOptionsLoading] = useState(true)
+  const [districtOptionsLoading, setDistrictOptionsLoading] = useState(false)
+  const [wardOptionsLoading, setWardOptionsLoading] = useState(false)
 
   const sellerEntryHref = useMemo(
     () => getSellEntryHref(user?.role, isAuthenticated),
@@ -178,11 +194,125 @@ export default function HomePage() {
     }
   }, [])
 
+  useEffect(() => {
+    let ignore = false
+
+    async function loadProvinceOptions() {
+      setProvinceOptionsLoading(true)
+
+      try {
+        const result = await vietnamProvincesApi.getAll()
+
+        if (!ignore) {
+          setProvinceOptions(result)
+        }
+      } catch {
+        if (!ignore) {
+          setProvinceOptions([])
+        }
+      } finally {
+        if (!ignore) {
+          setProvinceOptionsLoading(false)
+        }
+      }
+    }
+
+    void loadProvinceOptions()
+
+    return () => {
+      ignore = true
+    }
+  }, [])
+
+  useEffect(() => {
+    const selectedProvince = findAdministrativeOptionByName(provinceOptions, searchProvince)
+
+    if (!selectedProvince) {
+      setDistrictOptions([])
+      setWardOptions([])
+      setDistrictOptionsLoading(false)
+      setWardOptionsLoading(false)
+      return
+    }
+
+    const selectedProvinceCode = selectedProvince.code
+    let ignore = false
+
+    async function loadDistrictOptions() {
+      setDistrictOptionsLoading(true)
+
+      try {
+        const result = await vietnamProvincesApi.getDistricts(selectedProvinceCode)
+
+        if (!ignore) {
+          setDistrictOptions(result)
+        }
+      } catch {
+        if (!ignore) {
+          setDistrictOptions([])
+        }
+      } finally {
+        if (!ignore) {
+          setDistrictOptionsLoading(false)
+        }
+      }
+    }
+
+    void loadDistrictOptions()
+
+    return () => {
+      ignore = true
+    }
+  }, [provinceOptions, searchProvince])
+
+  useEffect(() => {
+    const selectedDistrict = findAdministrativeOptionByName(districtOptions, searchDistrict)
+
+    if (!selectedDistrict) {
+      setWardOptions([])
+      setWardOptionsLoading(false)
+      return
+    }
+
+    const selectedDistrictCode = selectedDistrict.code
+    let ignore = false
+
+    async function loadWardOptions() {
+      setWardOptionsLoading(true)
+
+      try {
+        const result = await vietnamProvincesApi.getWards(selectedDistrictCode)
+
+        if (!ignore) {
+          setWardOptions(result)
+        }
+      } catch {
+        if (!ignore) {
+          setWardOptions([])
+        }
+      } finally {
+        if (!ignore) {
+          setWardOptionsLoading(false)
+        }
+      }
+    }
+
+    void loadWardOptions()
+
+    return () => {
+      ignore = true
+    }
+  }, [districtOptions, searchDistrict])
+
   function handleSearch() {
+    const nextKeyword = searchKeyword.trim()
+
     navigate(
       buildRoute.market({
-        keyword: searchKeyword,
+        keyword: nextKeyword,
         province: searchProvince,
+        district: searchDistrict,
+        ward: searchWard,
       }),
     )
   }
@@ -202,7 +332,7 @@ export default function HomePage() {
 
             <Card className="mt-10 p-2 shadow-xl">
               <CardContent className="p-0">
-                <div className="grid gap-2 md:grid-cols-[1.4fr_0.8fr_auto]">
+                <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-[1.2fr_repeat(3,minmax(0,0.8fr))_auto]">
                   <div className="relative">
                     <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
@@ -215,17 +345,98 @@ export default function HomePage() {
                   </div>
 
                   <div className="relative">
-                    <MapPin className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      placeholder="Tỉnh / thành phố"
-                      className="h-12 pl-10"
-                      value={searchProvince}
-                      onChange={(event) => setSearchProvince(event.target.value)}
-                      onKeyDown={(event) => event.key === 'Enter' && handleSearch()}
-                    />
+                    <MapPin className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Select
+                      value={searchProvince || ALL_LOCATION_VALUE}
+                      onValueChange={(value) => {
+                        const nextProvince = value === ALL_LOCATION_VALUE ? '' : value
+                        setSearchProvince(nextProvince)
+                        setSearchDistrict('')
+                        setSearchWard('')
+                        setDistrictOptions([])
+                        setWardOptions([])
+                      }}
+                    >
+                      <SelectTrigger className="h-12 pl-10 text-left">
+                        <SelectValue placeholder={provinceOptionsLoading ? 'Đang tải tỉnh / thành phố...' : 'Tỉnh / thành phố'} />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-72">
+                        <SelectItem value={ALL_LOCATION_VALUE}>Tất cả tỉnh / thành</SelectItem>
+                        {provinceOptions.map((province) => (
+                          <SelectItem key={province.code} value={province.name}>
+                            {province.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
 
-                  <Button size="lg" className="h-12 px-8" onClick={handleSearch}>
+                  <div className="relative">
+                    <MapPin className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Select
+                      value={searchDistrict || ALL_LOCATION_VALUE}
+                      onValueChange={(value) => {
+                        const nextDistrict = value === ALL_LOCATION_VALUE ? '' : value
+                        setSearchDistrict(nextDistrict)
+                        setSearchWard('')
+                        setWardOptions([])
+                      }}
+                      disabled={!searchProvince || districtOptionsLoading}
+                    >
+                      <SelectTrigger className="h-12 pl-10 text-left">
+                        <SelectValue
+                          placeholder={
+                            !searchProvince
+                              ? 'Chọn quận / huyện'
+                              : districtOptionsLoading
+                                ? 'Đang tải quận / huyện...'
+                                : 'Quận / huyện'
+                          }
+                        />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-72">
+                        <SelectItem value={ALL_LOCATION_VALUE}>Tất cả quận / huyện</SelectItem>
+                        {districtOptions.map((district) => (
+                          <SelectItem key={district.code} value={district.name}>
+                            {district.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="relative">
+                    <MapPin className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Select
+                      value={searchWard || ALL_LOCATION_VALUE}
+                      onValueChange={(value) => {
+                        setSearchWard(value === ALL_LOCATION_VALUE ? '' : value)
+                      }}
+                      disabled={!searchDistrict || wardOptionsLoading}
+                    >
+                      <SelectTrigger className="h-12 pl-10 text-left">
+                        <SelectValue
+                          placeholder={
+                            !searchDistrict
+                              ? 'Chọn phường / xã'
+                              : wardOptionsLoading
+                                ? 'Đang tải phường / xã...'
+                                : 'Phường / xã'
+                          }
+                        />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-72">
+                        <SelectItem value={ALL_LOCATION_VALUE}>Tất cả phường / xã</SelectItem>
+                        {wardOptions.map((ward) => (
+                          <SelectItem key={ward.code} value={ward.name}>
+                            {ward.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <Button size="lg" className="h-12 px-8 sm:col-span-2 xl:col-span-1" onClick={handleSearch}>
                     <Search className="mr-2 h-4 w-4" />
                     Tìm kiếm
                   </Button>

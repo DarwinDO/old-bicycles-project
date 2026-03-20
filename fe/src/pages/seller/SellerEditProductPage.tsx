@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, CheckCircle2, Info, Loader2, Upload, X } from 'lucide-react'
 import { productsApi } from '@/api/products.api'
 import { referenceDataApi } from '@/api/reference-data.api'
+import { AdministrativeLocationFields } from '@/components/AdministrativeLocationFields'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -546,23 +547,12 @@ export default function SellerEditProductPage() {
 
               <Separator />
 
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Tỉnh / thành phố</label>
-                  <Input
-                    value={formData.province}
-                    onChange={(event) => handleChange('province', event.target.value)}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Quận / huyện</label>
-                  <Input
-                    value={formData.district}
-                    onChange={(event) => handleChange('district', event.target.value)}
-                  />
-                </div>
-              </div>
+              <AdministrativeLocationFields
+                province={formData.province}
+                district={formData.district}
+                onProvinceChange={(value) => handleChange('province', value)}
+                onDistrictChange={(value) => handleChange('district', value)}
+              />
 
               {submitError && (
                 <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{submitError}</div>

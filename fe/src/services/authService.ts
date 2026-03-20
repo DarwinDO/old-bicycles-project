@@ -1,4 +1,4 @@
-import { authApi } from '@/api/auth.api'
+import { authApi, isAuthSession } from '@/api/auth.api'
 import { clearAuthSession, getAccessToken, getRefreshToken, hasAccessToken, setAuthSession } from '@/lib/auth-storage'
 import type {
   AuthSession,
@@ -85,8 +85,17 @@ export const authService = {
     return authApi.updateProfile(request)
   },
 
-  verifyEmail(token: string) {
-    return authApi.verifyEmail(token)
+  async verifyEmail(token: string): Promise<string | AuthSession> {
+    const result = await authApi.verifyEmail(token)
+
+    if (isAuthSession(result)) {
+      setAuthSession({
+        accessToken: result.accessToken,
+        refreshToken: result.refreshToken,
+      })
+    }
+
+    return result
   },
 
   getToken: getAccessToken,

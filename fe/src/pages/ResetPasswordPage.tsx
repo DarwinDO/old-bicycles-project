@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { Bike, Lock, Eye, EyeOff, AlertCircle, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -8,9 +8,30 @@ import { ROUTES } from '@/constants/routes'
 import { authService } from '@/services/authService'
 import { cn } from '@/lib/utils'
 
+const RESET_TOKEN_QUERY_KEYS = ['token', 'resetToken', 'reset_token'] as const
+
+function readResetTokenFromSearch(rawSearch: string): string {
+    const query = rawSearch.startsWith('?') ? rawSearch.slice(1) : rawSearch
+
+    for (const key of RESET_TOKEN_QUERY_KEYS) {
+        const pattern = new RegExp(`(?:^|&)${key}=([^&]*)`)
+        const match = query.match(pattern)
+
+        if (match) {
+            return decodeURIComponent(match[1].replace(/\+/g, '%2B')).trim()
+        }
+    }
+
+    return ''
+}
+
 export default function ResetPasswordPage() {
     const [searchParams] = useSearchParams()
-    const token = searchParams.get('token') || ''
+    const location = useLocation()
+    const token =
+        readResetTokenFromSearch(location.search) ||
+        RESET_TOKEN_QUERY_KEYS.map((key) => searchParams.get(key)?.trim() ?? '').find(Boolean) ||
+        ''
     const [newPassword, setNewPassword] = useState('')
     const [confirmPassword, setConfirmPassword] = useState('')
     const [showPassword, setShowPassword] = useState(false)

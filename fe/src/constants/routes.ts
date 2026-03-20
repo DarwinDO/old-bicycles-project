@@ -7,6 +7,7 @@ export const ROUTES = {
   NOTIFICATIONS: '/notifications',
   LOGIN: '/login',
   REGISTER: '/register',
+  VERIFY_EMAIL: '/verify-email',
   PROFILE: '/profile',
   MESSAGES: '/messages',
   GUIDE: '/guide',

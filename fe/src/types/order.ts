@@ -37,6 +37,7 @@ export interface Order {
   status: OrderStatus
   fundingStatus: OrderFundingStatus
   paymentMethod: PaymentMethod
+  buyerReviewSubmitted: boolean
   acceptedAt?: string | null
   paymentDeadline?: string | null
   createdAt: string

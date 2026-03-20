@@ -3,6 +3,7 @@ import {
   canBuyerConfirmReceived,
   canBuyerRequestPayment,
   canBuyerRequestRefund,
+  canBuyerSubmitReview,
   canSellerAcceptOrder,
   canSellerCompleteOrder,
   canSellerConfirmCashDeposit,
@@ -31,6 +32,7 @@ function buildOrder(overrides: Partial<Order> = {}): Order {
     status: 'pending',
     fundingStatus: 'unpaid',
     paymentMethod: 'transfer',
+    buyerReviewSubmitted: false,
     acceptedAt: null,
     paymentDeadline: null,
     createdAt: '2026-03-17T12:00:00Z',
@@ -117,6 +119,7 @@ describe('order-display', () => {
 
     expect(statusMeta.label).toBe('Chờ giải ngân cho người bán')
     expect(statusMeta.helperText).toContain('payout profile')
+    expect(canBuyerSubmitReview(order)).toBe(true)
   })
 
   it('shows refund pending transfer after admin approves refund', () => {
@@ -144,5 +147,17 @@ describe('order-display', () => {
     expect(statusMeta.label).toBe('Đã hoàn tiền')
     expect(canBuyerRequestRefund(order)).toBe(false)
     expect(canSellerCompleteOrder(order)).toBe(false)
+  })
+
+  it('hides the review action after the buyer already reviewed the order', () => {
+    const order = buildOrder({
+      status: 'completed',
+      fundingStatus: 'released',
+      paidAmount: 30000000,
+      remainingAmount: 0,
+      buyerReviewSubmitted: true,
+    })
+
+    expect(canBuyerSubmitReview(order)).toBe(false)
   })
 })

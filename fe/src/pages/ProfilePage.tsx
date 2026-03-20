@@ -34,6 +34,7 @@ import { ROUTES, buildRoute } from '@/constants/routes'
 import { cn } from '@/lib/utils'
 import { BuyerOrdersView } from '@/components/profile/BuyerOrdersView'
 import { PayoutProfileSection } from '@/components/profile/PayoutProfileSection'
+import { SellerReviewsSection } from '@/components/profile/SellerReviewsSection'
 import { SellerListingsSection } from '@/components/profile/SellerListingsSection'
 import { useAuth } from '@/contexts/AuthContext'
 import { authService } from '@/services/authService'
@@ -716,15 +717,18 @@ export default function ProfilePage() {
             )}
 
             {activeTab === 'reviews' && (
-              <Card>
-                <CardHeader>
+              user.role === 'seller' ? (
+                <SellerReviewsSection sellerId={user.id} />
+              ) : (
+                <Card>
+                  <CardHeader>
                   <CardTitle>Đánh giá từ người mua</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="py-8 text-center text-muted-foreground">Chưa có đánh giá nào.</div>
                 </CardContent>
               </Card>
-            )}
+            ))}
 
             {activeTab === 'payout' && <PayoutProfileSection />}
           </div>

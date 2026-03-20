@@ -1,6 +1,6 @@
-import { getResult, postResult } from '@/lib/http'
+import { getResult, postResult, putResult } from '@/lib/http'
 import type { PageResult } from '@/types/api'
-import type { Review, ReviewRequest } from '@/types/review'
+import type { Review, ReviewReplyRequest, ReviewRequest } from '@/types/review'
 
 export const reviewsApi = {
   submit(orderId: string, request: ReviewRequest) {
@@ -11,5 +11,9 @@ export const reviewsApi = {
     return getResult<PageResult<Review>>(`/api/users/${sellerId}/reviews`, {
       params: { page, size },
     })
+  },
+
+  reply(reviewId: string, request: ReviewReplyRequest) {
+    return putResult<Review, ReviewReplyRequest>(`/api/reviews/${reviewId}/reply`, request)
   },
 }

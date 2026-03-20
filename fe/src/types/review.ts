@@ -3,6 +3,10 @@ export interface ReviewRequest {
   comment: string
 }
 
+export interface ReviewReplyRequest {
+  reply: string
+}
+
 export interface Review {
   id: string
   orderId: string
@@ -12,5 +16,7 @@ export interface Review {
   revieweeName: string
   rating: number
   comment: string
+  sellerReply?: string | null
+  sellerRepliedAt?: string | null
   createdAt: string
 }

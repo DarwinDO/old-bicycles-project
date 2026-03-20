@@ -567,6 +567,15 @@ export default function BikeDetailPage() {
                       {review.comment && (
                         <p className="text-sm text-muted-foreground ml-10">{review.comment}</p>
                       )}
+                      {review.sellerReply && (
+                        <div className="ml-10 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2">
+                          <div className="text-xs font-medium text-primary">Phản hồi từ người bán</div>
+                          <p className="mt-1 text-sm text-muted-foreground">{review.sellerReply}</p>
+                          {review.sellerRepliedAt && (
+                            <p className="mt-1 text-xs text-muted-foreground">{formatDate(review.sellerRepliedAt)}</p>
+                          )}
+                        </div>
+                      )}
                       <Separator />
                     </div>
                   ))}

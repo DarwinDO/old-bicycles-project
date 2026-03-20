@@ -7,12 +7,14 @@ import {
   PackageOpen,
   RefreshCw,
   ShieldCheck,
+  Star,
   XCircle,
 } from 'lucide-react'
 import { ordersApi } from '@/api/orders.api'
 import { paymentsApi } from '@/api/payments.api'
 import { refundsApi } from '@/api/refunds.api'
 import { DisputeModal, type RefundFormValues } from '@/components/profile/DisputeModal'
+import { ReviewOrderDialog, type ReviewOrderFormValues } from '@/components/profile/ReviewOrderDialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/contexts/AuthContext'
@@ -20,6 +22,7 @@ import {
   canBuyerConfirmReceived,
   canBuyerRequestPayment,
   canBuyerRequestRefund,
+  canBuyerSubmitReview,
   canCancelOpenOrder,
   formatOrderCurrency,
   formatOrderDate,
@@ -28,6 +31,7 @@ import {
   getPaymentMethodLabel,
   getPaymentOptionLabel,
 } from '@/lib/order-display'
+import { reviewsApi } from '@/api/reviews.api'
 import type { Order } from '@/types/order'
 import type { PaymentRequestResponse } from '@/types/payment'
 
@@ -65,7 +69,9 @@ export function BuyerOrdersView() {
   const [actionLoadingKey, setActionLoadingKey] = useState<string | null>(null)
   const [paymentRequests, setPaymentRequests] = useState<Record<string, PaymentRequestResponse>>({})
   const [selectedOrderForRefund, setSelectedOrderForRefund] = useState<Order | null>(null)
+  const [selectedOrderForReview, setSelectedOrderForReview] = useState<Order | null>(null)
   const [refundError, setRefundError] = useState<string | null>(null)
+  const [reviewError, setReviewError] = useState<string | null>(null)
   const buyerOrders = user ? orders.filter((order) => order.buyerId === user.id) : []
 
   useEffect(() => {
@@ -199,6 +205,29 @@ export function BuyerOrdersView() {
     }
   }
 
+  async function handleSubmitReview(values: ReviewOrderFormValues) {
+    if (!selectedOrderForReview) {
+      return
+    }
+
+    setActionLoadingKey(`review:${selectedOrderForReview.id}`)
+
+    try {
+      await reviewsApi.submit(selectedOrderForReview.id, values)
+      const refreshedOrders = await ordersApi.getMine()
+      setOrders(refreshedOrders)
+      setReviewError(null)
+      setSelectedOrderForReview(null)
+      setError(null)
+    } catch (requestError) {
+      const message = getErrorMessage(requestError, 'Không thể gửi đánh giá lúc này.')
+      setReviewError(message)
+      setError(message)
+    } finally {
+      setActionLoadingKey(null)
+    }
+  }
+
   async function refreshOrdersSilently() {
     if (!user) {
       return
@@ -257,6 +286,7 @@ export function BuyerOrdersView() {
             const cancelActionLoading = actionLoadingKey === `cancel:${order.id}`
             const refundActionLoading = actionLoadingKey === `refund:${order.id}`
             const confirmReceivedLoading = actionLoadingKey === `confirmReceived:${order.id}`
+            const reviewActionLoading = actionLoadingKey === `review:${order.id}`
 
             return (
               <div key={order.id} className="rounded-xl border bg-card p-5 text-card-foreground shadow-sm">
@@ -352,6 +382,21 @@ export function BuyerOrdersView() {
                             <ShieldCheck className="h-4 w-4" />
                           )}
                           Xác nhận đã nhận xe
+                        </Button>
+                      )}
+
+                      {canBuyerSubmitReview(order) && (
+                        <Button
+                          variant="outline"
+                          className="gap-1.5"
+                          onClick={() => {
+                            setSelectedOrderForReview(order)
+                            setReviewError(null)
+                          }}
+                          disabled={reviewActionLoading}
+                        >
+                          <Star className="h-4 w-4" />
+                          Viết đánh giá
                         </Button>
                       )}
 
@@ -497,6 +542,18 @@ export function BuyerOrdersView() {
         refundAmount={selectedOrderForRefund?.paidAmount ?? 0}
         isSubmitting={Boolean(selectedOrderForRefund) && actionLoadingKey === `refund:${selectedOrderForRefund?.id}`}
         error={refundError}
+      />
+
+      <ReviewOrderDialog
+        open={Boolean(selectedOrderForReview)}
+        orderTitle={selectedOrderForReview?.productTitle ?? ''}
+        loading={Boolean(selectedOrderForReview) && actionLoadingKey === `review:${selectedOrderForReview?.id}`}
+        error={reviewError}
+        onClose={() => {
+          setSelectedOrderForReview(null)
+          setReviewError(null)
+        }}
+        onSubmit={handleSubmitReview}
       />
     </div>
   )

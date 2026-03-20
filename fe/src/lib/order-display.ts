@@ -174,3 +174,7 @@ export function canBuyerRequestRefund(order: Order) {
     order.paidAmount > 0
   )
 }
+
+export function canBuyerSubmitReview(order: Order) {
+  return order.status === 'completed' && !order.buyerReviewSubmitted
+}

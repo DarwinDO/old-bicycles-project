@@ -14,19 +14,23 @@ import {
 } from 'lucide-react'
 import { productsApi } from '@/api/products.api'
 import { referenceDataApi } from '@/api/reference-data.api'
+import { vietnamProvincesApi } from '@/api/vietnam-provinces.api'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { buildRoute } from '@/constants/routes'
 import { buildMarketSearchParams, readMarketSearchState } from '@/lib/market-search'
+import { findAdministrativeOptionByName, type AdministrativeOption } from '@/lib/vietnamese-provinces'
 import { cn } from '@/lib/utils'
 import type { Product, ProductFilterRequest } from '@/types/product'
 import type { Brand, Category } from '@/types/reference-data'
 
 const PAGE_SIZE = 6
+const ALL_LOCATION_VALUE = '__all__'
 
 const CONDITIONS = [
   { value: 'new_90', label: 'Như mới (90%+)' },
@@ -98,7 +102,14 @@ export default function BikeListingPage() {
   const [keyword, setKeyword] = useState(initialSearchState.keyword)
   const [searchInput, setSearchInput] = useState(initialSearchState.keyword)
   const [province, setProvince] = useState(initialSearchState.province)
-  const [provinceInput, setProvinceInput] = useState(initialSearchState.province)
+  const [district, setDistrict] = useState(initialSearchState.district)
+  const [ward, setWard] = useState(initialSearchState.ward)
+  const [provinceOptions, setProvinceOptions] = useState<AdministrativeOption[]>([])
+  const [districtOptions, setDistrictOptions] = useState<AdministrativeOption[]>([])
+  const [wardOptions, setWardOptions] = useState<AdministrativeOption[]>([])
+  const [provinceOptionsLoading, setProvinceOptionsLoading] = useState(true)
+  const [districtOptionsLoading, setDistrictOptionsLoading] = useState(false)
+  const [wardOptionsLoading, setWardOptionsLoading] = useState(false)
   const [selectedBrandId, setSelectedBrandId] = useState('')
   const [selectedCategoryId, setSelectedCategoryId] = useState(initialSearchState.categoryId)
   const [selectedCondition, setSelectedCondition] = useState('')
@@ -123,22 +134,135 @@ export default function BikeListingPage() {
     setKeyword(nextState.keyword)
     setSearchInput(nextState.keyword)
     setProvince(nextState.province)
-    setProvinceInput(nextState.province)
+    setDistrict(nextState.district)
+    setWard(nextState.ward)
     setSelectedCategoryId(nextState.categoryId)
     setPage(0)
   }, [searchParams])
 
+  useEffect(() => {
+    let ignore = false
+
+    async function loadProvinceOptions() {
+      setProvinceOptionsLoading(true)
+
+      try {
+        const result = await vietnamProvincesApi.getAll()
+
+        if (!ignore) {
+          setProvinceOptions(result)
+        }
+      } catch {
+        if (!ignore) {
+          setProvinceOptions([])
+        }
+      } finally {
+        if (!ignore) {
+          setProvinceOptionsLoading(false)
+        }
+      }
+    }
+
+    void loadProvinceOptions()
+
+    return () => {
+      ignore = true
+    }
+  }, [])
+
+  useEffect(() => {
+    const selectedProvince = findAdministrativeOptionByName(provinceOptions, province)
+
+    if (!selectedProvince) {
+      setDistrictOptions([])
+      setWardOptions([])
+      setDistrictOptionsLoading(false)
+      setWardOptionsLoading(false)
+      return
+    }
+
+    const selectedProvinceCode = selectedProvince.code
+    let ignore = false
+
+    async function loadDistrictOptions() {
+      setDistrictOptionsLoading(true)
+
+      try {
+        const result = await vietnamProvincesApi.getDistricts(selectedProvinceCode)
+
+        if (!ignore) {
+          setDistrictOptions(result)
+        }
+      } catch {
+        if (!ignore) {
+          setDistrictOptions([])
+        }
+      } finally {
+        if (!ignore) {
+          setDistrictOptionsLoading(false)
+        }
+      }
+    }
+
+    void loadDistrictOptions()
+
+    return () => {
+      ignore = true
+    }
+  }, [province, provinceOptions])
+
+  useEffect(() => {
+    const selectedDistrict = findAdministrativeOptionByName(districtOptions, district)
+
+    if (!selectedDistrict) {
+      setWardOptions([])
+      setWardOptionsLoading(false)
+      return
+    }
+
+    const selectedDistrictCode = selectedDistrict.code
+    let ignore = false
+
+    async function loadWardOptions() {
+      setWardOptionsLoading(true)
+
+      try {
+        const result = await vietnamProvincesApi.getWards(selectedDistrictCode)
+
+        if (!ignore) {
+          setWardOptions(result)
+        }
+      } catch {
+        if (!ignore) {
+          setWardOptions([])
+        }
+      } finally {
+        if (!ignore) {
+          setWardOptionsLoading(false)
+        }
+      }
+    }
+
+    void loadWardOptions()
+
+    return () => {
+      ignore = true
+    }
+  }, [district, districtOptions])
+
   const updateSearchUrl = useCallback(
-    (nextState: Partial<{ keyword: string; province: string; categoryId: string }>) => {
+    (nextState: Partial<{ keyword: string; province: string; district: string; ward: string; categoryId: string }>) => {
       const params = buildMarketSearchParams({
         keyword: nextState.keyword ?? keyword,
         province: nextState.province ?? province,
+        district: nextState.district ?? district,
+        ward: nextState.ward ?? ward,
         categoryId: nextState.categoryId ?? selectedCategoryId,
       })
 
       setSearchParams(params, { replace: true })
     },
-    [keyword, province, selectedCategoryId, setSearchParams],
+    [district, keyword, province, selectedCategoryId, setSearchParams, ward],
   )
 
   const fetchProducts = useCallback(async () => {
@@ -152,6 +276,8 @@ export default function BikeListingPage() {
 
     if (keyword) filters.keyword = keyword
     if (province) filters.province = province
+    if (district) filters.district = district
+    if (ward) filters.ward = ward
     if (selectedBrandId) filters.brandId = selectedBrandId
     if (selectedCategoryId) filters.categoryId = selectedCategoryId
     if (selectedCondition) filters.condition = selectedCondition as ProductFilterRequest['condition']
@@ -169,7 +295,7 @@ export default function BikeListingPage() {
     } finally {
       setIsLoading(false)
     }
-  }, [keyword, maxPrice, minPrice, page, province, selectedBrandId, selectedCategoryId, selectedCondition, verifiedOnly])
+  }, [district, keyword, maxPrice, minPrice, page, province, selectedBrandId, selectedCategoryId, selectedCondition, verifiedOnly, ward])
 
   useEffect(() => {
     void fetchProducts()
@@ -177,11 +303,9 @@ export default function BikeListingPage() {
 
   function handleSearchSubmit() {
     const nextKeyword = searchInput.trim()
-    const nextProvince = provinceInput.trim()
     setPage(0)
     setKeyword(nextKeyword)
-    setProvince(nextProvince)
-    updateSearchUrl({ keyword: nextKeyword, province: nextProvince })
+    updateSearchUrl({ keyword: nextKeyword, province, district, ward })
   }
 
   function handleCategoryChange(categoryId: string) {
@@ -193,8 +317,9 @@ export default function BikeListingPage() {
   function clearFilters() {
     setSearchInput('')
     setKeyword('')
-    setProvinceInput('')
     setProvince('')
+    setDistrict('')
+    setWard('')
     setSelectedBrandId('')
     setSelectedCategoryId('')
     setSelectedCondition('')
@@ -208,6 +333,8 @@ export default function BikeListingPage() {
   const activeFiltersCount =
     (keyword ? 1 : 0) +
     (province ? 1 : 0) +
+    (district ? 1 : 0) +
+    (ward ? 1 : 0) +
     (selectedBrandId ? 1 : 0) +
     (selectedCategoryId ? 1 : 0) +
     (selectedCondition ? 1 : 0) +
@@ -218,6 +345,18 @@ export default function BikeListingPage() {
   const selectedCategory = categories.find((category) => category.id === selectedCategoryId)
   const selectedBrand = brands.find((brand) => brand.id === selectedBrandId)
   const selectedConditionLabel = CONDITIONS.find((condition) => condition.value === selectedCondition)?.label
+  const selectedProvinceOption = useMemo(
+    () => findAdministrativeOptionByName(provinceOptions, province),
+    [province, provinceOptions],
+  )
+  const selectedDistrictOption = useMemo(
+    () => findAdministrativeOptionByName(districtOptions, district),
+    [district, districtOptions],
+  )
+  const selectedWardOption = useMemo(
+    () => findAdministrativeOptionByName(wardOptions, ward),
+    [ward, wardOptions],
+  )
 
   const filterContent = (
     <div className="space-y-6">
@@ -379,12 +518,12 @@ export default function BikeListingPage() {
 
           <div className="min-w-0 flex-1">
             <div className="mb-6 flex flex-col gap-4">
-              <div className="grid gap-3 lg:grid-cols-[1fr_280px_auto]">
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(0,1.2fr)_repeat(3,minmax(0,0.8fr))_auto]">
                 <div className="relative">
                   <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     placeholder="Tìm kiếm xe đạp..."
-                    className="pl-10"
+                    className="h-11 pl-10"
                     value={searchInput}
                     onChange={(event) => setSearchInput(event.target.value)}
                     onKeyDown={(event) => event.key === 'Enter' && handleSearchSubmit()}
@@ -392,52 +531,154 @@ export default function BikeListingPage() {
                 </div>
 
                 <div className="relative">
-                  <MapPin className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    placeholder="Lọc theo tỉnh / thành phố"
-                    className="pl-10"
-                    value={provinceInput}
-                    onChange={(event) => setProvinceInput(event.target.value)}
-                    onKeyDown={(event) => event.key === 'Enter' && handleSearchSubmit()}
-                  />
+                  <MapPin className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Select
+                    value={selectedProvinceOption?.name ?? ALL_LOCATION_VALUE}
+                    onValueChange={(value) => {
+                      const nextProvince = value === ALL_LOCATION_VALUE ? '' : value
+                      setPage(0)
+                      setProvince(nextProvince)
+                      setDistrict('')
+                      setWard('')
+                      setDistrictOptions([])
+                      setWardOptions([])
+                      updateSearchUrl({
+                        province: nextProvince,
+                        district: '',
+                        ward: '',
+                      })
+                    }}
+                    disabled={provinceOptionsLoading}
+                  >
+                    <SelectTrigger className="h-11 pl-10 text-left">
+                      <SelectValue
+                        placeholder={
+                          provinceOptionsLoading ? 'Đang tải tỉnh / thành phố...' : 'Tỉnh / thành phố'
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-72">
+                      <SelectItem value={ALL_LOCATION_VALUE}>Tất cả tỉnh / thành</SelectItem>
+                      {provinceOptions.map((option) => (
+                        <SelectItem key={option.code} value={option.name}>
+                          {option.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <Button onClick={handleSearchSubmit}>Tìm</Button>
+                <div className="relative">
+                  <MapPin className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Select
+                    value={selectedDistrictOption?.name ?? ALL_LOCATION_VALUE}
+                    onValueChange={(value) => {
+                      const nextDistrict = value === ALL_LOCATION_VALUE ? '' : value
+                      setPage(0)
+                      setDistrict(nextDistrict)
+                      setWard('')
+                      setWardOptions([])
+                      updateSearchUrl({
+                        district: nextDistrict,
+                        ward: '',
+                      })
+                    }}
+                    disabled={!selectedProvinceOption || districtOptionsLoading}
+                  >
+                    <SelectTrigger className="h-11 pl-10 text-left">
+                      <SelectValue
+                        placeholder={
+                          !selectedProvinceOption
+                            ? 'Quận / huyện'
+                            : districtOptionsLoading
+                              ? 'Đang tải quận / huyện...'
+                              : 'Quận / huyện'
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-72">
+                      <SelectItem value={ALL_LOCATION_VALUE}>Tất cả quận / huyện</SelectItem>
+                      {districtOptions.map((option) => (
+                        <SelectItem key={option.code} value={option.name}>
+                          {option.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-                  <Sheet>
-                    <SheetTrigger asChild>
-                      <Button variant="outline" className="lg:hidden">
-                        <SlidersHorizontal className="mr-2 h-4 w-4" />
-                        Bộ lọc
-                      </Button>
-                    </SheetTrigger>
-                    <SheetContent side="left" className="w-[300px] overflow-y-auto">
-                      <SheetHeader>
-                        <SheetTitle>Bộ lọc</SheetTitle>
-                      </SheetHeader>
-                      <div className="mt-6">{filterContent}</div>
-                    </SheetContent>
-                  </Sheet>
+                <div className="relative">
+                  <MapPin className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Select
+                    value={selectedWardOption?.name ?? ALL_LOCATION_VALUE}
+                    onValueChange={(value) => {
+                      const nextWard = value === ALL_LOCATION_VALUE ? '' : value
+                      setPage(0)
+                      setWard(nextWard)
+                      updateSearchUrl({ ward: nextWard })
+                    }}
+                    disabled={!selectedDistrictOption || wardOptionsLoading}
+                  >
+                    <SelectTrigger className="h-11 pl-10 text-left">
+                      <SelectValue
+                        placeholder={
+                          !selectedDistrictOption
+                            ? 'Phường / xã'
+                            : wardOptionsLoading
+                              ? 'Đang tải phường / xã...'
+                              : 'Phường / xã'
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-72">
+                      <SelectItem value={ALL_LOCATION_VALUE}>Tất cả phường / xã</SelectItem>
+                      {wardOptions.map((option) => (
+                        <SelectItem key={option.code} value={option.name}>
+                          {option.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-                  <div className="hidden items-center rounded-lg border sm:flex">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className={cn('rounded-r-none', viewMode === 'grid' && 'bg-muted')}
-                      onClick={() => setViewMode('grid')}
-                    >
-                      <Grid3X3 className="h-4 w-4" />
+                <Button className="h-11 sm:col-span-2 xl:col-span-1" onClick={handleSearchSubmit}>
+                  Tìm kiếm
+                </Button>
+              </div>
+
+              <div className="flex items-center justify-between gap-3">
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <Button variant="outline" className="lg:hidden">
+                      <SlidersHorizontal className="mr-2 h-4 w-4" />
+                      Bộ lọc
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className={cn('rounded-l-none', viewMode === 'list' && 'bg-muted')}
-                      onClick={() => setViewMode('list')}
-                    >
-                      <List className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  </SheetTrigger>
+                  <SheetContent side="left" className="w-[300px] overflow-y-auto">
+                    <SheetHeader>
+                      <SheetTitle>Bộ lọc</SheetTitle>
+                    </SheetHeader>
+                    <div className="mt-6">{filterContent}</div>
+                  </SheetContent>
+                </Sheet>
+
+                <div className="hidden items-center rounded-lg border sm:ml-auto sm:flex">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={cn('rounded-r-none', viewMode === 'grid' && 'bg-muted')}
+                    onClick={() => setViewMode('grid')}
+                  >
+                    <Grid3X3 className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={cn('rounded-l-none', viewMode === 'list' && 'bg-muted')}
+                    onClick={() => setViewMode('list')}
+                  >
+                    <List className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
 
@@ -464,10 +705,40 @@ export default function BikeListingPage() {
                       <X
                         className="h-3 w-3 cursor-pointer"
                         onClick={() => {
-                          setProvinceInput('')
                           setProvince('')
+                          setDistrict('')
+                          setWard('')
                           setPage(0)
-                          updateSearchUrl({ province: '' })
+                          updateSearchUrl({ province: '', district: '', ward: '' })
+                        }}
+                      />
+                    </Badge>
+                  )}
+
+                  {district && (
+                    <Badge variant="secondary" className="gap-1">
+                      Quận / huyện: {district}
+                      <X
+                        className="h-3 w-3 cursor-pointer"
+                        onClick={() => {
+                          setDistrict('')
+                          setWard('')
+                          setPage(0)
+                          updateSearchUrl({ district: '', ward: '' })
+                        }}
+                      />
+                    </Badge>
+                  )}
+
+                  {ward && (
+                    <Badge variant="secondary" className="gap-1">
+                      Phường / xã: {ward}
+                      <X
+                        className="h-3 w-3 cursor-pointer"
+                        onClick={() => {
+                          setWard('')
+                          setPage(0)
+                          updateSearchUrl({ ward: '' })
                         }}
                       />
                     </Badge>

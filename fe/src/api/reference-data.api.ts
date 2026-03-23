@@ -64,6 +64,10 @@ export const referenceDataApi = {
     return getResult<ReferenceValue[]>('/api/frame-materials')
   },
 
+  getGroupsets() {
+    return getResult<ReferenceValue[]>('/api/groupsets')
+  },
+
   createFrameMaterial(request: ReferenceValueUpsertRequest) {
     return postResult<ReferenceValue, ReferenceValueUpsertRequest>('/api/admin/frame-materials', request)
   },
@@ -77,5 +81,20 @@ export const referenceDataApi = {
 
   deleteFrameMaterial(frameMaterialId: string) {
     return deleteResult<string>(`/api/admin/frame-materials/${frameMaterialId}`)
+  },
+
+  createGroupset(request: ReferenceValueUpsertRequest) {
+    return postResult<ReferenceValue, ReferenceValueUpsertRequest>('/api/admin/groupsets', request)
+  },
+
+  updateGroupset(groupsetId: string, request: ReferenceValueUpsertRequest) {
+    return putResult<ReferenceValue, ReferenceValueUpsertRequest>(
+      `/api/admin/groupsets/${groupsetId}`,
+      request,
+    )
+  },
+
+  deleteGroupset(groupsetId: string) {
+    return deleteResult<string>(`/api/admin/groupsets/${groupsetId}`)
   },
 }

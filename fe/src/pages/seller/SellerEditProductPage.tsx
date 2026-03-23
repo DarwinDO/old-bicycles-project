@@ -41,9 +41,9 @@ interface FormState {
   brandId: string
   frameSize: string
   wheelSize: string
+  groupsetId: string
   brakeTypeId: string
   frameMaterialId: string
-  groupset: string
   condition: string
   price: string
   originalPrice: string
@@ -110,9 +110,9 @@ export default function SellerEditProductPage() {
     brandId: '',
     frameSize: '',
     wheelSize: '',
+    groupsetId: '',
     brakeTypeId: '',
     frameMaterialId: '',
-    groupset: '',
     condition: '',
     price: '',
     originalPrice: '',
@@ -126,6 +126,7 @@ export default function SellerEditProductPage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [brakeTypes, setBrakeTypes] = useState<ReferenceValue[]>([])
   const [frameMaterials, setFrameMaterials] = useState<ReferenceValue[]>([])
+  const [groupsets, setGroupsets] = useState<ReferenceValue[]>([])
   const [referenceLoading, setReferenceLoading] = useState(true)
 
   useEffect(() => {
@@ -138,18 +139,23 @@ export default function SellerEditProductPage() {
       referenceDataApi.getCategories(),
       referenceDataApi.getBrakeTypes(),
       referenceDataApi.getFrameMaterials(),
+      referenceDataApi.getGroupsets(),
       productsApi.getMineById(id),
     ])
-      .then(([loadedBrands, loadedCategories, loadedBrakeTypes, loadedFrameMaterials, product]) => {
+      .then(([loadedBrands, loadedCategories, loadedBrakeTypes, loadedFrameMaterials, loadedGroupsets, product]) => {
         setBrands(loadedBrands)
         setCategories(loadedCategories)
         setBrakeTypes(loadedBrakeTypes)
         setFrameMaterials(loadedFrameMaterials)
+        setGroupsets(loadedGroupsets)
 
         const matchedCategory = loadedCategories.find((category) => category.name === product.categoryName)
         const matchedBrand = loadedBrands.find((brand) => brand.name === product.brandName)
         const matchedBrakeType = loadedBrakeTypes.find((brakeType) => brakeType.name === product.brakeTypeName)
         const matchedMaterial = loadedFrameMaterials.find((material) => material.name === product.frameMaterialName)
+        const matchedGroupset = product.groupsetId
+          ? loadedGroupsets.find((groupset) => groupset.id === product.groupsetId)
+          : loadedGroupsets.find((groupset) => groupset.name === product.groupset)
 
         setFormData({
           title: product.title ?? '',
@@ -157,9 +163,9 @@ export default function SellerEditProductPage() {
           brandId: matchedBrand?.id ?? '',
           frameSize: product.frameSize ?? '',
           wheelSize: product.wheelSize ?? '',
+          groupsetId: matchedGroupset?.id ?? '',
           brakeTypeId: matchedBrakeType?.id ?? '',
           frameMaterialId: matchedMaterial?.id ?? '',
-          groupset: product.groupset ?? '',
           condition: product.condition ?? '',
           price: String(product.price ?? ''),
           originalPrice: String(product.originalPrice ?? ''),
@@ -244,9 +250,9 @@ export default function SellerEditProductPage() {
       categoryId: formData.categoryId || undefined,
       brakeTypeId: formData.brakeTypeId || undefined,
       frameMaterialId: formData.frameMaterialId || undefined,
+      groupsetId: formData.groupsetId || undefined,
       frameSize: formData.frameSize || undefined,
       wheelSize: formData.wheelSize || undefined,
-      groupset: formData.groupset || undefined,
       condition: (formData.condition as ProductMutationInput['condition']) || undefined,
       province: formData.province || undefined,
       district: formData.district || undefined,
@@ -470,11 +476,18 @@ export default function SellerEditProductPage() {
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">Bộ truyền động</label>
-                <Input
-                  value={formData.groupset}
-                  onChange={(event) => handleChange('groupset', event.target.value)}
-                  placeholder="VD: Shimano Ultegra..."
-                />
+                <select
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  value={formData.groupsetId}
+                  onChange={(event) => handleChange('groupsetId', event.target.value)}
+                >
+                  <option value="">Chọn groupset</option>
+                  {groupsets.map((groupset) => (
+                    <option key={groupset.id} value={groupset.id}>
+                      {groupset.name}
+                    </option>
+                  ))}
+                </select>
               </div>
             </CardContent>
           </Card>

@@ -23,7 +23,7 @@ function buildProductFormData(input: ProductMutationInput) {
   appendFormField(formData, 'categoryId', input.categoryId)
   appendFormField(formData, 'frameSize', input.frameSize)
   appendFormField(formData, 'wheelSize', input.wheelSize)
-  appendFormField(formData, 'groupset', input.groupset)
+  appendFormField(formData, 'groupsetId', input.groupsetId)
   appendFormField(formData, 'condition', input.condition)
   appendFormField(formData, 'province', input.province)
   appendFormField(formData, 'district', input.district)

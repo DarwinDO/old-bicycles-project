@@ -45,6 +45,7 @@ export interface Product {
   district?: string | null
   frameSize?: string | null
   wheelSize?: string | null
+  groupsetId?: string | null
   groupset?: string | null
   createdAt: string
   expiresAt?: string | null
@@ -68,6 +69,7 @@ export interface ProductFilterRequest {
   condition?: ConditionType
   frameSize?: string
   wheelSize?: string
+  groupsetId?: string
   groupset?: string
   minPrice?: number
   maxPrice?: number
@@ -89,7 +91,7 @@ export interface ProductMutationInput {
   categoryId?: string
   frameSize?: string
   wheelSize?: string
-  groupset?: string
+  groupsetId?: string
   condition?: ConditionType
   province?: string
   district?: string

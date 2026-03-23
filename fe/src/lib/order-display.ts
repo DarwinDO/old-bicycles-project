@@ -75,6 +75,18 @@ export function getOrderStatusMeta(order: Order): OrderStatusMeta {
 
   if (
     (order.status === 'deposited' || order.status === 'awaiting_buyer_confirmation') &&
+    order.fundingStatus === 'refund_pending'
+  ) {
+    return {
+      label: 'Chờ admin duyệt hoàn tiền',
+      helperText:
+        'Người mua đã gửi yêu cầu hoàn tiền. Đơn hàng tạm dừng ở bước tranh chấp cho đến khi admin review yêu cầu này.',
+      tone: 'warning',
+    }
+  }
+
+  if (
+    (order.status === 'deposited' || order.status === 'awaiting_buyer_confirmation') &&
     order.fundingStatus === 'refund_pending_transfer'
   ) {
     return {

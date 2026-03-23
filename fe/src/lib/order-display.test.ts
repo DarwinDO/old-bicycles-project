@@ -107,6 +107,22 @@ describe('order-display', () => {
     expect(canBuyerRequestRefund(order)).toBe(true)
   })
 
+  it('shows refund pending while admin reviews a refund requested after handover', () => {
+    const order = buildOrder({
+      status: 'awaiting_buyer_confirmation',
+      fundingStatus: 'refund_pending',
+      paidAmount: 3000000,
+      remainingAmount: 27000000,
+    })
+
+    const statusMeta = getOrderStatusMeta(order)
+
+    expect(statusMeta.label).toBe('Chờ admin duyệt hoàn tiền')
+    expect(statusMeta.helperText).toContain('admin review')
+    expect(canBuyerRequestRefund(order)).toBe(false)
+    expect(canBuyerConfirmReceived(order)).toBe(false)
+  })
+
   it('shows seller payout pending after buyer confirms receipt', () => {
     const order = buildOrder({
       status: 'completed',

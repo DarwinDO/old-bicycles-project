@@ -424,10 +424,17 @@ export function BuyerOrdersView() {
                         </Button>
                       )}
 
-                      {order.status === 'awaiting_buyer_confirmation' && !canBuyerConfirmReceived(order) && (
+                      {order.status === 'awaiting_buyer_confirmation' && order.fundingStatus === 'held' && !canBuyerConfirmReceived(order) && (
                         <Button variant="ghost" className="cursor-default hover:bg-transparent" disabled>
                           <ShieldCheck className="mr-2 h-4 w-4" />
                           Chờ bạn xác nhận đã nhận xe
+                        </Button>
+                      )}
+
+                      {order.fundingStatus === 'refund_pending' && (
+                        <Button variant="ghost" className="cursor-default hover:bg-transparent" disabled>
+                          <AlertTriangle className="mr-2 h-4 w-4" />
+                          Đã gửi yêu cầu hoàn tiền
                         </Button>
                       )}
 

@@ -48,11 +48,7 @@ function formatPrice(price: number): string {
 
 function getPrimaryImage(product: Product): string {
   const primaryImage = product.images.find((image) => image.isPrimary)
-  return (
-    primaryImage?.url ??
-    product.images[0]?.url ??
-    'https://images.unsplash.com/photo-1576435728678-68d0fbf94e91?w=800'
-  )
+  return primaryImage?.url ?? product.images[0]?.url ?? ''
 }
 
 interface FilterSectionProps {
@@ -82,6 +78,27 @@ function ProductCardSkeleton() {
         <div className="h-3 w-1/3 animate-pulse rounded bg-muted" />
       </div>
     </div>
+  )
+}
+
+function ProductCardImage({ imageUrl, title }: { imageUrl: string; title: string }) {
+  if (!imageUrl) {
+    return (
+      <div className="flex h-full w-full items-center justify-center bg-muted/80">
+        <div className="flex flex-col items-center gap-2 text-muted-foreground">
+          <Grid3X3 className="h-8 w-8 opacity-50" />
+          <span className="text-xs font-medium">Chưa có ảnh</span>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <img
+      src={imageUrl}
+      alt={title}
+      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+    />
   )
 }
 
@@ -821,11 +838,7 @@ export default function BikeListingPage() {
                   <Link key={product.id} to={buildRoute.bikeDetail(product.id)}>
                     <Card className={cn('group cursor-pointer overflow-hidden transition-all hover:shadow-lg', viewMode === 'list' && 'flex')}>
                       <div className={cn('relative overflow-hidden', viewMode === 'grid' ? 'aspect-[4/3]' : 'w-48 shrink-0')}>
-                        <img
-                          src={getPrimaryImage(product)}
-                          alt={product.title}
-                          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                        />
+                        <ProductCardImage imageUrl={getPrimaryImage(product)} title={product.title} />
 
                         <div className="absolute left-3 top-3 flex flex-wrap gap-2">
                           {product.condition && (

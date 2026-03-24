@@ -45,6 +45,8 @@ export type OrderFundingStatus =
   | 'refund_pending_transfer'
   | 'refunded'
 
+export type OrderCancelReason = 'buyer_cancelled' | 'seller_cancelled' | 'admin_cancelled' | 'payment_expired'
+
 export interface Order {
   id: string
   productId: string
@@ -68,6 +70,8 @@ export interface Order {
   buyerReceiptEvidence?: OrderEvidenceSubmission | null
   acceptedAt?: string | null
   paymentDeadline?: string | null
+  cancelReason?: OrderCancelReason | null
+  cancelledAt?: string | null
   createdAt: string
   updatedAt: string
 }

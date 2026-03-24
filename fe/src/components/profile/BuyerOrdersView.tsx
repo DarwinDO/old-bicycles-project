@@ -29,10 +29,12 @@ import {
   canCancelOpenOrder,
   formatOrderCurrency,
   formatOrderDate,
+  getPaymentCountdownText,
   getOrderStatusMeta,
   getOrderToneClass,
   getPaymentMethodLabel,
   getPaymentOptionLabel,
+  isPaymentDeadlineExpired,
 } from '@/lib/order-display'
 import type { Order, OrderEvidenceInput } from '@/types/order'
 import type { PaymentRequestResponse } from '@/types/payment'
@@ -73,10 +75,21 @@ export function BuyerOrdersView() {
   const [selectedOrderForRefund, setSelectedOrderForRefund] = useState<Order | null>(null)
   const [selectedOrderForReview, setSelectedOrderForReview] = useState<Order | null>(null)
   const [selectedOrderForReceipt, setSelectedOrderForReceipt] = useState<Order | null>(null)
+  const [nowMs, setNowMs] = useState(() => Date.now())
   const [refundError, setRefundError] = useState<string | null>(null)
   const [reviewError, setReviewError] = useState<string | null>(null)
   const [receiptError, setReceiptError] = useState<string | null>(null)
   const buyerOrders = user ? orders.filter((order) => order.buyerId === user.id) : []
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setNowMs(Date.now())
+    }, 1000)
+
+    return () => {
+      window.clearInterval(intervalId)
+    }
+  }, [])
 
   useEffect(() => {
     const state = location.state as { orderCreatedNotice?: string } | null
@@ -288,7 +301,9 @@ export function BuyerOrdersView() {
       ) : (
         <div className="grid gap-4">
           {buyerOrders.map((order) => {
-            const statusMeta = getOrderStatusMeta(order)
+            const statusMeta = getOrderStatusMeta(order, nowMs)
+            const paymentDeadlineExpired = isPaymentDeadlineExpired(order, nowMs)
+            const paymentCountdownText = getPaymentCountdownText(order.paymentDeadline, nowMs)
             const paymentRequest = paymentRequests[order.id]
             const paymentActionLoading = actionLoadingKey === `payment:${order.id}`
             const cancelActionLoading = actionLoadingKey === `cancel:${order.id}`
@@ -325,6 +340,21 @@ export function BuyerOrdersView() {
                       </div>
                       <p className="text-sm text-muted-foreground">{statusMeta.helperText}</p>
 
+                      {order.fundingStatus === 'awaiting_payment' && order.paymentDeadline && (
+                        <div
+                          className={`rounded-lg border px-3 py-2 text-sm ${
+                            paymentDeadlineExpired
+                              ? 'border-destructive/30 bg-destructive/5 text-destructive'
+                              : 'border-primary/20 bg-primary/5 text-primary'
+                          }`}
+                        >
+                          <p className="font-medium">Hạn thanh toán: {formatOrderDate(order.paymentDeadline)}</p>
+                          <p className={paymentDeadlineExpired ? 'text-destructive/90' : 'text-primary/90'}>
+                            {paymentCountdownText}
+                          </p>
+                        </div>
+                      )}
+
                       <div className="grid gap-1 text-sm text-muted-foreground sm:grid-cols-2">
                         <p>
                           Phương thức: <span className="font-medium text-foreground">{getPaymentMethodLabel(order)}</span>
@@ -348,7 +378,7 @@ export function BuyerOrdersView() {
                     <div className="text-lg font-bold text-primary">{formatOrderCurrency(order.totalAmount)}</div>
 
                     <div className="flex w-full flex-wrap gap-2 lg:w-auto lg:justify-end">
-                      {canBuyerRequestPayment(order) && (
+                      {canBuyerRequestPayment(order, nowMs) && (
                         <Button
                           className="gap-1.5"
                           onClick={() => void handleCreatePaymentRequest(order)}
@@ -411,7 +441,7 @@ export function BuyerOrdersView() {
                         </Button>
                       )}
 
-                      {canCancelOpenOrder(order) && (
+                      {canCancelOpenOrder(order, nowMs) && (
                         <Button variant="outline" onClick={() => void handleCancelOrder(order)} disabled={cancelActionLoading}>
                           {cancelActionLoading ? 'Đang hủy...' : 'Hủy đơn'}
                         </Button>
@@ -423,6 +453,15 @@ export function BuyerOrdersView() {
                           Thanh toán trực tiếp với người bán
                         </Button>
                       )}
+
+                      {order.status === 'pending' &&
+                        order.fundingStatus === 'awaiting_payment' &&
+                        paymentDeadlineExpired && (
+                          <Button variant="ghost" className="cursor-default hover:bg-transparent" disabled>
+                            <XCircle className="mr-2 h-4 w-4" />
+                            Đơn đã hết hạn thanh toán
+                          </Button>
+                        )}
 
                       {order.status === 'awaiting_buyer_confirmation' && order.fundingStatus === 'held' && !canBuyerConfirmReceived(order) && (
                         <Button variant="ghost" className="cursor-default hover:bg-transparent" disabled>

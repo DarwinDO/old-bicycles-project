@@ -6,12 +6,14 @@ describe('app-header-visibility', () => {
   it('hides seller entry for authenticated buyers', () => {
     expect(canAccessSellerEntry('buyer', true)).toBe(false)
     expect(getAppHeaderNavigation('buyer', true).some((item) => item.href === ROUTES.SELL)).toBe(false)
+    expect(getAppHeaderNavigation('buyer', true).some((item) => item.href === ROUTES.ASSISTANT)).toBe(true)
   })
 
   it('keeps seller entry for guests and sellers', () => {
     expect(canAccessSellerEntry(undefined, false)).toBe(true)
     expect(canAccessSellerEntry('seller', true)).toBe(true)
     expect(getAppHeaderNavigation(undefined, false).some((item) => item.href === ROUTES.SELL)).toBe(true)
+    expect(getAppHeaderNavigation(undefined, false).some((item) => item.href === ROUTES.ASSISTANT)).toBe(false)
     expect(getAppHeaderNavigation('seller', true).some((item) => item.href === ROUTES.SELLER_NEW_PRODUCT)).toBe(true)
   })
 

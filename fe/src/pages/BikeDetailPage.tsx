@@ -229,7 +229,7 @@ export default function BikeDetailPage() {
   const isOrderActionDisabled = isLockedForTransaction || isOwnListing
   const isAdminDetailView = user?.role === 'admin'
   const listPageHref = isAdminDetailView ? ROUTES.ADMIN_LISTINGS : ROUTES.MARKET
-  const listPageLabel = isAdminDetailView ? 'Duyá»‡t tin Ä‘Äƒng' : 'Mua xe'
+  const listPageLabel = isAdminDetailView ? 'Duyệt tin đăng' : 'Mua xe'
 
   const handleOpenOrderDialog = () => {
     if (!product) {

@@ -27,13 +27,17 @@ export function getSellEntryHref(role?: AppRole | null, isAuthenticated = false)
 }
 
 export function getAppHeaderNavigation(role?: AppRole | null, isAuthenticated = false) {
-  if (canAccessSellerEntry(role, isAuthenticated)) {
-    return baseNavigation.map((item) =>
-      item.href === ROUTES.SELL
-        ? { ...item, href: getSellEntryHref(role, isAuthenticated) }
-        : item,
-    )
+  const baseItems = canAccessSellerEntry(role, isAuthenticated)
+    ? baseNavigation.map((item) =>
+        item.href === ROUTES.SELL
+          ? { ...item, href: getSellEntryHref(role, isAuthenticated) }
+          : item,
+      )
+    : baseNavigation.filter((item) => item.href !== ROUTES.SELL)
+
+  if (isAuthenticated) {
+    return [...baseItems, { name: 'Trợ lý', href: ROUTES.ASSISTANT }]
   }
 
-  return baseNavigation.filter((item) => item.href !== ROUTES.SELL)
+  return baseItems
 }

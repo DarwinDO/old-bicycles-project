@@ -14,10 +14,12 @@ import {
   canSellerConfirmCashDeposit,
   formatOrderCurrency,
   formatOrderDate,
+  getPaymentCountdownText,
   getOrderStatusMeta,
   getOrderToneClass,
   getPaymentMethodLabel,
   getPaymentOptionLabel,
+  isPaymentDeadlineExpired,
 } from '@/lib/order-display'
 import type { Order, OrderEvidenceInput } from '@/types/order'
 
@@ -53,6 +55,17 @@ export default function SellerOrdersPage() {
   const [deliveryError, setDeliveryError] = useState<string | null>(null)
   const [actionLoadingKey, setActionLoadingKey] = useState<string | null>(null)
   const [selectedOrderForDelivery, setSelectedOrderForDelivery] = useState<Order | null>(null)
+  const [nowMs, setNowMs] = useState(() => Date.now())
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setNowMs(Date.now())
+    }, 1000)
+
+    return () => {
+      window.clearInterval(intervalId)
+    }
+  }, [])
 
   useEffect(() => {
     if (!sellerId) {
@@ -177,7 +190,9 @@ export default function SellerOrdersPage() {
       ) : (
         <div className="grid gap-4">
           {orders.map((order) => {
-            const statusMeta = getOrderStatusMeta(order)
+            const statusMeta = getOrderStatusMeta(order, nowMs)
+            const paymentDeadlineExpired = isPaymentDeadlineExpired(order, nowMs)
+            const paymentCountdownText = getPaymentCountdownText(order.paymentDeadline, nowMs)
 
             return (
               <div key={order.id} className="space-y-4 rounded-xl border bg-card p-5 text-card-foreground shadow-sm">
@@ -207,6 +222,21 @@ export default function SellerOrdersPage() {
                         Trạng thái: {statusMeta.label}
                       </div>
                       <p className="text-sm text-muted-foreground">{statusMeta.helperText}</p>
+
+                      {order.fundingStatus === 'awaiting_payment' && order.paymentDeadline && (
+                        <div
+                          className={`rounded-lg border px-3 py-2 text-sm ${
+                            paymentDeadlineExpired
+                              ? 'border-destructive/30 bg-destructive/5 text-destructive'
+                              : 'border-primary/20 bg-primary/5 text-primary'
+                          }`}
+                        >
+                          <p className="font-medium">Hạn thanh toán: {formatOrderDate(order.paymentDeadline)}</p>
+                          <p className={paymentDeadlineExpired ? 'text-destructive/90' : 'text-primary/90'}>
+                            {paymentCountdownText}
+                          </p>
+                        </div>
+                      )}
 
                       <div className="grid gap-1 text-sm text-muted-foreground sm:grid-cols-2">
                         <p>
@@ -246,7 +276,7 @@ export default function SellerOrdersPage() {
                         </Button>
                       )}
 
-                      {canSellerConfirmCashDeposit(order) && (
+                      {canSellerConfirmCashDeposit(order, nowMs) && (
                         <Button
                           variant="outline"
                           className="gap-1.5"
@@ -281,7 +311,7 @@ export default function SellerOrdersPage() {
                         </Button>
                       )}
 
-                      {canCancelOpenOrder(order) && (
+                      {canCancelOpenOrder(order, nowMs) && (
                         <Button
                           variant="outline"
                           className="gap-1.5 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-950/30"
@@ -297,10 +327,18 @@ export default function SellerOrdersPage() {
                         </Button>
                       )}
 
+                      {order.status === 'pending' &&
+                        order.fundingStatus === 'awaiting_payment' &&
+                        paymentDeadlineExpired && (
+                          <Button variant="ghost" className="cursor-default hover:bg-transparent" disabled>
+                            Đơn đã hết hạn thanh toán
+                          </Button>
+                        )}
+
                       {!canSellerAcceptOrder(order) &&
-                        !canSellerConfirmCashDeposit(order) &&
+                        !canSellerConfirmCashDeposit(order, nowMs) &&
                         !canSellerCompleteOrder(order) &&
-                        !canCancelOpenOrder(order) && (
+                        !canCancelOpenOrder(order, nowMs) && (
                           <Button variant="ghost" className="cursor-default hover:bg-transparent" disabled>
                             Không có thao tác thêm
                           </Button>

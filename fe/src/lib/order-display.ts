@@ -47,7 +47,50 @@ export function getPaymentOptionLabel(order: Order) {
   return order.paymentOption === 'full' ? 'Thanh toán toàn bộ' : 'Đặt cọc một phần'
 }
 
-export function getOrderStatusMeta(order: Order): OrderStatusMeta {
+function getPaymentDeadlineMs(order: Order) {
+  if (!order.paymentDeadline) {
+    return null
+  }
+
+  const deadlineMs = new Date(order.paymentDeadline).getTime()
+  return Number.isFinite(deadlineMs) ? deadlineMs : null
+}
+
+export function isPaymentDeadlineExpired(order: Order, nowMs = Date.now()) {
+  const deadlineMs = getPaymentDeadlineMs(order)
+  return deadlineMs !== null && deadlineMs <= nowMs
+}
+
+export function getPaymentCountdownText(paymentDeadline?: string | null, nowMs = Date.now()) {
+  if (!paymentDeadline) {
+    return null
+  }
+
+  const deadlineMs = new Date(paymentDeadline).getTime()
+  if (!Number.isFinite(deadlineMs)) {
+    return null
+  }
+
+  const diffMs = deadlineMs - nowMs
+  if (diffMs <= 0) {
+    return 'Đã quá hạn thanh toán'
+  }
+
+  const totalSeconds = Math.floor(diffMs / 1000)
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const seconds = totalSeconds % 60
+
+  if (hours > 0) {
+    return `Còn ${hours} giờ ${minutes} phút`
+  }
+  if (minutes > 0) {
+    return `Còn ${minutes} phút ${seconds} giây`
+  }
+  return `Còn ${seconds} giây`
+}
+
+export function getOrderStatusMeta(order: Order, nowMs = Date.now()): OrderStatusMeta {
   if (order.status === 'completed' && order.fundingStatus === 'seller_payout_pending') {
     return {
       label: 'Chờ giải ngân cho người bán',
@@ -68,7 +111,8 @@ export function getOrderStatusMeta(order: Order): OrderStatusMeta {
   if (order.status === 'awaiting_buyer_confirmation' && order.fundingStatus === 'held') {
     return {
       label: 'Chờ người mua xác nhận',
-      helperText: 'Người bán đã báo giao xe. Người mua cần xác nhận đã nhận xe để hệ thống chuyển sang bước giải ngân.',
+      helperText:
+        'Người bán đã báo giao xe. Người mua cần xác nhận đã nhận xe để hệ thống chuyển sang bước giải ngân.',
       tone: 'warning',
     }
   }
@@ -97,6 +141,15 @@ export function getOrderStatusMeta(order: Order): OrderStatusMeta {
     }
   }
 
+  if (order.status === 'cancelled' && order.fundingStatus === 'refund_pending_transfer') {
+    return {
+      label: 'Chờ chuyển khoản hoàn tiền',
+      helperText:
+        'Hệ thống đã nhận được thanh toán sau khi đơn bị hủy hoặc hết hạn. Khoản tiền này đang chờ hoàn thủ công cho người mua.',
+      tone: 'warning',
+    }
+  }
+
   if (order.status === 'cancelled' && order.fundingStatus === 'refund_pending') {
     return {
       label: 'Đang chờ hoàn tiền',
@@ -113,6 +166,14 @@ export function getOrderStatusMeta(order: Order): OrderStatusMeta {
     }
   }
 
+  if (order.status === 'cancelled' && order.cancelReason === 'payment_expired') {
+    return {
+      label: 'Đã hết hạn thanh toán',
+      helperText: 'Người mua không thanh toán đúng hạn nên đơn đã tự hủy.',
+      tone: 'danger',
+    }
+  }
+
   if (order.status === 'cancelled') {
     return {
       label: 'Đã hủy',
@@ -126,6 +187,14 @@ export function getOrderStatusMeta(order: Order): OrderStatusMeta {
       label: 'Đã đặt cọc',
       helperText: 'Hệ thống đã giữ tiền đặt cọc và chờ người bán hoàn tất giao dịch.',
       tone: 'info',
+    }
+  }
+
+  if (order.status === 'pending' && order.fundingStatus === 'awaiting_payment' && isPaymentDeadlineExpired(order, nowMs)) {
+    return {
+      label: 'Đã hết hạn thanh toán',
+      helperText: 'Đơn hàng đã quá hạn thanh toán. Hệ thống sẽ tự hủy hoặc đang đồng bộ trạng thái hủy.',
+      tone: 'danger',
     }
   }
 
@@ -159,8 +228,13 @@ export function canSellerAcceptOrder(order: Order) {
   return order.status === 'pending' && order.fundingStatus === 'unpaid'
 }
 
-export function canSellerConfirmCashDeposit(order: Order) {
-  return order.status === 'pending' && order.fundingStatus === 'awaiting_payment' && order.paymentMethod === 'cash'
+export function canSellerConfirmCashDeposit(order: Order, nowMs = Date.now()) {
+  return (
+    order.status === 'pending' &&
+    order.fundingStatus === 'awaiting_payment' &&
+    order.paymentMethod === 'cash' &&
+    !isPaymentDeadlineExpired(order, nowMs)
+  )
 }
 
 export function canSellerCompleteOrder(order: Order) {
@@ -171,12 +245,21 @@ export function canBuyerConfirmReceived(order: Order) {
   return order.status === 'awaiting_buyer_confirmation' && order.fundingStatus === 'held'
 }
 
-export function canCancelOpenOrder(order: Order) {
-  return order.status === 'pending' && (order.fundingStatus === 'unpaid' || order.fundingStatus === 'awaiting_payment')
+export function canCancelOpenOrder(order: Order, nowMs = Date.now()) {
+  return (
+    order.status === 'pending' &&
+    (order.fundingStatus === 'unpaid' ||
+      (order.fundingStatus === 'awaiting_payment' && !isPaymentDeadlineExpired(order, nowMs)))
+  )
 }
 
-export function canBuyerRequestPayment(order: Order) {
-  return order.status === 'pending' && order.fundingStatus === 'awaiting_payment' && order.paymentMethod !== 'cash'
+export function canBuyerRequestPayment(order: Order, nowMs = Date.now()) {
+  return (
+    order.status === 'pending' &&
+    order.fundingStatus === 'awaiting_payment' &&
+    order.paymentMethod !== 'cash' &&
+    !isPaymentDeadlineExpired(order, nowMs)
+  )
 }
 
 export function canBuyerRequestRefund(order: Order) {

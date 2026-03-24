@@ -7,7 +7,7 @@
 Ví dụ:
 
 - đúng: `Chọn groupset`
-- bị vỡ: `Chá»n groupset`
+- bị vỡ: chuỗi chữ hiện ra thành các ký tự lạ
 
 Điều này thường xảy ra khi:
 
@@ -52,7 +52,7 @@ Lý do:
 ## 5. Cách kiểm tra nhanh sau khi sửa
 
 1. mở lại file trong VS Code với `UTF-8`
-2. kiểm tra các label tiếng Việt có còn bị kiểu `Chá»...` hay không
+2. kiểm tra các label tiếng Việt có còn bị vỡ nữa hay không
 3. chạy lại test/build để chắc việc đổi text không làm hỏng màn hình
 
 Trong slice này đã verify bằng:
@@ -62,6 +62,6 @@ Trong slice này đã verify bằng:
 
 ## 6. Chốt ngắn
 
-Đây là một lỗi hiển thị do encoding, không phải lỗi nghiệp vụ `groupset`.
+Đây là lỗi hiển thị do encoding, không phải lỗi nghiệp vụ `groupset`.
 
 Logic filter/create/edit vẫn giữ nguyên, chỉ dọn lại text để UI hiển thị đúng tiếng Việt.

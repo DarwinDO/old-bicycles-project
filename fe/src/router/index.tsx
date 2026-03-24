@@ -25,6 +25,7 @@ import NotFoundPage from '../pages/NotFoundPage';
 
 // Messages pages (lazy loaded)
 const MessagesPage = lazy(() => import('../pages/messages/MessagesPage'));
+const AssistantPage = lazy(() => import('../pages/AssistantPage'));
 
 // User utility pages (lazy loaded)
 const NotificationsPage = lazy(() => import('../pages/NotificationsPage'));
@@ -98,6 +99,14 @@ export default function AppRouter() {
                         element={
                             <ProtectedRoute>
                                 <MessagesPage />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path={ROUTES.ASSISTANT}
+                        element={
+                            <ProtectedRoute>
+                                <AssistantPage />
                             </ProtectedRoute>
                         }
                     />

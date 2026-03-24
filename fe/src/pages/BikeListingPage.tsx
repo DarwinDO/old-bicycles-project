@@ -27,7 +27,7 @@ import { buildMarketSearchParams, readMarketSearchState } from '@/lib/market-sea
 import { findAdministrativeOptionByName, type AdministrativeOption } from '@/lib/vietnamese-provinces'
 import { cn } from '@/lib/utils'
 import type { Product, ProductFilterRequest } from '@/types/product'
-import type { Brand, Category } from '@/types/reference-data'
+import type { Brand, Category, ReferenceValue } from '@/types/reference-data'
 
 const PAGE_SIZE = 6
 const ALL_LOCATION_VALUE = '__all__'
@@ -48,11 +48,7 @@ function formatPrice(price: number): string {
 
 function getPrimaryImage(product: Product): string {
   const primaryImage = product.images.find((image) => image.isPrimary)
-  return (
-    primaryImage?.url ??
-    product.images[0]?.url ??
-    'https://images.unsplash.com/photo-1576435728678-68d0fbf94e91?w=800'
-  )
+  return primaryImage?.url ?? product.images[0]?.url ?? ''
 }
 
 interface FilterSectionProps {
@@ -85,6 +81,27 @@ function ProductCardSkeleton() {
   )
 }
 
+function ProductCardImage({ imageUrl, title }: { imageUrl: string; title: string }) {
+  if (!imageUrl) {
+    return (
+      <div className="flex h-full w-full items-center justify-center bg-muted/80">
+        <div className="flex flex-col items-center gap-2 text-muted-foreground">
+          <Grid3X3 className="h-8 w-8 opacity-50" />
+          <span className="text-xs font-medium">Chưa có ảnh</span>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <img
+      src={imageUrl}
+      alt={title}
+      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+    />
+  )
+}
+
 export default function BikeListingPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const initialSearchState = useMemo(() => readMarketSearchState(searchParams), [searchParams])
@@ -92,6 +109,7 @@ export default function BikeListingPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [brands, setBrands] = useState<Brand[]>([])
   const [categories, setCategories] = useState<Category[]>([])
+  const [groupsets, setGroupsets] = useState<ReferenceValue[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [page, setPage] = useState(0)
@@ -111,6 +129,7 @@ export default function BikeListingPage() {
   const [districtOptionsLoading, setDistrictOptionsLoading] = useState(false)
   const [wardOptionsLoading, setWardOptionsLoading] = useState(false)
   const [selectedBrandId, setSelectedBrandId] = useState('')
+  const [selectedGroupsetId, setSelectedGroupsetId] = useState('')
   const [selectedCategoryId, setSelectedCategoryId] = useState(initialSearchState.categoryId)
   const [selectedCondition, setSelectedCondition] = useState('')
   const [verifiedOnly, setVerifiedOnly] = useState(false)
@@ -118,14 +137,16 @@ export default function BikeListingPage() {
   const [maxPrice, setMaxPrice] = useState('')
 
   useEffect(() => {
-    Promise.all([referenceDataApi.getBrands(), referenceDataApi.getCategories()])
-      .then(([loadedBrands, loadedCategories]) => {
+    Promise.all([referenceDataApi.getBrands(), referenceDataApi.getCategories(), referenceDataApi.getGroupsets()])
+      .then(([loadedBrands, loadedCategories, loadedGroupsets]) => {
         setBrands(loadedBrands)
         setCategories(loadedCategories)
+        setGroupsets(loadedGroupsets)
       })
       .catch(() => {
         setBrands([])
         setCategories([])
+        setGroupsets([])
       })
   }, [])
 
@@ -279,6 +300,7 @@ export default function BikeListingPage() {
     if (district) filters.district = district
     if (ward) filters.ward = ward
     if (selectedBrandId) filters.brandId = selectedBrandId
+    if (selectedGroupsetId) filters.groupsetId = selectedGroupsetId
     if (selectedCategoryId) filters.categoryId = selectedCategoryId
     if (selectedCondition) filters.condition = selectedCondition as ProductFilterRequest['condition']
     if (verifiedOnly) filters.hasInspection = true
@@ -295,7 +317,7 @@ export default function BikeListingPage() {
     } finally {
       setIsLoading(false)
     }
-  }, [district, keyword, maxPrice, minPrice, page, province, selectedBrandId, selectedCategoryId, selectedCondition, verifiedOnly, ward])
+  }, [district, keyword, maxPrice, minPrice, page, province, selectedBrandId, selectedCategoryId, selectedCondition, selectedGroupsetId, verifiedOnly, ward])
 
   useEffect(() => {
     void fetchProducts()
@@ -319,9 +341,10 @@ export default function BikeListingPage() {
     setKeyword('')
     setProvince('')
     setDistrict('')
-    setWard('')
-    setSelectedBrandId('')
-    setSelectedCategoryId('')
+      setWard('')
+      setSelectedBrandId('')
+      setSelectedGroupsetId('')
+      setSelectedCategoryId('')
     setSelectedCondition('')
     setVerifiedOnly(false)
     setMinPrice('')
@@ -336,6 +359,7 @@ export default function BikeListingPage() {
     (district ? 1 : 0) +
     (ward ? 1 : 0) +
     (selectedBrandId ? 1 : 0) +
+    (selectedGroupsetId ? 1 : 0) +
     (selectedCategoryId ? 1 : 0) +
     (selectedCondition ? 1 : 0) +
     (verifiedOnly ? 1 : 0) +
@@ -344,6 +368,7 @@ export default function BikeListingPage() {
 
   const selectedCategory = categories.find((category) => category.id === selectedCategoryId)
   const selectedBrand = brands.find((brand) => brand.id === selectedBrandId)
+  const selectedGroupset = groupsets.find((groupset) => groupset.id === selectedGroupsetId)
   const selectedConditionLabel = CONDITIONS.find((condition) => condition.value === selectedCondition)?.label
   const selectedProvinceOption = useMemo(
     () => findAdministrativeOptionByName(provinceOptions, province),
@@ -405,6 +430,30 @@ export default function BikeListingPage() {
             </label>
           ))}
         </div>
+      </FilterSection>
+
+      <Separator />
+
+      <FilterSection title="Groupset">
+        <Select
+          value={selectedGroupsetId || ALL_LOCATION_VALUE}
+          onValueChange={(value) => {
+            setSelectedGroupsetId(value === ALL_LOCATION_VALUE ? '' : value)
+            setPage(0)
+          }}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Chọn groupset" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ALL_LOCATION_VALUE}>Tất cả groupset</SelectItem>
+            {groupsets.map((groupset) => (
+              <SelectItem key={groupset.id} value={groupset.id}>
+                {groupset.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </FilterSection>
 
       <Separator />
@@ -758,6 +807,13 @@ export default function BikeListingPage() {
                     </Badge>
                   )}
 
+                  {selectedGroupset && (
+                    <Badge variant="secondary" className="gap-1">
+                      Groupset: {selectedGroupset.name}
+                      <X className="h-3 w-3 cursor-pointer" onClick={() => setSelectedGroupsetId('')} />
+                    </Badge>
+                  )}
+
                   {selectedConditionLabel && (
                     <Badge variant="secondary" className="gap-1">
                       Tình trạng: {selectedConditionLabel}
@@ -821,11 +877,7 @@ export default function BikeListingPage() {
                   <Link key={product.id} to={buildRoute.bikeDetail(product.id)}>
                     <Card className={cn('group cursor-pointer overflow-hidden transition-all hover:shadow-lg', viewMode === 'list' && 'flex')}>
                       <div className={cn('relative overflow-hidden', viewMode === 'grid' ? 'aspect-[4/3]' : 'w-48 shrink-0')}>
-                        <img
-                          src={getPrimaryImage(product)}
-                          alt={product.title}
-                          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                        />
+                        <ProductCardImage imageUrl={getPrimaryImage(product)} title={product.title} />
 
                         <div className="absolute left-3 top-3 flex flex-wrap gap-2">
                           {product.condition && (

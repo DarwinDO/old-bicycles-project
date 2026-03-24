@@ -25,6 +25,7 @@ interface ChatWindowProps {
 
 const REALTIME_CONNECTION_WARNING = 'Kết nối realtime đang gián đoạn. Hệ thống sẽ tự thử kết nối lại.'
 const INITIAL_CONNECTION_WARNING_DELAY_MS = 8000
+const CHAT_CONTENT_WIDTH_CLASS = 'max-w-3xl'
 
 function getErrorMessage(error: unknown, fallback: string) {
   if (
@@ -297,15 +298,17 @@ export function ChatWindow({ conversation, onBack }: ChatWindowProps) {
         </Button>
       </header>
 
-      <div className="flex cursor-default items-center gap-3 border-b bg-muted/30 p-3">
-        <div className="flex h-12 w-12 items-center justify-center rounded bg-muted text-xs font-semibold text-muted-foreground">
-          🚲
+      <div className="border-b bg-muted/30 p-3">
+        <div className={cn('mx-auto flex w-full items-center gap-3', CHAT_CONTENT_WIDTH_CLASS)}>
+          <div className="flex h-12 w-12 items-center justify-center rounded bg-muted text-xs font-semibold text-muted-foreground">
+            🚲
+          </div>
+          <div className="flex-1">
+            <span className="line-clamp-1 text-sm font-medium">{conversation.productTitle}</span>
+            <span className="text-xs text-muted-foreground">Cuộc trò chuyện gắn với sản phẩm này</span>
+          </div>
+          <Badge variant="secondary">Chat mua bán</Badge>
         </div>
-        <div className="flex-1">
-          <span className="line-clamp-1 text-sm font-medium">{conversation.productTitle}</span>
-          <span className="text-xs text-muted-foreground">Cuộc trò chuyện gắn với sản phẩm này</span>
-        </div>
-        <Badge variant="secondary">Chat mua bán</Badge>
       </div>
 
       {error && (
@@ -317,7 +320,8 @@ export function ChatWindow({ conversation, onBack }: ChatWindowProps) {
       <ScrollArea className="flex-1 p-4" viewportRef={scrollRef}>
         <div
           className={cn(
-            'mx-auto flex w-full max-w-5xl flex-col gap-4 pb-4',
+            'mx-auto flex w-full flex-col gap-4 pb-4',
+            CHAT_CONTENT_WIDTH_CLASS,
             shouldAnchorMessagesToBottom && 'min-h-full justify-end',
           )}
         >
@@ -340,7 +344,7 @@ export function ChatWindow({ conversation, onBack }: ChatWindowProps) {
 
               return (
                 <div key={message.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
-                  <div className="flex max-w-[75%] flex-col gap-1 md:max-w-[65%]">
+                  <div className="flex max-w-[78%] flex-col gap-1 md:max-w-[68%]">
                     <div
                       className={`
                         rounded-2xl px-4 py-2 text-sm
@@ -365,7 +369,7 @@ export function ChatWindow({ conversation, onBack }: ChatWindowProps) {
       </ScrollArea>
 
       <div className="border-t bg-background p-4">
-        <form onSubmit={handleSend} className="mx-auto flex w-full max-w-5xl items-center gap-2">
+        <form onSubmit={handleSend} className={cn('mx-auto flex w-full items-center gap-2', CHAT_CONTENT_WIDTH_CLASS)}>
           <Input
             placeholder={isSocketReady ? 'Nhập tin nhắn...' : 'Đang chờ kết nối realtime...'}
             className="flex-1 rounded-full border-transparent bg-muted/50 transition-colors focus-visible:bg-background focus-visible:ring-1 focus-visible:ring-primary"

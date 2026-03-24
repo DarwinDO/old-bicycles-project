@@ -1,5 +1,19 @@
-import { getResult, patchResult, postResult } from '@/lib/http'
-import type { Order, OrderCreateRequest } from '@/types/order'
+import { getResult, http, patchResult, postResult } from '@/lib/http'
+import type { Order, OrderCreateRequest, OrderEvidenceInput } from '@/types/order'
+
+function buildOrderEvidenceFormData(input?: OrderEvidenceInput) {
+  const formData = new FormData()
+
+  if (input?.note?.trim()) {
+    formData.append('note', input.note.trim())
+  }
+
+  input?.files?.forEach((file) => {
+    formData.append('files', file)
+  })
+
+  return formData
+}
 
 export const ordersApi = {
   create(request: OrderCreateRequest) {
@@ -18,12 +32,22 @@ export const ordersApi = {
     return patchResult<Order>(`/api/orders/${orderId}/confirm-deposit`)
   },
 
-  complete(orderId: string) {
-    return patchResult<Order>(`/api/orders/${orderId}/complete`)
+  async complete(orderId: string, input: OrderEvidenceInput) {
+    const response = await http.patch(`/api/orders/${orderId}/complete`, buildOrderEvidenceFormData(input), {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+    return response.data.result as Order
   },
 
-  confirmReceived(orderId: string) {
-    return patchResult<Order>(`/api/orders/${orderId}/confirm-received`)
+  async confirmReceived(orderId: string, input: OrderEvidenceInput) {
+    const response = await http.patch(`/api/orders/${orderId}/confirm-received`, buildOrderEvidenceFormData(input), {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+    return response.data.result as Order
   },
 
   cancel(orderId: string) {

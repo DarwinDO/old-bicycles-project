@@ -13,7 +13,10 @@ import {
 import { ordersApi } from '@/api/orders.api'
 import { paymentsApi } from '@/api/payments.api'
 import { refundsApi } from '@/api/refunds.api'
+import { reviewsApi } from '@/api/reviews.api'
 import { DisputeModal, type RefundFormValues } from '@/components/profile/DisputeModal'
+import { OrderEvidenceDialog } from '@/components/profile/OrderEvidenceDialog'
+import { OrderEvidenceSection } from '@/components/profile/OrderEvidenceSection'
 import { ReviewOrderDialog, type ReviewOrderFormValues } from '@/components/profile/ReviewOrderDialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -26,13 +29,14 @@ import {
   canCancelOpenOrder,
   formatOrderCurrency,
   formatOrderDate,
+  getPaymentCountdownText,
   getOrderStatusMeta,
   getOrderToneClass,
   getPaymentMethodLabel,
   getPaymentOptionLabel,
+  isPaymentDeadlineExpired,
 } from '@/lib/order-display'
-import { reviewsApi } from '@/api/reviews.api'
-import type { Order } from '@/types/order'
+import type { Order, OrderEvidenceInput } from '@/types/order'
 import type { PaymentRequestResponse } from '@/types/payment'
 
 function getErrorMessage(error: unknown, fallback: string) {
@@ -70,9 +74,22 @@ export function BuyerOrdersView() {
   const [paymentRequests, setPaymentRequests] = useState<Record<string, PaymentRequestResponse>>({})
   const [selectedOrderForRefund, setSelectedOrderForRefund] = useState<Order | null>(null)
   const [selectedOrderForReview, setSelectedOrderForReview] = useState<Order | null>(null)
+  const [selectedOrderForReceipt, setSelectedOrderForReceipt] = useState<Order | null>(null)
+  const [nowMs, setNowMs] = useState(() => Date.now())
   const [refundError, setRefundError] = useState<string | null>(null)
   const [reviewError, setReviewError] = useState<string | null>(null)
+  const [receiptError, setReceiptError] = useState<string | null>(null)
   const buyerOrders = user ? orders.filter((order) => order.buyerId === user.id) : []
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setNowMs(Date.now())
+    }, 1000)
+
+    return () => {
+      window.clearInterval(intervalId)
+    }
+  }, [])
 
   useEffect(() => {
     const state = location.state as { orderCreatedNotice?: string } | null
@@ -163,15 +180,19 @@ export function BuyerOrdersView() {
     }
   }
 
-  async function handleConfirmReceived(order: Order) {
+  async function handleConfirmReceived(order: Order, values: OrderEvidenceInput) {
     setActionLoadingKey(`confirmReceived:${order.id}`)
 
     try {
-      const updatedOrder = await ordersApi.confirmReceived(order.id)
+      const updatedOrder = await ordersApi.confirmReceived(order.id, values)
       replaceOrder(updatedOrder)
+      setSelectedOrderForReceipt(null)
+      setReceiptError(null)
       setError(null)
     } catch (requestError) {
-      setError(getErrorMessage(requestError, 'Không thể xác nhận đã nhận xe lúc này.'))
+      const message = getErrorMessage(requestError, 'Không thể xác nhận đã nhận xe lúc này.')
+      setReceiptError(message)
+      setError(message)
     } finally {
       setActionLoadingKey(null)
     }
@@ -280,7 +301,9 @@ export function BuyerOrdersView() {
       ) : (
         <div className="grid gap-4">
           {buyerOrders.map((order) => {
-            const statusMeta = getOrderStatusMeta(order)
+            const statusMeta = getOrderStatusMeta(order, nowMs)
+            const paymentDeadlineExpired = isPaymentDeadlineExpired(order, nowMs)
+            const paymentCountdownText = getPaymentCountdownText(order.paymentDeadline, nowMs)
             const paymentRequest = paymentRequests[order.id]
             const paymentActionLoading = actionLoadingKey === `payment:${order.id}`
             const cancelActionLoading = actionLoadingKey === `cancel:${order.id}`
@@ -289,7 +312,7 @@ export function BuyerOrdersView() {
             const reviewActionLoading = actionLoadingKey === `review:${order.id}`
 
             return (
-              <div key={order.id} className="rounded-xl border bg-card p-5 text-card-foreground shadow-sm">
+              <div key={order.id} className="space-y-4 rounded-xl border bg-card p-5 text-card-foreground shadow-sm">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                   <div className="flex gap-4">
                     <div className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary/50 text-muted-foreground">
@@ -317,6 +340,21 @@ export function BuyerOrdersView() {
                       </div>
                       <p className="text-sm text-muted-foreground">{statusMeta.helperText}</p>
 
+                      {order.fundingStatus === 'awaiting_payment' && order.paymentDeadline && (
+                        <div
+                          className={`rounded-lg border px-3 py-2 text-sm ${
+                            paymentDeadlineExpired
+                              ? 'border-destructive/30 bg-destructive/5 text-destructive'
+                              : 'border-primary/20 bg-primary/5 text-primary'
+                          }`}
+                        >
+                          <p className="font-medium">Hạn thanh toán: {formatOrderDate(order.paymentDeadline)}</p>
+                          <p className={paymentDeadlineExpired ? 'text-destructive/90' : 'text-primary/90'}>
+                            {paymentCountdownText}
+                          </p>
+                        </div>
+                      )}
+
                       <div className="grid gap-1 text-sm text-muted-foreground sm:grid-cols-2">
                         <p>
                           Phương thức: <span className="font-medium text-foreground">{getPaymentMethodLabel(order)}</span>
@@ -340,7 +378,7 @@ export function BuyerOrdersView() {
                     <div className="text-lg font-bold text-primary">{formatOrderCurrency(order.totalAmount)}</div>
 
                     <div className="flex w-full flex-wrap gap-2 lg:w-auto lg:justify-end">
-                      {canBuyerRequestPayment(order) && (
+                      {canBuyerRequestPayment(order, nowMs) && (
                         <Button
                           className="gap-1.5"
                           onClick={() => void handleCreatePaymentRequest(order)}
@@ -373,7 +411,10 @@ export function BuyerOrdersView() {
                       {canBuyerConfirmReceived(order) && (
                         <Button
                           className="gap-1.5 bg-green-600 text-white hover:bg-green-700"
-                          onClick={() => void handleConfirmReceived(order)}
+                          onClick={() => {
+                            setSelectedOrderForReceipt(order)
+                            setReceiptError(null)
+                          }}
                           disabled={confirmReceivedLoading}
                         >
                           {confirmReceivedLoading ? (
@@ -400,7 +441,7 @@ export function BuyerOrdersView() {
                         </Button>
                       )}
 
-                      {canCancelOpenOrder(order) && (
+                      {canCancelOpenOrder(order, nowMs) && (
                         <Button variant="outline" onClick={() => void handleCancelOrder(order)} disabled={cancelActionLoading}>
                           {cancelActionLoading ? 'Đang hủy...' : 'Hủy đơn'}
                         </Button>
@@ -413,10 +454,26 @@ export function BuyerOrdersView() {
                         </Button>
                       )}
 
-                      {order.status === 'awaiting_buyer_confirmation' && !canBuyerConfirmReceived(order) && (
+                      {order.status === 'pending' &&
+                        order.fundingStatus === 'awaiting_payment' &&
+                        paymentDeadlineExpired && (
+                          <Button variant="ghost" className="cursor-default hover:bg-transparent" disabled>
+                            <XCircle className="mr-2 h-4 w-4" />
+                            Đơn đã hết hạn thanh toán
+                          </Button>
+                        )}
+
+                      {order.status === 'awaiting_buyer_confirmation' && order.fundingStatus === 'held' && !canBuyerConfirmReceived(order) && (
                         <Button variant="ghost" className="cursor-default hover:bg-transparent" disabled>
                           <ShieldCheck className="mr-2 h-4 w-4" />
                           Chờ bạn xác nhận đã nhận xe
+                        </Button>
+                      )}
+
+                      {order.fundingStatus === 'refund_pending' && (
+                        <Button variant="ghost" className="cursor-default hover:bg-transparent" disabled>
+                          <AlertTriangle className="mr-2 h-4 w-4" />
+                          Đã gửi yêu cầu hoàn tiền
                         </Button>
                       )}
 
@@ -444,7 +501,7 @@ export function BuyerOrdersView() {
                 </div>
 
                 {paymentRequest && (
-                  <div className="mt-4 rounded-xl border border-primary/20 bg-primary/5 p-4">
+                  <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
                     <div className="flex flex-col gap-4 lg:flex-row">
                       {paymentRequest.qrCodeUrl && (
                         <div className="w-full max-w-[180px] shrink-0 overflow-hidden rounded-lg border bg-white p-2">
@@ -525,6 +582,17 @@ export function BuyerOrdersView() {
                     </div>
                   </div>
                 )}
+
+                <div className="grid gap-3 lg:grid-cols-2">
+                  <OrderEvidenceSection
+                    title="Chứng cứ bàn giao từ người bán"
+                    evidence={order.sellerHandoverEvidence}
+                  />
+                  <OrderEvidenceSection
+                    title="Chứng cứ đã nhận xe từ người mua"
+                    evidence={order.buyerReceiptEvidence}
+                  />
+                </div>
               </div>
             )
           })}
@@ -554,6 +622,26 @@ export function BuyerOrdersView() {
           setReviewError(null)
         }}
         onSubmit={handleSubmitReview}
+      />
+
+      <OrderEvidenceDialog
+        open={Boolean(selectedOrderForReceipt)}
+        title="Xác nhận đã nhận xe"
+        description="Tải thêm ảnh nếu bạn muốn lưu lại bằng chứng tình trạng xe sau khi nhận cho đơn hàng"
+        noteLabel="Ghi chú khi nhận xe"
+        notePlaceholder="Ví dụ: xe đúng mô tả, đủ phụ kiện và đã kiểm tra tình trạng tổng thể."
+        submitLabel="Xác nhận đã nhận xe"
+        orderTitle={selectedOrderForReceipt?.productTitle ?? ''}
+        helperText="Nếu xe có vấn đề, đừng xác nhận. Hãy quay lại đơn hàng và chọn yêu cầu hoàn tiền hoặc tranh chấp."
+        loading={Boolean(selectedOrderForReceipt) && actionLoadingKey === `confirmReceived:${selectedOrderForReceipt?.id}`}
+        error={receiptError}
+        onClose={() => {
+          setSelectedOrderForReceipt(null)
+          setReceiptError(null)
+        }}
+        onSubmit={(values) =>
+          selectedOrderForReceipt ? handleConfirmReceived(selectedOrderForReceipt, values) : undefined
+        }
       />
     </div>
   )

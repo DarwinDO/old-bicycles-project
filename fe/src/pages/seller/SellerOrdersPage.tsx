@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { CheckCircle, Loader2, ShoppingBag, Truck, Wallet, XCircle } from 'lucide-react'
 import { ordersApi } from '@/api/orders.api'
+import { OrderEvidenceDialog } from '@/components/profile/OrderEvidenceDialog'
+import { OrderEvidenceSection } from '@/components/profile/OrderEvidenceSection'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/contexts/AuthContext'
@@ -12,12 +14,14 @@ import {
   canSellerConfirmCashDeposit,
   formatOrderCurrency,
   formatOrderDate,
+  getPaymentCountdownText,
   getOrderStatusMeta,
   getOrderToneClass,
   getPaymentMethodLabel,
   getPaymentOptionLabel,
+  isPaymentDeadlineExpired,
 } from '@/lib/order-display'
-import type { Order } from '@/types/order'
+import type { Order, OrderEvidenceInput } from '@/types/order'
 
 function getErrorMessage(error: unknown, fallback: string) {
   if (
@@ -48,7 +52,20 @@ export default function SellerOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [deliveryError, setDeliveryError] = useState<string | null>(null)
   const [actionLoadingKey, setActionLoadingKey] = useState<string | null>(null)
+  const [selectedOrderForDelivery, setSelectedOrderForDelivery] = useState<Order | null>(null)
+  const [nowMs, setNowMs] = useState(() => Date.now())
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setNowMs(Date.now())
+    }, 1000)
+
+    return () => {
+      window.clearInterval(intervalId)
+    }
+  }, [])
 
   useEffect(() => {
     if (!sellerId) {
@@ -93,10 +110,7 @@ export default function SellerOrdersPage() {
     )
   }
 
-  async function runOrderAction(
-    order: Order,
-    action: 'accept' | 'confirmDeposit' | 'complete' | 'cancel',
-  ) {
+  async function runOrderAction(order: Order, action: 'accept' | 'confirmDeposit' | 'cancel') {
     setActionLoadingKey(`${action}:${order.id}`)
 
     try {
@@ -105,9 +119,7 @@ export default function SellerOrdersPage() {
           ? await ordersApi.accept(order.id)
           : action === 'confirmDeposit'
             ? await ordersApi.confirmDeposit(order.id)
-            : action === 'complete'
-              ? await ordersApi.complete(order.id)
-              : await ordersApi.cancel(order.id)
+            : await ordersApi.cancel(order.id)
 
       replaceOrder(updatedOrder)
       setError(null)
@@ -119,11 +131,27 @@ export default function SellerOrdersPage() {
             ? 'Không thể chấp nhận đơn hàng lúc này.'
             : action === 'confirmDeposit'
               ? 'Không thể xác nhận thanh toán trực tiếp lúc này.'
-              : action === 'complete'
-                ? 'Không thể báo đã giao xe lúc này.'
-                : 'Không thể hủy đơn hàng lúc này.',
+              : 'Không thể hủy đơn hàng lúc này.',
         ),
       )
+    } finally {
+      setActionLoadingKey(null)
+    }
+  }
+
+  async function handleSubmitDeliveryEvidence(order: Order, values: OrderEvidenceInput) {
+    setActionLoadingKey(`complete:${order.id}`)
+
+    try {
+      const updatedOrder = await ordersApi.complete(order.id, values)
+      replaceOrder(updatedOrder)
+      setSelectedOrderForDelivery(null)
+      setDeliveryError(null)
+      setError(null)
+    } catch (requestError) {
+      const message = getErrorMessage(requestError, 'Không thể báo đã giao xe lúc này.')
+      setDeliveryError(message)
+      setError(message)
     } finally {
       setActionLoadingKey(null)
     }
@@ -162,10 +190,12 @@ export default function SellerOrdersPage() {
       ) : (
         <div className="grid gap-4">
           {orders.map((order) => {
-            const statusMeta = getOrderStatusMeta(order)
+            const statusMeta = getOrderStatusMeta(order, nowMs)
+            const paymentDeadlineExpired = isPaymentDeadlineExpired(order, nowMs)
+            const paymentCountdownText = getPaymentCountdownText(order.paymentDeadline, nowMs)
 
             return (
-              <div key={order.id} className="rounded-xl border bg-card p-5 text-card-foreground shadow-sm">
+              <div key={order.id} className="space-y-4 rounded-xl border bg-card p-5 text-card-foreground shadow-sm">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                   <div className="flex gap-4">
                     <div className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary/50 text-muted-foreground">
@@ -192,6 +222,21 @@ export default function SellerOrdersPage() {
                         Trạng thái: {statusMeta.label}
                       </div>
                       <p className="text-sm text-muted-foreground">{statusMeta.helperText}</p>
+
+                      {order.fundingStatus === 'awaiting_payment' && order.paymentDeadline && (
+                        <div
+                          className={`rounded-lg border px-3 py-2 text-sm ${
+                            paymentDeadlineExpired
+                              ? 'border-destructive/30 bg-destructive/5 text-destructive'
+                              : 'border-primary/20 bg-primary/5 text-primary'
+                          }`}
+                        >
+                          <p className="font-medium">Hạn thanh toán: {formatOrderDate(order.paymentDeadline)}</p>
+                          <p className={paymentDeadlineExpired ? 'text-destructive/90' : 'text-primary/90'}>
+                            {paymentCountdownText}
+                          </p>
+                        </div>
+                      )}
 
                       <div className="grid gap-1 text-sm text-muted-foreground sm:grid-cols-2">
                         <p>
@@ -231,7 +276,7 @@ export default function SellerOrdersPage() {
                         </Button>
                       )}
 
-                      {canSellerConfirmCashDeposit(order) && (
+                      {canSellerConfirmCashDeposit(order, nowMs) && (
                         <Button
                           variant="outline"
                           className="gap-1.5"
@@ -251,7 +296,10 @@ export default function SellerOrdersPage() {
                         <Button
                           variant="outline"
                           className="gap-1.5 border-green-200 text-green-700 hover:bg-green-50 dark:border-green-900/50 dark:text-green-400 dark:hover:bg-green-950/30"
-                          onClick={() => void runOrderAction(order, 'complete')}
+                          onClick={() => {
+                            setSelectedOrderForDelivery(order)
+                            setDeliveryError(null)
+                          }}
                           disabled={actionLoadingKey === `complete:${order.id}`}
                         >
                           {actionLoadingKey === `complete:${order.id}` ? (
@@ -263,7 +311,7 @@ export default function SellerOrdersPage() {
                         </Button>
                       )}
 
-                      {canCancelOpenOrder(order) && (
+                      {canCancelOpenOrder(order, nowMs) && (
                         <Button
                           variant="outline"
                           className="gap-1.5 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-950/30"
@@ -279,10 +327,18 @@ export default function SellerOrdersPage() {
                         </Button>
                       )}
 
+                      {order.status === 'pending' &&
+                        order.fundingStatus === 'awaiting_payment' &&
+                        paymentDeadlineExpired && (
+                          <Button variant="ghost" className="cursor-default hover:bg-transparent" disabled>
+                            Đơn đã hết hạn thanh toán
+                          </Button>
+                        )}
+
                       {!canSellerAcceptOrder(order) &&
-                        !canSellerConfirmCashDeposit(order) &&
+                        !canSellerConfirmCashDeposit(order, nowMs) &&
                         !canSellerCompleteOrder(order) &&
-                        !canCancelOpenOrder(order) && (
+                        !canCancelOpenOrder(order, nowMs) && (
                           <Button variant="ghost" className="cursor-default hover:bg-transparent" disabled>
                             Không có thao tác thêm
                           </Button>
@@ -296,11 +352,43 @@ export default function SellerOrdersPage() {
                     </div>
                   </div>
                 </div>
+
+                <div className="grid gap-3 lg:grid-cols-2">
+                  <OrderEvidenceSection
+                    title="Chứng cứ bàn giao từ người bán"
+                    evidence={order.sellerHandoverEvidence}
+                  />
+                  <OrderEvidenceSection
+                    title="Chứng cứ đã nhận xe từ người mua"
+                    evidence={order.buyerReceiptEvidence}
+                  />
+                </div>
               </div>
             )
           })}
         </div>
       )}
+
+      <OrderEvidenceDialog
+        open={Boolean(selectedOrderForDelivery)}
+        title="Xác nhận đã bàn giao xe"
+        description="Tải ảnh bàn giao để buyer và admin có thể đối chiếu lại tình trạng xe cho đơn hàng"
+        noteLabel="Ghi chú bàn giao"
+        notePlaceholder="Ví dụ: đã bàn giao xe và phụ kiện tại cửa hàng, buyer đã kiểm tra ngoại quan."
+        submitLabel="Báo đã giao xe"
+        orderTitle={selectedOrderForDelivery?.productTitle ?? ''}
+        requireFiles
+        helperText="Vui lòng chụp rõ xe, phụ kiện đi kèm hoặc tình trạng đóng gói. Không chụp thông tin cá nhân không cần thiết."
+        loading={Boolean(selectedOrderForDelivery) && actionLoadingKey === `complete:${selectedOrderForDelivery?.id}`}
+        error={deliveryError}
+        onClose={() => {
+          setSelectedOrderForDelivery(null)
+          setDeliveryError(null)
+        }}
+        onSubmit={(values) =>
+          selectedOrderForDelivery ? handleSubmitDeliveryEvidence(selectedOrderForDelivery, values) : undefined
+        }
+      />
     </div>
   )
 }

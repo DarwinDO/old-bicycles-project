@@ -2,6 +2,32 @@ export type PaymentOption = 'partial' | 'full'
 
 export type PaymentMethod = 'transfer' | 'cash' | 'online'
 
+export type OrderEvidenceType = 'seller_handover' | 'buyer_receipt'
+
+export interface OrderEvidenceFile {
+  id: string
+  fileUrl: string
+  fileName?: string | null
+  contentType?: string | null
+  sortOrder?: number | null
+}
+
+export interface OrderEvidenceSubmission {
+  id: string
+  evidenceType: OrderEvidenceType
+  submittedByUserId: string
+  submittedByName: string
+  submittedByRole: 'guest' | 'buyer' | 'seller' | 'inspector' | 'admin'
+  note?: string | null
+  createdAt: string
+  files: OrderEvidenceFile[]
+}
+
+export interface OrderEvidenceInput {
+  note?: string
+  files?: File[]
+}
+
 export type OrderStatus =
   | 'pending'
   | 'deposited'
@@ -18,6 +44,8 @@ export type OrderFundingStatus =
   | 'refund_pending'
   | 'refund_pending_transfer'
   | 'refunded'
+
+export type OrderCancelReason = 'buyer_cancelled' | 'seller_cancelled' | 'admin_cancelled' | 'payment_expired'
 
 export interface Order {
   id: string
@@ -38,8 +66,12 @@ export interface Order {
   fundingStatus: OrderFundingStatus
   paymentMethod: PaymentMethod
   buyerReviewSubmitted: boolean
+  sellerHandoverEvidence?: OrderEvidenceSubmission | null
+  buyerReceiptEvidence?: OrderEvidenceSubmission | null
   acceptedAt?: string | null
   paymentDeadline?: string | null
+  cancelReason?: OrderCancelReason | null
+  cancelledAt?: string | null
   createdAt: string
   updatedAt: string
 }

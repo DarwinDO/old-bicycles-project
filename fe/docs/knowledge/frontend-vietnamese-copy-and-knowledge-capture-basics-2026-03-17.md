@@ -1,32 +1,31 @@
 # Frontend Vietnamese Copy And Knowledge Capture Basics - 2026-03-17
 
-## Mục Tiêu
+## Mục tiêu
 
 Ghi lại 2 vấn đề quan trọng cho FE:
 
-1. Vì sao đôi khi chữ tiếng Việt lại bị không dấu hoặc bị vỡ chữ.
+1. Vì sao đôi khi chữ tiếng Việt lại bị mất dấu hoặc bị vỡ chữ.
 2. Sau mỗi task FE, cần ghi lại kiến thức vào `docs/knowledge/` như thế nào để người mới cũng hiểu được.
 
-## Phân Biệt 2 Lỗi Rất Dễ Nhầm
+## Phân biệt 2 lỗi rất dễ nhầm
 
 ### 1. Tiếng Việt không dấu
 
-Ví dụ một câu tiếng Việt bị bỏ hết dấu, kiểu như câu “quản lý và kiểm duyệt các tin đăng bán xe” nhưng được viết thành dạng ASCII.
+Ví dụ một câu tiếng Việt bị bỏ hết dấu, kiểu như câu `quản lý và kiểm duyệt các tin đăng bán xe` nhưng được viết thành dạng ASCII.
 
 Đây **không phải** lỗi encoding. Đây thường là do người viết chủ động gõ ASCII để “an toàn”.
 
-Trong case này, nguyên nhân là:
+Trong case này, nguyên nhân thường là:
 
-- trước đó tôi đã fallback sang kiểu chữ không dấu để tránh rủi ro encoding
+- trước đó người sửa code fallback sang kiểu chữ không dấu để tránh rủi ro encoding
 - cách làm này an toàn về mặt kỹ thuật, nhưng xấu về mặt sản phẩm và không phù hợp cho UI tiếng Việt
 
 ### 2. Mojibake hoặc vỡ chữ
 
 Ví dụ hay gặp:
 
-- `Quáº£n lÃ½`
-- `Ä‘Ã£`
-- `kiá»ƒm`
+- `Quản lý` đúng lại thành một chuỗi ký tự lạ
+- `đã` bị biến thành các ký tự kiểu `Ã`, `Ä`, `Â`
 
 Đây là lỗi **encoding** hoặc lỗi khi một file UTF-8 bị đọc bằng bộ mã sai.
 
@@ -36,7 +35,7 @@ Nói đơn giản:
 - nhưng công cụ đọc file hiểu sai kiểu mã hóa
 - kết quả là chữ bị biến thành ký tự lạ
 
-## Encoding Là Gì?
+## Encoding là gì?
 
 `Encoding` là cách máy tính biến chữ thành số để lưu vào file.
 
@@ -47,13 +46,13 @@ Ví dụ rất dễ hiểu:
 
 Nếu lúc ghi file dùng một kiểu mã hóa, nhưng lúc đọc file lại dùng kiểu khác, chữ sẽ vỡ.
 
-## UTF-8 Là Gì?
+## UTF-8 là gì?
 
 `UTF-8` là chuẩn mã hóa rất phổ biến hiện nay. Nó hỗ trợ tiếng Việt tốt.
 
 Trong dự án FE này, nên xem `UTF-8` là chuẩn mặc định.
 
-## Cách Giảm Tối Đa Việc Bị Mất Dấu Hoặc Vỡ Chữ
+## Cách giảm tối đa việc bị mất dấu hoặc vỡ chữ
 
 ### 1. Với UI copy và tài liệu tiếng Việt, luôn dùng tiếng Việt có dấu
 
@@ -89,20 +88,20 @@ Có lúc:
 
 Lúc đó chưa chắc file hỏng. Có thể terminal đang dùng code page không đúng.
 
-## Vì Sao AGENTS Cần Bổ Sung Rule Này?
+## Vì sao AGENTS cần bổ sung rule này?
 
 Vì nếu rule không nói rõ:
 
 - model rất dễ quay về cách an toàn là dùng ASCII
 - nhất là khi dự án đang có sẵn vài file lỗi encoding cũ
 
-Nên FE AGENTS giờ cần chốt:
+Nên FE AGENTS cần chốt:
 
 - UI copy tiếng Việt phải giữ đúng dấu
 - docs/handoff tiếng Việt cũng phải giữ đúng dấu
 - chỉ code identifier và comment kỹ thuật mới nên giữ tiếng Anh
 
-## Knowledge Capture Là Gì?
+## Knowledge capture là gì?
 
 `Knowledge capture` nghĩa là sau khi làm xong một task, ta không chỉ sửa code rồi thôi.
 
@@ -120,7 +119,7 @@ Mục tiêu là:
 - dev mới vào vẫn đọc hiểu được
 - khi quên, chỉ cần mở note ra xem
 
-## Knowledge Note Trong FE Nên Viết Cho Ai?
+## Knowledge note trong FE nên viết cho ai?
 
 Mặc định nên viết cho:
 
@@ -135,7 +134,7 @@ Mặc định nên viết cho:
 - có ví dụ cụ thể
 - không nhảy cóc quá nhiều
 
-## Những Thuật Ngữ FE Cần Giải Thích Dễ Hiểu
+## Những thuật ngữ FE cần giải thích dễ hiểu
 
 ### 1. Route
 
@@ -200,7 +199,7 @@ Ví dụ:
 
 - `AuthContext`
 
-## Luồng File Của Task Dev 1: Admin Listings
+## Luồng file của task dev: Admin Listings
 
 Đây là luồng đi đơn giản, dễ nhớ:
 
@@ -223,7 +222,7 @@ Ví dụ:
     - sau khi xác nhận, page gọi `adminProductsApi.approve(...)` hoặc `adminProductsApi.hide(...)`
     - request thành công thì page refetch danh sách
 
-## Sơ Đồ Luồng Đi
+## Sơ đồ luồng đi
 
 ```mermaid
 flowchart LR
@@ -240,7 +239,7 @@ flowchart LR
     C --> I[ConfirmDialog]
 ```
 
-## Sau Mỗi Task FE Nên Ghi Gì Vào `docs/knowledge/`?
+## Sau mỗi task FE nên ghi gì vào `docs/knowledge/`?
 
 Ít nhất nên có 4 phần:
 
@@ -258,7 +257,7 @@ flowchart LR
 - file nào không nên đụng
 - state nào dễ làm hỏng UI
 
-## Kết Luận
+## Kết luận
 
 Muốn trị dứt điểm việc tiếng Việt bị xấu trong FE, cần làm đồng thời 3 việc:
 

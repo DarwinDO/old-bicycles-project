@@ -10,6 +10,7 @@ export const ROUTES = {
   VERIFY_EMAIL: '/verify-email',
   PROFILE: '/profile',
   MESSAGES: '/messages',
+  ASSISTANT: '/assistant',
   GUIDE: '/guide',
   // Admin routes
   ADMIN: '/admin',

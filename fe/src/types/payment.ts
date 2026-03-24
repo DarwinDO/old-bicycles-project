@@ -4,7 +4,7 @@ export type PaymentGateway = 'manual' | 'sepay'
 
 export type PaymentPhase = 'upfront' | 'remaining'
 
-export type PaymentStatus = 'pending' | 'processing' | 'success' | 'failed' | 'refunded'
+export type PaymentStatus = 'pending' | 'processing' | 'success' | 'failed' | 'expired' | 'refunded'
 
 export interface PaymentRequestResponse {
   paymentId: string
@@ -38,5 +38,6 @@ export interface PaymentHistoryItem {
   checkoutUrl?: string | null
   qrCodeUrl?: string | null
   paymentDate?: string | null
+  expiresAt?: string | null
   createdAt: string
 }

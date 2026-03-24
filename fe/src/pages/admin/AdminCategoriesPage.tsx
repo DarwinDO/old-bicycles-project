@@ -1,19 +1,22 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Plus, Pencil, Trash2, Check, X, Loader2, AlertCircle, Tags, Award, Disc, Layers } from 'lucide-react'
+import { Plus, Pencil, Trash2, Check, X, Loader2, AlertCircle, Tags, Award, Disc, Layers, Ruler } from 'lucide-react'
 import { referenceDataApi } from '@/api/reference-data.api'
-import type { Brand, Category, ReferenceValue } from '@/types/reference-data'
+import type { Brand, Category, ReferenceValue, SizeChart } from '@/types/reference-data'
+import AdminSizeChartsPanel from './AdminSizeChartsPanel'
 
 // ── types ──────────────────────────────────────────────────────────────────
 
-type TabId = 'categories' | 'brands' | 'brakeTypes' | 'frameMaterials'
+type TabId = 'categories' | 'brands' | 'brakeTypes' | 'frameMaterials' | 'groupsets' | 'sizeCharts'
 
 const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
   { id: 'categories', label: 'Danh mục xe', icon: Tags },
   { id: 'brands', label: 'Thương hiệu', icon: Award },
   { id: 'brakeTypes', label: 'Loại phanh', icon: Disc },
   { id: 'frameMaterials', label: 'Chất liệu khung', icon: Layers },
+  { id: 'groupsets', label: 'Groupset', icon: Layers },
+  { id: 'sizeCharts', label: 'Size chart', icon: Ruler },
 ]
 
 // ── generic ref-value panel (BrakeTypes & FrameMaterials) ─────────────────
@@ -363,13 +366,15 @@ export default function AdminCategoriesPage() {
   const [brands, setBrands] = useState<Brand[]>([])
   const [brakeTypes, setBrakeTypes] = useState<ReferenceValue[]>([])
   const [frameMaterials, setFrameMaterials] = useState<ReferenceValue[]>([])
+  const [groupsets, setGroupsets] = useState<ReferenceValue[]>([])
+  const [sizeCharts, setSizeCharts] = useState<SizeChart[]>([])
 
   // Loading/error per tab
   const [tabLoading, setTabLoading] = useState<Record<TabId, boolean>>({
-    categories: false, brands: false, brakeTypes: false, frameMaterials: false,
+    categories: false, brands: false, brakeTypes: false, frameMaterials: false, groupsets: false, sizeCharts: false,
   })
   const [tabError, setTabError] = useState<Record<TabId, string | null>>({
-    categories: null, brands: null, brakeTypes: null, frameMaterials: null,
+    categories: null, brands: null, brakeTypes: null, frameMaterials: null, groupsets: null, sizeCharts: null,
   })
 
   const setLoading = (tab: TabId, v: boolean) => setTabLoading((p) => ({ ...p, [tab]: v }))
@@ -404,13 +409,36 @@ export default function AdminCategoriesPage() {
     finally { setLoading('frameMaterials', false) }
   }, [])
 
+  const fetchGroupsets = useCallback(async () => {
+    setLoading('groupsets', true); setError('groupsets', null)
+    try { setGroupsets(await referenceDataApi.getGroupsets()) }
+    catch { setError('groupsets', 'Không thể tải groupset.') }
+    finally { setLoading('groupsets', false) }
+  }, [])
+
+  const fetchSizeCharts = useCallback(async () => {
+    setLoading('sizeCharts', true); setError('sizeCharts', null)
+    try {
+      const [loadedCharts, loadedCategories] = await Promise.all([
+        referenceDataApi.getAdminSizeCharts(),
+        referenceDataApi.getCategories(),
+      ])
+      setSizeCharts(loadedCharts)
+      setCategories(loadedCategories)
+    } catch {
+      setError('sizeCharts', 'Không thể tải size chart.')
+    } finally { setLoading('sizeCharts', false) }
+  }, [])
+
   // Load when tab changes
   useEffect(() => {
     if (activeTab === 'categories') fetchCategories()
     if (activeTab === 'brands') fetchBrands()
     if (activeTab === 'brakeTypes') fetchBrakeTypes()
     if (activeTab === 'frameMaterials') fetchFrameMaterials()
-  }, [activeTab, fetchCategories, fetchBrands, fetchBrakeTypes, fetchFrameMaterials])
+    if (activeTab === 'groupsets') fetchGroupsets()
+    if (activeTab === 'sizeCharts') fetchSizeCharts()
+  }, [activeTab, fetchCategories, fetchBrands, fetchBrakeTypes, fetchFrameMaterials, fetchGroupsets, fetchSizeCharts])
 
   // BrakeType CRUD wrappers
   const btHandlers = {
@@ -444,6 +472,36 @@ export default function AdminCategoriesPage() {
     },
   }
 
+  const gsHandlers = {
+    onAdd: async (name: string, description?: string) => {
+      await referenceDataApi.createGroupset({ name, description })
+      fetchGroupsets()
+    },
+    onUpdate: async (id: string, name: string, description?: string) => {
+      await referenceDataApi.updateGroupset(id, { name, description })
+      fetchGroupsets()
+    },
+    onDelete: async (id: string) => {
+      await referenceDataApi.deleteGroupset(id)
+      fetchGroupsets()
+    },
+  }
+
+  const scHandlers = {
+    onAdd: async (request: Parameters<typeof referenceDataApi.createSizeChart>[0]) => {
+      await referenceDataApi.createSizeChart(request)
+      fetchSizeCharts()
+    },
+    onUpdate: async (id: string, request: Parameters<typeof referenceDataApi.updateSizeChart>[1]) => {
+      await referenceDataApi.updateSizeChart(id, request)
+      fetchSizeCharts()
+    },
+    onDelete: async (id: string) => {
+      await referenceDataApi.deleteSizeChart(id)
+      fetchSizeCharts()
+    },
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -459,11 +517,10 @@ export default function AdminCategoriesPage() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-all border-b-2 -mb-px ${
-                activeTab === tab.id
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-muted-foreground hover:text-foreground'
-              }`}
+              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-all border-b-2 -mb-px ${activeTab === tab.id
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+                }`}
             >
               <Icon className="h-4 w-4" />
               {tab.label}
@@ -504,6 +561,23 @@ export default function AdminCategoriesPage() {
             loading={tabLoading.frameMaterials}
             error={tabError.frameMaterials}
             {...fmHandlers}
+          />
+        )}
+        {activeTab === 'groupsets' && (
+          <RefValuePanel
+            items={groupsets}
+            loading={tabLoading.groupsets}
+            error={tabError.groupsets}
+            {...gsHandlers}
+          />
+        )}
+        {activeTab === 'sizeCharts' && (
+          <AdminSizeChartsPanel
+            charts={sizeCharts}
+            categories={categories}
+            loading={tabLoading.sizeCharts}
+            error={tabError.sizeCharts}
+            {...scHandlers}
           />
         )}
       </div>

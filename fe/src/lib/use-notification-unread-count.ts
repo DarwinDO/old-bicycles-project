@@ -7,17 +7,18 @@ import { NOTIFICATIONS_UPDATED_EVENT } from '@/lib/notification-unread'
 const UNREAD_COUNT_POLL_INTERVAL_MS = 30_000
 
 export function useNotificationUnreadCount() {
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, user } = useAuth()
   const location = useLocation()
   const [unreadCount, setUnreadCount] = useState(0)
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated || !user?.id) {
       setUnreadCount(0)
       return
     }
 
     let cancelled = false
+    setUnreadCount(0)
 
     async function refreshUnreadCount() {
       try {
@@ -60,7 +61,7 @@ export function useNotificationUnreadCount() {
       window.removeEventListener(NOTIFICATIONS_UPDATED_EVENT, handleFocus)
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
-  }, [isAuthenticated, location.pathname])
+  }, [isAuthenticated, location.pathname, user?.id])
 
   return unreadCount
 }

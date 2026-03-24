@@ -418,7 +418,7 @@ export default function AdminDisputesPage() {
       </div>
 
       <Dialog open={detailDialog.open} onOpenChange={(open) => setDetailDialog((current) => ({ ...current, open }))}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="max-h-[85vh] max-w-3xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Chi tiết yêu cầu hoàn tiền</DialogTitle>
             <DialogDescription>

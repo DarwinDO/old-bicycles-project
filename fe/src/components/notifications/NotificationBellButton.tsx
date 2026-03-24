@@ -1,20 +1,26 @@
+import * as React from 'react'
 import { Bell } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
-interface NotificationBellButtonProps {
+interface NotificationBellButtonProps extends React.ComponentProps<typeof Button> {
   unreadCount: number
-  onClick: () => void
-  className?: string
 }
 
-export function NotificationBellButton({
+export const NotificationBellButton = React.forwardRef<HTMLButtonElement, NotificationBellButtonProps>(function NotificationBellButton({
   unreadCount,
-  onClick,
   className,
-}: NotificationBellButtonProps) {
+  ...buttonProps
+}, ref) {
   return (
-    <Button variant="ghost" size="icon" className={cn('relative', className)} onClick={onClick}>
+    <Button
+      ref={ref}
+      variant="ghost"
+      size="icon"
+      className={cn('relative', className)}
+      aria-label="Mở thông báo"
+      {...buttonProps}
+    >
       <Bell className="h-5 w-5" />
       {unreadCount > 0 && (
         <span className="absolute -right-1 -top-1 inline-flex min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 py-0.5 text-[10px] font-semibold leading-none text-destructive-foreground">
@@ -23,4 +29,4 @@ export function NotificationBellButton({
       )}
     </Button>
   )
-}
+})

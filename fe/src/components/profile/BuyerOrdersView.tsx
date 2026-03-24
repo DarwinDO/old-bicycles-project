@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { ordersApi } from '@/api/orders.api'
 import { paymentsApi } from '@/api/payments.api'
+import { payoutsApi } from '@/api/payouts.api'
 import { refundsApi } from '@/api/refunds.api'
 import { reviewsApi } from '@/api/reviews.api'
 import { DisputeModal, type RefundFormValues } from '@/components/profile/DisputeModal'
@@ -36,6 +37,7 @@ import {
   getPaymentOptionLabel,
   isPaymentDeadlineExpired,
 } from '@/lib/order-display'
+import { isPayoutProfileReady } from '@/lib/payout-profile'
 import type { Order, OrderEvidenceInput } from '@/types/order'
 import type { PaymentRequestResponse } from '@/types/payment'
 
@@ -79,7 +81,8 @@ export function BuyerOrdersView() {
   const [refundError, setRefundError] = useState<string | null>(null)
   const [reviewError, setReviewError] = useState<string | null>(null)
   const [receiptError, setReceiptError] = useState<string | null>(null)
-  const buyerOrders = user ? orders.filter((order) => order.buyerId === user.id) : []
+  const [payoutProfileReady, setPayoutProfileReady] = useState(false)
+  const buyerOrders = user ? orders.filter((order) => order.buyerId === user.id) : [] 
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
@@ -106,6 +109,7 @@ export function BuyerOrdersView() {
     if (!user) {
       setOrders([])
       setLoading(false)
+      setPayoutProfileReady(false)
       return
     }
 
@@ -143,6 +147,34 @@ export function BuyerOrdersView() {
     return () => {
       cancelled = true
       window.clearInterval(intervalId)
+    }
+  }, [user])
+
+  useEffect(() => {
+    if (!user) {
+      setPayoutProfileReady(false)
+      return
+    }
+
+    let ignore = false
+
+    async function loadPayoutProfile() {
+      try {
+        const profile = await payoutsApi.getMyProfile()
+        if (!ignore) {
+          setPayoutProfileReady(isPayoutProfileReady(profile))
+        }
+      } catch {
+        if (!ignore) {
+          setPayoutProfileReady(false)
+        }
+      }
+    }
+
+    void loadPayoutProfile()
+
+    return () => {
+      ignore = true
     }
   }, [user])
 
@@ -610,6 +642,7 @@ export function BuyerOrdersView() {
         refundAmount={selectedOrderForRefund?.paidAmount ?? 0}
         isSubmitting={Boolean(selectedOrderForRefund) && actionLoadingKey === `refund:${selectedOrderForRefund?.id}`}
         error={refundError}
+        payoutProfileReady={payoutProfileReady}
       />
 
       <ReviewOrderDialog

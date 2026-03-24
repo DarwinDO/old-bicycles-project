@@ -149,7 +149,7 @@ describe('order-display', () => {
     const statusMeta = getOrderStatusMeta(order)
 
     expect(statusMeta.label).toBe('Chờ admin duyệt hoàn tiền')
-    expect(statusMeta.helperText).toContain('admin review')
+    expect(statusMeta.helperText).toContain('admin xem xét')
     expect(canBuyerRequestRefund(order)).toBe(false)
     expect(canBuyerConfirmReceived(order)).toBe(false)
   })
@@ -196,7 +196,7 @@ describe('order-display', () => {
     const statusMeta = getOrderStatusMeta(order)
 
     expect(statusMeta.label).toBe('Chờ chuyển khoản hoàn tiền')
-    expect(statusMeta.helperText).toContain('thanh toán sau khi đơn bị hủy')
+    expect(statusMeta.helperText).toContain('sau khi đơn bị hủy')
   })
 
   it('maps cancelled expired orders to payment expired state', () => {
@@ -210,10 +210,10 @@ describe('order-display', () => {
     const statusMeta = getOrderStatusMeta(order)
 
     expect(statusMeta.label).toBe('Đã hết hạn thanh toán')
-    expect(statusMeta.helperText).toContain('đã tự hủy')
+    expect(statusMeta.helperText).toContain('tự hủy')
   })
 
-  it('maps refunded cancelled orders to refunded state', () => {
+  it('maps refunded cancelled orders to refunded state and mentions relisting workflow', () => {
     const order = buildOrder({
       status: 'cancelled',
       fundingStatus: 'refunded',
@@ -222,6 +222,8 @@ describe('order-display', () => {
     const statusMeta = getOrderStatusMeta(order)
 
     expect(statusMeta.label).toBe('Đã hoàn tiền')
+    expect(statusMeta.helperText).toContain('kiểm định lại')
+    expect(statusMeta.helperText).toContain('Tin đăng liên quan đã bị ẩn')
     expect(canBuyerRequestRefund(order)).toBe(false)
     expect(canSellerCompleteOrder(order)).toBe(false)
   })

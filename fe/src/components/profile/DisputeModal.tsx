@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { AlertTriangle } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { AlertTriangle, Wallet } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -27,6 +28,7 @@ interface DisputeModalProps {
   refundAmount: number
   isSubmitting?: boolean
   error?: string | null
+  payoutProfileReady?: boolean
 }
 
 const reasonOptions = [
@@ -45,6 +47,7 @@ export function DisputeModal({
   refundAmount,
   isSubmitting = false,
   error = null,
+  payoutProfileReady = false,
 }: DisputeModalProps) {
   const [reason, setReason] = useState('')
   const [evidenceNote, setEvidenceNote] = useState('')
@@ -88,6 +91,24 @@ export function DisputeModal({
             Backend hiện chỉ cho tạo yêu cầu hoàn đúng bằng số tiền đã thanh toán, nên FE không cho sửa số tiền này.
           </p>
         </div>
+
+        {!payoutProfileReady && (
+          <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-100">
+            <div className="flex items-start gap-2">
+              <Wallet className="mt-0.5 h-4 w-4 shrink-0" />
+              <div className="space-y-2">
+                <p className="font-medium">Bạn chưa hoàn tất tài khoản nhận hoàn tiền.</p>
+                <p>
+                  Bạn vẫn có thể gửi yêu cầu hoàn tiền ngay. Tuy nhiên nếu admin duyệt hoàn, hệ thống sẽ bị chặn ở bước
+                  chuyển khoản cho đến khi bạn cập nhật payout profile.
+                </p>
+                <Button variant="outline" size="sm" asChild>
+                  <Link to="/profile?tab=payout">Cập nhật tài khoản nhận tiền</Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="grid gap-4 py-2">
           <div className="grid gap-2">

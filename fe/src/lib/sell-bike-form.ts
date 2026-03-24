@@ -1,3 +1,5 @@
+import { parseCurrencyInput } from '@/lib/currency-input'
+
 export type SellBikeStep = 1 | 2 | 3 | 4
 export type SellBikeImageType = 'main' | 'groupset' | 'serial' | 'other'
 export type SellBikeValidationErrorKey =
@@ -58,9 +60,9 @@ export function validateSellBikeStep(
   }
 
   if (step === 4) {
-    const parsedPrice = Number(formData.price)
+    const parsedPrice = parseCurrencyInput(formData.price)
 
-    if (!formData.price.trim() || Number.isNaN(parsedPrice) || parsedPrice <= 0) {
+    if (!formData.price.trim() || parsedPrice === null || parsedPrice <= 0) {
       errors.price = 'Vui lòng nhập giá bán hợp lệ.'
     }
 

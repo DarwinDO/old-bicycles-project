@@ -1,26 +1,28 @@
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
 import AdminPayoutsPage from './AdminPayoutsPage'
 
-const { getAdminPayoutsMock, completeAdminPayoutMock } = vi.hoisted(() => ({
+const { getAdminPayoutsMock, completeAdminPayoutMock, remindProfileRequiredPayoutMock } = vi.hoisted(() => ({
   getAdminPayoutsMock: vi.fn(),
   completeAdminPayoutMock: vi.fn(),
+  remindProfileRequiredPayoutMock: vi.fn(),
 }))
 
 vi.mock('@/api/payouts.api', () => ({
   payoutsApi: {
     getAdminPayouts: getAdminPayoutsMock,
     completeAdminPayout: completeAdminPayoutMock,
+    remindProfileRequiredPayout: remindProfileRequiredPayoutMock,
   },
 }))
 
-function buildPageResult() {
+function buildPageResult(status: 'pending_transfer' | 'profile_required' = 'pending_transfer') {
   return {
     content: [
       {
         id: 'payout-1',
         type: 'refund' as const,
-        status: 'pending_transfer' as const,
+        status,
         provider: 'vietqr_manual' as const,
         amount: 2_000,
         recipientId: 'buyer-1',
@@ -30,7 +32,7 @@ function buildPageResult() {
         accountNumber: '00000645722',
         accountName: 'NGUYEN HOANG VIET DO',
         transferContent: 'REFUND-OB-0001',
-        qrCodeUrl: 'https://img.vietqr.io/image/970423-00000645722-compact2.png',
+        qrCodeUrl: status === 'pending_transfer' ? 'https://img.vietqr.io/image/970423-00000645722-compact2.png' : null,
         bankReference: null,
         adminNote: null,
         orderId: 'order-1',
@@ -81,6 +83,7 @@ describe('AdminPayoutsPage', () => {
   beforeEach(() => {
     getAdminPayoutsMock.mockReset()
     completeAdminPayoutMock.mockReset()
+    remindProfileRequiredPayoutMock.mockReset()
   })
 
   it('loads payouts from the API and renders rows', async () => {
@@ -102,5 +105,30 @@ describe('AdminPayoutsPage', () => {
     expect(screen.getByText('Trek Domane AL 4')).toBeInTheDocument()
     expect(screen.getByText('Hoàn tiền buyer')).toBeInTheDocument()
     expect(screen.getByText('Chờ chuyển khoản')).toBeInTheDocument()
+  })
+
+  it('allows admin to remind payout recipients when profile is missing', async () => {
+    getAdminPayoutsMock.mockResolvedValue(buildPageResult('profile_required'))
+    remindProfileRequiredPayoutMock.mockResolvedValue({
+      ...buildPageResult('profile_required').content[0],
+    })
+
+    render(<AdminPayoutsPage />)
+
+    const recipient = await screen.findByText('Nguyen Buyer')
+    const row = recipient.closest('tr')
+    expect(row).not.toBeNull()
+
+    const rowButtons = within(row as HTMLElement).getAllByRole('button')
+    fireEvent.pointerDown(rowButtons[0])
+
+    const remindButton = await screen.findByText('Nhắc cập nhật payout profile')
+    fireEvent.click(remindButton)
+
+    await waitFor(() => {
+      expect(remindProfileRequiredPayoutMock).toHaveBeenCalledWith('payout-1')
+    })
+
+    expect(await screen.findByText('Đã nhắc Nguyen Buyer cập nhật payout profile.')).toBeInTheDocument()
   })
 })

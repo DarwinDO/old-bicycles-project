@@ -3,6 +3,7 @@ import { type ColumnDef } from '@tanstack/react-table'
 import {
   ArrowRightLeft,
   Banknote,
+  BellRing,
   ChevronLeft,
   ChevronRight,
   Eye,
@@ -123,6 +124,7 @@ export default function AdminPayoutsPage() {
   const [totalElements, setTotalElements] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
   const [detailDialog, setDetailDialog] = useState<{ open: boolean; payout: AdminPayout | null }>({
     open: false,
     payout: null,
@@ -140,6 +142,7 @@ export default function AdminPayoutsPage() {
     adminNote: '',
     loading: false,
   })
+  const [remindingPayoutId, setRemindingPayoutId] = useState<string | null>(null)
 
   useEffect(() => {
     let ignore = false
@@ -216,6 +219,7 @@ export default function AdminPayoutsPage() {
       })
 
       await reloadPayouts()
+      setNotice('Đã xác nhận payout hoàn tất.')
       setCompleteDialog({
         open: false,
         payout: null,
@@ -226,6 +230,20 @@ export default function AdminPayoutsPage() {
     } catch (requestError) {
       setCompleteDialog((current) => ({ ...current, loading: false }))
       setError(getErrorMessage(requestError, 'Không thể xác nhận payout lúc này.'))
+    }
+  }
+
+  async function handleRemindProfile(payout: AdminPayout) {
+    setRemindingPayoutId(payout.id)
+
+    try {
+      await payoutsApi.remindProfileRequiredPayout(payout.id)
+      setNotice(`Đã nhắc ${payout.recipientName} cập nhật payout profile.`)
+      setError(null)
+    } catch (requestError) {
+      setError(getErrorMessage(requestError, 'Không thể gửi nhắc cập nhật payout profile lúc này.'))
+    } finally {
+      setRemindingPayoutId(null)
     }
   }
 
@@ -304,6 +322,16 @@ export default function AdminPayoutsPage() {
               <Eye className="mr-2 h-4 w-4" />
               Xem chi tiết
             </DropdownMenuItem>
+
+            {row.original.status === 'profile_required' && (
+              <DropdownMenuItem
+                onClick={() => void handleRemindProfile(row.original)}
+                disabled={remindingPayoutId === row.original.id}
+              >
+                <BellRing className="mr-2 h-4 w-4" />
+                Nhắc cập nhật payout profile
+              </DropdownMenuItem>
+            )}
 
             {row.original.status === 'pending_transfer' && (
               <DropdownMenuItem
@@ -399,12 +427,16 @@ export default function AdminPayoutsPage() {
         </div>
       )}
 
+      {notice && (
+        <div className="rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-primary">
+          {notice}
+        </div>
+      )}
+
       <div className="space-y-4">
         <div className="flex flex-col gap-2 text-sm text-muted-foreground md:flex-row md:items-center md:justify-between">
           <p>{loading ? 'Đang tải danh sách payout...' : `Tìm thấy ${totalElements} payout`}</p>
-          <p>
-            {typeFilter === 'all' ? 'Đang xem tất cả loại payout' : `Đang lọc: ${typeLabelMap[typeFilter]}`}
-          </p>
+          <p>{typeFilter === 'all' ? 'Đang xem tất cả loại payout' : `Đang lọc: ${typeLabelMap[typeFilter]}`}</p>
         </div>
 
         <DataTable
@@ -500,8 +532,18 @@ export default function AdminPayoutsPage() {
                     />
                   </div>
                 ) : (
-                  <div className="rounded-lg border border-dashed px-4 py-6 text-center text-sm text-muted-foreground">
-                    Người nhận chưa có payout profile hoặc thiếu đủ thông tin để tạo VietQR.
+                  <div className="space-y-3 rounded-lg border border-dashed px-4 py-6 text-center text-sm text-muted-foreground">
+                    <p>Người nhận chưa có payout profile hoặc thiếu đủ thông tin để tạo VietQR.</p>
+                    {detailDialog.payout.status === 'profile_required' && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => void handleRemindProfile(detailDialog.payout!)}
+                        disabled={remindingPayoutId === detailDialog.payout.id}
+                      >
+                        {remindingPayoutId === detailDialog.payout.id ? 'Đang gửi nhắc...' : 'Nhắc cập nhật payout profile'}
+                      </Button>
+                    )}
                   </div>
                 )}
 

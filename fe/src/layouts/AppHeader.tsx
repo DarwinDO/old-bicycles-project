@@ -16,7 +16,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { NotificationBellButton } from '@/components/notifications/NotificationBellButton'
+import { NotificationDropdown } from '@/components/notifications/NotificationDropdown'
 import { authService } from '@/services/authService'
 import { clearStoredChatUnreadCount, getStoredChatUnreadCount, incrementStoredChatUnreadCount } from '@/lib/chat-unread'
 import { useNotificationUnreadCount } from '@/lib/use-notification-unread-count'
@@ -171,10 +171,7 @@ export default function AppHeader() {
                   Đăng tin
                 </Button>
               )}
-              <NotificationBellButton
-                unreadCount={notificationUnreadCount}
-                onClick={() => navigate(ROUTES.NOTIFICATIONS)}
-              />
+              <NotificationDropdown unreadCount={notificationUnreadCount} />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-muted">
@@ -275,13 +272,7 @@ export default function AppHeader() {
                         </span>
                       </div>
                     </div>
-                    <NotificationBellButton
-                      unreadCount={notificationUnreadCount}
-                      onClick={() => {
-                        navigate(ROUTES.NOTIFICATIONS)
-                        setMobileMenuOpen(false)
-                      }}
-                    />
+                    <NotificationDropdown unreadCount={notificationUnreadCount} />
                   </div>
                 )}
 

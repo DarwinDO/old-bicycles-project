@@ -5,7 +5,7 @@ import { ThemeToggle } from '@/components/theme-toggle'
 import { useAuth } from '@/contexts/AuthContext'
 import { ROUTES } from '@/constants/routes'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { NotificationBellButton } from '@/components/notifications/NotificationBellButton'
+import { NotificationDropdown } from '@/components/notifications/NotificationDropdown'
 import { useNotificationUnreadCount } from '@/lib/use-notification-unread-count'
 import {
   DropdownMenu,
@@ -36,7 +36,7 @@ export default function InspectorLayout() {
 
           <div className="flex items-center gap-3">
             <ThemeToggle />
-            <NotificationBellButton unreadCount={unreadCount} onClick={() => navigate(ROUTES.NOTIFICATIONS)} />
+            <NotificationDropdown unreadCount={unreadCount} />
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

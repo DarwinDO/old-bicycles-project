@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, CheckCircle, ExternalLink, Loader2, Paperclip, ShieldCheck, XCircle } from 'lucide-react'
 import { inspectionsApi } from '@/api/inspections.api'
-import { productsApi } from '@/api/products.api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import type { Inspection, InspectionEvaluationRequest } from '@/types/inspection'
@@ -100,7 +99,7 @@ export default function InspectionFormPage() {
 
       try {
         const [productResult, inspectionResult] = await Promise.all([
-          productsApi.getById(id),
+          inspectionsApi.getProductContext(id),
           inspectionsApi.getByProduct(id),
         ])
 

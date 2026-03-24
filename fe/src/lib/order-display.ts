@@ -124,7 +124,7 @@ export function getOrderStatusMeta(order: Order, nowMs = Date.now()): OrderStatu
     return {
       label: 'Chờ admin duyệt hoàn tiền',
       helperText:
-        'Người mua đã gửi yêu cầu hoàn tiền. Đơn hàng tạm dừng ở bước tranh chấp cho đến khi admin review yêu cầu này.',
+        'Người mua đã gửi yêu cầu hoàn tiền. Đơn hàng tạm dừng ở bước tranh chấp cho đến khi admin xem xét yêu cầu này.',
       tone: 'warning',
     }
   }
@@ -161,7 +161,8 @@ export function getOrderStatusMeta(order: Order, nowMs = Date.now()): OrderStatu
   if (order.status === 'cancelled' && order.fundingStatus === 'refunded') {
     return {
       label: 'Đã hoàn tiền',
-      helperText: 'Khoản đặt cọc đã được hoàn lại và đơn hàng đã đóng.',
+      helperText:
+        'Khoản đặt cọc đã được hoàn lại và đơn hàng đã đóng. Tin đăng liên quan đã bị ẩn; nếu người bán muốn bán lại thì phải cập nhật, duyệt lại và kiểm định lại.',
       tone: 'success',
     }
   }

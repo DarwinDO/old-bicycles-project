@@ -1,35 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Bell, Check, CheckCheck, ChevronLeft, ChevronRight } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { notificationsApi } from '@/api/notifications.api'
+import { Button } from '@/components/ui/button'
+import { formatNotificationRelativeTime } from '@/lib/notification-time'
 import { emitNotificationsUpdated } from '@/lib/notification-unread'
 import type { PageResult } from '@/types/api'
 import type { NotificationItem } from '@/types/notification'
-
-function relativeTime(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime()
-  const mins = Math.floor(diff / 60000)
-
-  if (mins < 1) {
-    return 'Vừa xong'
-  }
-
-  if (mins < 60) {
-    return `${mins} phút trước`
-  }
-
-  const hours = Math.floor(mins / 60)
-  if (hours < 24) {
-    return `${hours} giờ trước`
-  }
-
-  const days = Math.floor(hours / 24)
-  if (days < 30) {
-    return `${days} ngày trước`
-  }
-
-  return new Date(dateStr).toLocaleDateString('vi-VN')
-}
 
 export default function NotificationsPage() {
   const [page, setPage] = useState<PageResult<NotificationItem> | null>(null)
@@ -114,6 +90,7 @@ export default function NotificationsPage() {
             )}
           </div>
         </div>
+
         {unreadCount > 0 && (
           <Button variant="outline" size="sm" onClick={handleMarkAllRead} disabled={markingAll}>
             <CheckCheck className="mr-1 h-4 w-4" />
@@ -156,6 +133,7 @@ export default function NotificationsPage() {
                       <div className="mt-0.5 h-2.5 w-2.5 rounded-full bg-primary" />
                     )}
                   </div>
+
                   <div className="min-w-0 flex-1">
                     <p
                       className={`text-sm font-medium ${
@@ -168,7 +146,7 @@ export default function NotificationsPage() {
                       {notification.content}
                     </p>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      {relativeTime(notification.createdAt)}
+                      {formatNotificationRelativeTime(notification.createdAt)}
                     </p>
                   </div>
                 </div>

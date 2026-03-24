@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
 import { ROUTES } from '@/constants/routes'
+import { formatCurrencyInput, parseCurrencyInput } from '@/lib/currency-input'
 import { cn } from '@/lib/utils'
 import type { ProductMutationInput } from '@/types/product'
 import type { Brand, Category, ReferenceValue } from '@/types/reference-data'
@@ -167,8 +168,8 @@ export default function SellerEditProductPage() {
           brakeTypeId: matchedBrakeType?.id ?? '',
           frameMaterialId: matchedMaterial?.id ?? '',
           condition: product.condition ?? '',
-          price: String(product.price ?? ''),
-          originalPrice: String(product.originalPrice ?? ''),
+          price: formatCurrencyInput(product.price),
+          originalPrice: formatCurrencyInput(product.originalPrice),
           description: product.description ?? '',
           province: product.province ?? '',
           district: product.district ?? '',
@@ -198,6 +199,10 @@ export default function SellerEditProductPage() {
 
   function handleChange<K extends keyof FormState>(name: K, value: FormState[K]) {
     setFormData((current) => ({ ...current, [name]: value }))
+  }
+
+  function handlePriceChange(field: 'price' | 'originalPrice', rawValue: string) {
+    handleChange(field, formatCurrencyInput(rawValue))
   }
 
   function handleImageUpload(event: React.ChangeEvent<HTMLInputElement>) {
@@ -244,8 +249,8 @@ export default function SellerEditProductPage() {
     const payload: ProductMutationInput = {
       title: formData.title,
       description: formData.description,
-      price: Number(formData.price),
-      originalPrice: formData.originalPrice ? Number(formData.originalPrice) : undefined,
+      price: parseCurrencyInput(formData.price) ?? 0,
+      originalPrice: parseCurrencyInput(formData.originalPrice) ?? undefined,
       brandId: formData.brandId || undefined,
       categoryId: formData.categoryId || undefined,
       brakeTypeId: formData.brakeTypeId || undefined,
@@ -542,18 +547,23 @@ export default function SellerEditProductPage() {
                     Giá bán <span className="text-red-500">*</span>
                   </label>
                   <Input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="VD: 25.000.000"
                     value={formData.price}
-                    onChange={(event) => handleChange('price', event.target.value)}
+                    onChange={(event) => handlePriceChange('price', event.target.value)}
                   />
+                  <p className="text-xs text-muted-foreground">Số tiền sẽ được tự động định dạng theo VND để người mua dễ đọc.</p>
                 </div>
 
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Giá gốc</label>
                   <Input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="VD: 36.000.000"
                     value={formData.originalPrice}
-                    onChange={(event) => handleChange('originalPrice', event.target.value)}
+                    onChange={(event) => handlePriceChange('originalPrice', event.target.value)}
                   />
                 </div>
               </div>

@@ -8,6 +8,7 @@ import type {
   InspectionRequestItem,
 } from '@/types/inspection'
 import type { PageResult } from '@/types/api'
+import type { Product } from '@/types/product'
 
 export const inspectionsApi = {
   request(productId: string) {
@@ -31,6 +32,10 @@ export const inspectionsApi = {
 
   getByProduct(productId: string) {
     return getResult<Inspection | null>(`/api/inspections/product/${productId}`)
+  },
+
+  getProductContext(productId: string) {
+    return getResult<Product>(`/api/inspections/product-context/${productId}`)
   },
 
   getDashboard() {

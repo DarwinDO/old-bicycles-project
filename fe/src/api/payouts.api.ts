@@ -26,4 +26,8 @@ export const payoutsApi = {
   completeAdminPayout(payoutId: string, request: PayoutCompleteRequest) {
     return patchResult<AdminPayout, PayoutCompleteRequest>(`/api/admin/payouts/${payoutId}/complete`, request)
   },
+
+  remindProfileRequiredPayout(payoutId: string) {
+    return patchResult<AdminPayout, undefined>(`/api/admin/payouts/${payoutId}/remind-profile`)
+  },
 }

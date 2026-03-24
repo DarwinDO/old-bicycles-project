@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { CheckCircle, Loader2, ShoppingBag, Truck, Wallet, XCircle } from 'lucide-react'
 import { ordersApi } from '@/api/orders.api'
+import { payoutsApi } from '@/api/payouts.api'
 import { OrderEvidenceDialog } from '@/components/profile/OrderEvidenceDialog'
 import { OrderEvidenceSection } from '@/components/profile/OrderEvidenceSection'
 import { Badge } from '@/components/ui/badge'
@@ -21,6 +22,7 @@ import {
   getPaymentOptionLabel,
   isPaymentDeadlineExpired,
 } from '@/lib/order-display'
+import { isPayoutProfileReady } from '@/lib/payout-profile'
 import type { Order, OrderEvidenceInput } from '@/types/order'
 
 function getErrorMessage(error: unknown, fallback: string) {
@@ -56,6 +58,7 @@ export default function SellerOrdersPage() {
   const [actionLoadingKey, setActionLoadingKey] = useState<string | null>(null)
   const [selectedOrderForDelivery, setSelectedOrderForDelivery] = useState<Order | null>(null)
   const [nowMs, setNowMs] = useState(() => Date.now())
+  const [payoutProfileReady, setPayoutProfileReady] = useState(false)
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
@@ -71,6 +74,7 @@ export default function SellerOrdersPage() {
     if (!sellerId) {
       setOrders([])
       setLoading(false)
+      setPayoutProfileReady(false)
       return
     }
 
@@ -101,6 +105,34 @@ export default function SellerOrdersPage() {
 
     return () => {
       cancelled = true
+    }
+  }, [sellerId])
+
+  useEffect(() => {
+    if (!sellerId) {
+      setPayoutProfileReady(false)
+      return
+    }
+
+    let ignore = false
+
+    async function loadPayoutProfile() {
+      try {
+        const profile = await payoutsApi.getMyProfile()
+        if (!ignore) {
+          setPayoutProfileReady(isPayoutProfileReady(profile))
+        }
+      } catch {
+        if (!ignore) {
+          setPayoutProfileReady(false)
+        }
+      }
+    }
+
+    void loadPayoutProfile()
+
+    return () => {
+      ignore = true
     }
   }, [sellerId])
 
@@ -170,6 +202,17 @@ export default function SellerOrdersPage() {
       {error && (
         <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
           {error}
+        </div>
+      )}
+
+      {!payoutProfileReady && (
+        <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-100">
+          Người bán cần hoàn tất payout profile trước khi chấp nhận đơn mới để hệ thống có thể giải ngân khoản cọc về sau.
+          <div className="mt-3">
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/profile?tab=payout">Cập nhật tài khoản nhận tiền</Link>
+            </Button>
+          </div>
         </div>
       )}
 
@@ -261,7 +304,7 @@ export default function SellerOrdersPage() {
                     <div className="text-lg font-bold text-primary">{formatOrderCurrency(order.totalAmount)}</div>
 
                     <div className="flex w-full flex-wrap gap-2 lg:w-auto lg:justify-end">
-                      {canSellerAcceptOrder(order) && (
+                      {canSellerAcceptOrder(order) && payoutProfileReady && (
                         <Button
                           className="gap-1.5 bg-green-600 text-white hover:bg-green-700"
                           onClick={() => void runOrderAction(order, 'accept')}
@@ -273,6 +316,12 @@ export default function SellerOrdersPage() {
                             <CheckCircle className="h-4 w-4" />
                           )}
                           Chấp nhận đơn
+                        </Button>
+                      )}
+
+                      {canSellerAcceptOrder(order) && !payoutProfileReady && (
+                        <Button variant="outline" asChild>
+                          <Link to="/profile?tab=payout">Cần payout profile để chấp nhận đơn</Link>
                         </Button>
                       )}
 

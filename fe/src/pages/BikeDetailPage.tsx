@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowLeft, CreditCard, MapPin, Shield, MessageCircle, Heart, Share2, ChevronLeft, ChevronRight,
@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ROUTES } from '@/constants/routes'
+import { formatCurrencyInput, parseCurrencyInput } from '@/lib/currency-input'
 import { cn } from '@/lib/utils'
 import { adminProductsApi } from '@/api/admin-products.api'
 import { ordersApi } from '@/api/orders.api'
@@ -57,17 +58,6 @@ function getTimeAgo(dateStr: string): string {
   return `${months} tháng trước`
 }
 
-function parseCurrencyInput(rawValue: string): number | null {
-  const normalizedDigits = rawValue.replace(/[^\d]/g, '')
-
-  if (!normalizedDigits) {
-    return null
-  }
-
-  const parsedValue = Number(normalizedDigits)
-  return Number.isFinite(parsedValue) ? parsedValue : null
-}
-
 const ORDER_CREATED_NOTICE =
   'Đơn mua đã được tạo. Sau khi người bán chấp nhận đơn, bạn mới có thể lấy mã QR hoặc thông tin chuyển khoản ở mục Đơn mua.'
 
@@ -105,7 +95,7 @@ export default function BikeDetailPage() {
   const [orderError, setOrderError] = useState<string | null>(null)
   const [orderLoading, setOrderLoading] = useState(false)
   const [paymentOption, setPaymentOption] = useState<PaymentOption>('partial')
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('transfer')
+  const paymentMethod: PaymentMethod = 'transfer'
   const [upfrontAmount, setUpfrontAmount] = useState('')
 
   useEffect(() => {
@@ -187,7 +177,7 @@ export default function BikeDetailPage() {
       const beMessage = res?.data?.message
 
       if (status === 409) {
-        // Already in wishlist — just sync state
+        // Already in wishlist â€” just sync state
         setIsWishlisted(true)
       } else {
         // Show BE message if available, otherwise fallback by status
@@ -331,7 +321,7 @@ export default function BikeDetailPage() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center space-y-3">
           <p className="text-destructive">{error ?? 'Không tìm thấy sản phẩm.'}</p>
-          <Button variant="outline" onClick={() => navigate(listPageHref)}>Quay lại</Button>
+          <Button variant="outline" onClick={() => navigate(listPageHref)}>Quay láº¡i</Button>
         </div>
       </div>
     )
@@ -354,7 +344,7 @@ export default function BikeDetailPage() {
             </Button>
           )}
           <nav className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Link to={ROUTES.HOME} className="hover:text-foreground">Trang chủ</Link>
+            <Link to={ROUTES.HOME} className="hover:text-foreground">Trang chá»§</Link>
             <span>/</span>
             <Link to={listPageHref} className="hover:text-foreground">{listPageLabel}</Link>
             <span>/</span>
@@ -379,8 +369,7 @@ export default function BikeDetailPage() {
                   />
                 ) : (
                   <div className="h-full w-full flex flex-col items-center justify-center text-muted-foreground gap-2">
-                    <span className="text-4xl">🚲</span>
-                    <span className="text-sm">Không có ảnh</span>
+                    <span className="text-sm font-medium">Chưa có ảnh</span>
                   </div>
                 )}
                 {sortedImages.length > 1 && (
@@ -472,13 +461,13 @@ export default function BikeDetailPage() {
               </CardContent>
             </Card>
 
-            {sizeChart && sizeChart.rows.length > 0 && (
+            {product.categoryId && (
               <Card>
                 <CardHeader>
                   <CardTitle>Gợi ý chiều cao theo size</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {matchingSizeChartRow && (
+                  {sizeChart && sizeChart.rows.length > 0 && matchingSizeChartRow && (
                     <div className="rounded-lg border border-primary/30 bg-primary/5 px-4 py-3">
                       <div className="text-sm font-medium text-foreground">
                         Size {matchingSizeChartRow.frameSize} thường phù hợp với người cao {matchingSizeChartRow.heightMinCm} - {matchingSizeChartRow.heightMaxCm} cm
@@ -489,6 +478,8 @@ export default function BikeDetailPage() {
                     </div>
                   )}
 
+                  {sizeChart && sizeChart.rows.length > 0 ? (
+                    <>
                   <div className="overflow-x-auto rounded-lg border">
                     <table className="min-w-full text-sm">
                       <thead className="bg-muted/40 text-left">
@@ -506,7 +497,7 @@ export default function BikeDetailPage() {
                             <tr key={row.id} className={cn('border-t', isHighlighted && 'bg-primary/5')}>
                               <td className="px-4 py-3 font-medium">{row.frameSize}</td>
                               <td className="px-4 py-3 text-muted-foreground">{row.heightMinCm} - {row.heightMaxCm} cm</td>
-                              <td className="px-4 py-3 text-muted-foreground">{row.note ?? '—'}</td>
+                              <td className="px-4 py-3 text-muted-foreground">{row.note ?? 'â€”'}</td>
                             </tr>
                           )
                         })}
@@ -516,6 +507,12 @@ export default function BikeDetailPage() {
                   <p className="text-xs text-muted-foreground">
                     Size chart là bảng tham khảo chung theo danh mục {product.categoryName ?? 'xe đạp'}. Độ phù hợp thực tế còn phụ thuộc geometry từng mẫu xe.
                   </p>
+                    </>
+                  ) : (
+                    <div className="rounded-lg border border-dashed border-muted-foreground/30 bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
+                      Danh mục {product.categoryName ?? 'này'} hiện chưa có bảng size chart. Bạn có thể dựa vào size khung và trao đổi thêm với người bán để chọn xe phù hợp.
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}
@@ -537,7 +534,7 @@ export default function BikeDetailPage() {
                 <CardContent className="space-y-4">
                   {inspection.overallScore != null && (
                     <div className="text-center">
-                      <div className="text-4xl font-bold text-primary">{inspection.overallScore}/10</div>
+                      <div className="text-4xl font-bold text-primary">{inspection.overallScore}/5</div>
                       <div className="text-sm text-muted-foreground">Điểm tổng thể</div>
                     </div>
                   )}
@@ -545,25 +542,25 @@ export default function BikeDetailPage() {
                     {inspection.frameScore != null && (
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Khung xe</span>
-                        <span className="font-medium">{inspection.frameScore}/10</span>
+                        <span className="font-medium">{inspection.frameScore}/5</span>
                       </div>
                     )}
                     {inspection.drivetrainScore != null && (
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Truyền động</span>
-                        <span className="font-medium">{inspection.drivetrainScore}/10</span>
+                        <span className="font-medium">{inspection.drivetrainScore}/5</span>
                       </div>
                     )}
                     {inspection.wheelsScore != null && (
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Bánh xe</span>
-                        <span className="font-medium">{inspection.wheelsScore}/10</span>
+                        <span className="font-medium">{inspection.wheelsScore}/5</span>
                       </div>
                     )}
                     {inspection.brakesScore != null && (
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Phanh</span>
-                        <span className="font-medium">{inspection.brakesScore}/10</span>
+                        <span className="font-medium">{inspection.brakesScore}/5</span>
                       </div>
                     )}
                     {inspection.wearPercentage != null && (
@@ -740,7 +737,7 @@ export default function BikeDetailPage() {
                       onClick={() => navigator.share?.({ title: product.title, url: window.location.href })}
                     >
                       <Share2 className="mr-2 h-4 w-4" />
-                      Chia sẻ
+                      Chia sáº»
                     </Button>
                   </div>
                   {/* Wishlist error feedback */}
@@ -819,19 +816,22 @@ export default function BikeDetailPage() {
                   <SelectItem value="full">Thanh toán toàn bộ</SelectItem>
                 </SelectContent>
               </Select>
+              <p className="text-xs text-muted-foreground">
+                Tạm thời chỉ hỗ trợ chuyển khoản để hệ thống theo dõi cọc, timeout thanh toán và đối soát giao dịch rõ ràng hơn.
+              </p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="payment-method">Phương thức thanh toán</Label>
-              <Select value={paymentMethod} onValueChange={(value) => setPaymentMethod(value as PaymentMethod)}>
-                <SelectTrigger id="payment-method">
-                  <SelectValue placeholder="Chọn phương thức thanh toán" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="transfer">Chuyển khoản</SelectItem>
-                  <SelectItem value="cash">Tiền mặt</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label htmlFor="payment-method">Phương thức thanh toán áp dụng</Label>
+              <div
+                id="payment-method"
+                className="flex min-h-11 items-center rounded-md border border-input bg-muted/30 px-3 text-sm font-medium text-foreground"
+              >
+                Chuyển khoản
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Tiền mặt đã được ẩn khỏi flow công khai vì hệ thống hiện chỉ đối soát đặt cọc, timeout thanh toán và webhook ổn định qua chuyển khoản.
+              </p>
             </div>
 
             {paymentOption === 'partial' && (
@@ -840,12 +840,12 @@ export default function BikeDetailPage() {
                 <Input
                   id="upfront-amount"
                   inputMode="numeric"
-                  placeholder="Ví dụ: 5000000"
+                  placeholder="Ví dụ: 5.000.000"
                   value={upfrontAmount}
-                  onChange={(event) => setUpfrontAmount(event.target.value)}
+                  onChange={(event) => setUpfrontAmount(formatCurrencyInput(event.target.value))}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Backend cho phép bạn nhập số tiền ứng trước hợp lệ, miễn lớn hơn 0 và không vượt quá giá xe.
+                  Số tiền sẽ được tự động định dạng theo VND để buyer dễ đọc. Backend chỉ chấp nhận số tiền ứng trước lớn hơn 0 và không vượt quá giá xe.
                 </p>
               </div>
             )}
@@ -877,3 +877,4 @@ export default function BikeDetailPage() {
     </div>
   )
 }
+

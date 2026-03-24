@@ -8,12 +8,14 @@ const {
   getBrakeTypesMock,
   getFrameMaterialsMock,
   getGroupsetsMock,
+  getAdminSizeChartsMock,
 } = vi.hoisted(() => ({
   getCategoriesMock: vi.fn(),
   getBrandsMock: vi.fn(),
   getBrakeTypesMock: vi.fn(),
   getFrameMaterialsMock: vi.fn(),
   getGroupsetsMock: vi.fn(),
+  getAdminSizeChartsMock: vi.fn(),
 }))
 
 vi.mock('@/api/reference-data.api', () => ({
@@ -23,6 +25,7 @@ vi.mock('@/api/reference-data.api', () => ({
     getBrakeTypes: getBrakeTypesMock,
     getFrameMaterials: getFrameMaterialsMock,
     getGroupsets: getGroupsetsMock,
+    getAdminSizeCharts: getAdminSizeChartsMock,
     createCategory: vi.fn(),
     updateCategory: vi.fn(),
     deleteCategory: vi.fn(),
@@ -38,6 +41,9 @@ vi.mock('@/api/reference-data.api', () => ({
     createGroupset: vi.fn(),
     updateGroupset: vi.fn(),
     deleteGroupset: vi.fn(),
+    createSizeChart: vi.fn(),
+    updateSizeChart: vi.fn(),
+    deleteSizeChart: vi.fn(),
   },
 }))
 
@@ -48,8 +54,16 @@ describe('AdminCategoriesPage', () => {
     getBrakeTypesMock.mockReset()
     getFrameMaterialsMock.mockReset()
     getGroupsetsMock.mockReset()
+    getAdminSizeChartsMock.mockReset()
 
-    getCategoriesMock.mockResolvedValue([])
+    getCategoriesMock.mockResolvedValue([
+      {
+        id: 'category-road',
+        name: 'Road Bike',
+        slug: 'road-bike',
+        createdAt: '2026-03-23T00:00:00Z',
+      },
+    ])
     getBrandsMock.mockResolvedValue([])
     getBrakeTypesMock.mockResolvedValue([])
     getFrameMaterialsMock.mockResolvedValue([])
@@ -59,6 +73,27 @@ describe('AdminCategoriesPage', () => {
         name: 'Shimano 105',
         description: '11-speed road groupset',
         createdAt: '2026-03-23T00:00:00Z',
+      },
+    ])
+    getAdminSizeChartsMock.mockResolvedValue([
+      {
+        id: 'size-chart-1',
+        categoryId: 'category-road',
+        categoryName: 'Road Bike',
+        name: 'Road bike size guide',
+        description: 'Height guidance for road bikes',
+        createdAt: '2026-03-23T00:00:00Z',
+        updatedAt: '2026-03-23T00:00:00Z',
+        rows: [
+          {
+            id: 'row-1',
+            frameSize: '54',
+            heightMinCm: 170,
+            heightMaxCm: 178,
+            note: 'Road fit',
+            displayOrder: 0,
+          },
+        ],
       },
     ])
   })
@@ -76,5 +111,18 @@ describe('AdminCategoriesPage', () => {
 
     expect(await screen.findByText('Shimano 105')).toBeInTheDocument()
     expect(screen.getByText('11-speed road groupset')).toBeInTheDocument()
+  })
+
+  it('loads size charts when the size chart tab is selected', async () => {
+    render(<AdminCategoriesPage />)
+
+    fireEvent.click(screen.getByRole('button', { name: /size chart/i }))
+
+    await waitFor(() => {
+      expect(getAdminSizeChartsMock).toHaveBeenCalledTimes(1)
+    })
+
+    expect(await screen.findByText('Road bike size guide')).toBeInTheDocument()
+    expect(screen.getByText('170 - 178 cm')).toBeInTheDocument()
   })
 })

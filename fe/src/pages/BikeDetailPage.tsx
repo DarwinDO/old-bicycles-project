@@ -21,10 +21,12 @@ import { productsApi } from '@/api/products.api'
 import { wishlistApi } from '@/api/wishlist.api'
 import { reviewsApi } from '@/api/reviews.api'
 import { inspectionsApi } from '@/api/inspections.api'
+import { referenceDataApi } from '@/api/reference-data.api'
 import type { PaymentMethod, PaymentOption } from '@/types/order'
 import type { Product } from '@/types/product'
 import type { Review } from '@/types/review'
 import type { Inspection } from '@/types/inspection'
+import type { SizeChart } from '@/types/reference-data'
 import { useAuth } from '@/contexts/AuthContext'
 
 const CONDITION_LABELS: Record<string, string> = {
@@ -91,6 +93,7 @@ export default function BikeDetailPage() {
   const [product, setProduct] = useState<Product | null>(null)
   const [inspection, setInspection] = useState<Inspection | null>(null)
   const [reviews, setReviews] = useState<Review[]>([])
+  const [sizeChart, setSizeChart] = useState<SizeChart | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
@@ -122,6 +125,16 @@ export default function BikeDetailPage() {
         const extras: Promise<unknown>[] = []
 
         extras.push(inspectionsApi.getByProduct(id).then(setInspection))
+
+        if (p.categoryId) {
+          extras.push(
+            referenceDataApi.getSizeChartByCategory(p.categoryId)
+              .then(setSizeChart)
+              .catch(() => { /* non-critical */ }),
+          )
+        } else {
+          setSizeChart(null)
+        }
 
         if (p.seller?.id) {
           extras.push(
@@ -205,6 +218,10 @@ export default function BikeDetailPage() {
 
   const avgRating = reviews.length > 0
     ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+    : null
+  const normalizedProductFrameSize = product?.frameSize?.trim().toLowerCase() ?? null
+  const matchingSizeChartRow = normalizedProductFrameSize
+    ? sizeChart?.rows.find((row) => row.frameSize.trim().toLowerCase() === normalizedProductFrameSize)
     : null
 
   const isOwnListing = Boolean(user?.id && product?.seller?.id && user.id === product.seller.id)
@@ -454,6 +471,54 @@ export default function BikeDetailPage() {
                 </div>
               </CardContent>
             </Card>
+
+            {sizeChart && sizeChart.rows.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Gợi ý chiều cao theo size</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {matchingSizeChartRow && (
+                    <div className="rounded-lg border border-primary/30 bg-primary/5 px-4 py-3">
+                      <div className="text-sm font-medium text-foreground">
+                        Size {matchingSizeChartRow.frameSize} thường phù hợp với người cao {matchingSizeChartRow.heightMinCm} - {matchingSizeChartRow.heightMaxCm} cm
+                      </div>
+                      {matchingSizeChartRow.note && (
+                        <p className="mt-1 text-sm text-muted-foreground">{matchingSizeChartRow.note}</p>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="overflow-x-auto rounded-lg border">
+                    <table className="min-w-full text-sm">
+                      <thead className="bg-muted/40 text-left">
+                        <tr>
+                          <th className="px-4 py-3 font-medium">Frame size</th>
+                          <th className="px-4 py-3 font-medium">Chiều cao gợi ý</th>
+                          <th className="px-4 py-3 font-medium">Ghi chú</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {sizeChart.rows.map((row) => {
+                          const isHighlighted = normalizedProductFrameSize !== null
+                            && row.frameSize.trim().toLowerCase() === normalizedProductFrameSize
+                          return (
+                            <tr key={row.id} className={cn('border-t', isHighlighted && 'bg-primary/5')}>
+                              <td className="px-4 py-3 font-medium">{row.frameSize}</td>
+                              <td className="px-4 py-3 text-muted-foreground">{row.heightMinCm} - {row.heightMaxCm} cm</td>
+                              <td className="px-4 py-3 text-muted-foreground">{row.note ?? '—'}</td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Size chart là bảng tham khảo chung theo danh mục {product.categoryName ?? 'xe đạp'}. Độ phù hợp thực tế còn phụ thuộc geometry từng mẫu xe.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Inspection Report */}
             {inspection && (

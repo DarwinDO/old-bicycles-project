@@ -51,6 +51,7 @@ export interface Product {
   expiresAt?: string | null
   seller?: ProductSeller | null
   brandName?: string | null
+  categoryId?: string | null
   categoryName?: string | null
   brakeTypeName?: string | null
   frameMaterialName?: string | null

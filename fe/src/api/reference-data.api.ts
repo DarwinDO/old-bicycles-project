@@ -6,6 +6,8 @@ import type {
   CategoryUpsertRequest,
   ReferenceValue,
   ReferenceValueUpsertRequest,
+  SizeChart,
+  SizeChartUpsertRequest,
 } from '@/types/reference-data'
 
 export const referenceDataApi = {
@@ -96,5 +98,25 @@ export const referenceDataApi = {
 
   deleteGroupset(groupsetId: string) {
     return deleteResult<string>(`/api/admin/groupsets/${groupsetId}`)
+  },
+
+  getSizeChartByCategory(categoryId: string) {
+    return getResult<SizeChart | null>(`/api/size-charts/category/${categoryId}`)
+  },
+
+  getAdminSizeCharts() {
+    return getResult<SizeChart[]>('/api/admin/size-charts')
+  },
+
+  createSizeChart(request: SizeChartUpsertRequest) {
+    return postResult<SizeChart, SizeChartUpsertRequest>('/api/admin/size-charts', request)
+  },
+
+  updateSizeChart(sizeChartId: string, request: SizeChartUpsertRequest) {
+    return putResult<SizeChart, SizeChartUpsertRequest>(`/api/admin/size-charts/${sizeChartId}`, request)
+  },
+
+  deleteSizeChart(sizeChartId: string) {
+    return deleteResult<string>(`/api/admin/size-charts/${sizeChartId}`)
   },
 }

@@ -25,6 +25,9 @@ function buildPageResult(status: 'pending_transfer' | 'profile_required' = 'pend
         status,
         provider: 'vietqr_manual' as const,
         amount: 2_000,
+        grossAmount: 2_000,
+        feeDeductionAmount: 0,
+        netAmount: 2_000,
         recipientId: 'buyer-1',
         recipientName: 'Nguyen Buyer',
         bankCode: 'TPBank',
@@ -105,6 +108,10 @@ describe('AdminPayoutsPage', () => {
     expect(screen.getByText('Trek Domane AL 4')).toBeInTheDocument()
     expect(screen.getByText('Hoàn tiền buyer')).toBeInTheDocument()
     expect(screen.getByText('Chờ chuyển khoản')).toBeInTheDocument()
+    expect(document.body).toHaveTextContent('Gross:')
+    expect(document.body.textContent).toMatch(/2\.000\s₫/)
+    expect(document.body).toHaveTextContent('Fee deduction:')
+    expect(document.body.textContent).toMatch(/0\s₫/)
   })
 
   it('allows admin to remind payout recipients when profile is missing', async () => {

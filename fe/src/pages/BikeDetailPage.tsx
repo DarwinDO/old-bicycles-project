@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ROUTES } from '@/constants/routes'
 import { formatCurrencyInput, parseCurrencyInput } from '@/lib/currency-input'
+import { calculatePlatformFeePreview } from '@/lib/platform-fee-preview'
 import { cn } from '@/lib/utils'
 import { adminProductsApi } from '@/api/admin-products.api'
 import { ordersApi } from '@/api/orders.api'
@@ -220,6 +221,18 @@ export default function BikeDetailPage() {
   const isAdminDetailView = user?.role === 'admin'
   const listPageHref = isAdminDetailView ? ROUTES.ADMIN_LISTINGS : ROUTES.MARKET
   const listPageLabel = isAdminDetailView ? 'Duyệt tin đăng' : 'Mua xe'
+  const safeProductPrice = product?.price ?? 0
+  const parsedUpfrontAmountForPreview = paymentOption === 'partial' ? parseCurrencyInput(upfrontAmount) ?? 0 : safeProductPrice
+  const protectedAmountForPreview = paymentOption === 'full' ? safeProductPrice : parsedUpfrontAmountForPreview
+  const feePreview = calculatePlatformFeePreview(safeProductPrice, protectedAmountForPreview, paymentMethod)
+  const exceedsProductPrice = paymentOption === 'partial' && protectedAmountForPreview > safeProductPrice
+  const isBelowMinimumAllowedUpfront =
+    paymentOption === 'partial' &&
+    protectedAmountForPreview > 0 &&
+    feePreview.isApplicable &&
+    protectedAmountForPreview < feePreview.minimumAllowedUpfrontAmount
+  const shouldShowPreviewBreakdown =
+    paymentOption === 'full' || (paymentOption === 'partial' && protectedAmountForPreview > 0)
 
   const handleOpenOrderDialog = () => {
     if (!product) {
@@ -259,6 +272,23 @@ export default function BikeDetailPage() {
 
     if (paymentOption === 'partial' && (!parsedUpfrontAmount || parsedUpfrontAmount <= 0)) {
       setOrderError('Vui lòng nhập số tiền ứng trước hợp lệ.')
+      return
+    }
+
+    if (paymentOption === 'partial' && parsedUpfrontAmount !== null && parsedUpfrontAmount > product.price) {
+      setOrderError('Số tiền ứng trước không được vượt quá giá xe.')
+      return
+    }
+
+    if (
+      paymentOption === 'partial' &&
+      feePreview.isApplicable &&
+      parsedUpfrontAmount &&
+      parsedUpfrontAmount < feePreview.minimumAllowedUpfrontAmount
+    ) {
+      setOrderError(
+        `Số tiền ứng trước phải từ ${formatPrice(feePreview.minimumAllowedUpfrontAmount)} trở lên để đủ cover phần phí seller.`,
+      )
       return
     }
 
@@ -845,8 +875,74 @@ export default function BikeDetailPage() {
                   onChange={(event) => setUpfrontAmount(formatCurrencyInput(event.target.value))}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Số tiền sẽ được tự động định dạng theo VND để buyer dễ đọc. Backend chỉ chấp nhận số tiền ứng trước lớn hơn 0 và không vượt quá giá xe.
+                  Hệ thống chỉ chấp nhận số tiền ứng trước lớn hơn 0, không vượt quá giá xe, và đủ lớn để cover phần phí seller.
                 </p>
+                {feePreview.isApplicable && (
+                  <p className="text-xs text-muted-foreground">
+                    Mức ứng trước tối thiểu hiện tại: {formatPrice(feePreview.minimumAllowedUpfrontAmount)}.
+                  </p>
+                )}
+              </div>
+            )}
+
+            {shouldShowPreviewBreakdown && (
+              <div className="space-y-3 rounded-lg border border-primary/20 bg-primary/5 p-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Preview khoản thanh toán</p>
+                    <p className="text-xs text-muted-foreground">
+                      Phí sàn đang được tính trên toàn bộ giá trị xe và chia đôi cho buyer và seller.
+                    </p>
+                  </div>
+                  {paymentOption === 'full' && <Badge variant="secondary">Full</Badge>}
+                </div>
+
+                <div className="grid gap-2 text-sm sm:grid-cols-2">
+                  <p>
+                    Giá trị xe:{' '}
+                    <span className="font-medium text-foreground">{formatPrice(product.price)}</span>
+                  </p>
+                  <p>
+                    Khoản sàn giữ cho giao dịch hiện tại:{' '}
+                    <span className="font-medium text-foreground">{formatPrice(feePreview.sellerGrossPayoutAmount)}</span>
+                  </p>
+                  <p>
+                    Phí sàn tổng:{' '}
+                    <span className="font-medium text-foreground">{formatPrice(feePreview.platformFeeTotal)}</span>
+                  </p>
+                  <p>
+                    Buyer chịu:{' '}
+                    <span className="font-medium text-foreground">{formatPrice(feePreview.buyerFeeAmount)}</span>
+                  </p>
+                  <p>
+                    Seller chịu:{' '}
+                    <span className="font-medium text-foreground">{formatPrice(feePreview.sellerFeeAmount)}</span>
+                  </p>
+                  <p>
+                    Buyer cần chuyển ngay:{' '}
+                    <span className="font-medium text-foreground">{formatPrice(feePreview.buyerChargeAmount)}</span>
+                  </p>
+                </div>
+
+                {paymentOption === 'partial' && (
+                  <p className="text-xs text-muted-foreground">
+                    Nếu giao dịch hoàn tất, seller dự kiến nhận ròng {formatPrice(feePreview.sellerNetPayoutAmount)} từ khoản hệ thống đang giữ.
+                  </p>
+                )}
+
+                {exceedsProductPrice && (
+                  <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+                    <AlertTriangle className="h-4 w-4 shrink-0" />
+                    Số tiền ứng trước không được vượt quá giá xe.
+                  </div>
+                )}
+
+                {isBelowMinimumAllowedUpfront && (
+                  <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+                    <AlertTriangle className="h-4 w-4 shrink-0" />
+                    Khoản ứng trước hiện tại chưa đủ cover phần phí seller. Vui lòng tăng lên ít nhất {formatPrice(feePreview.minimumAllowedUpfrontAmount)}.
+                  </div>
+                )}
               </div>
             )}
 
@@ -868,7 +964,10 @@ export default function BikeDetailPage() {
             >
               Hủy
             </Button>
-            <Button onClick={handleCreateOrder} disabled={orderLoading}>
+            <Button
+              onClick={handleCreateOrder}
+              disabled={orderLoading || exceedsProductPrice || isBelowMinimumAllowedUpfront}
+            >
               {orderLoading ? 'Đang tạo đơn...' : 'Tạo yêu cầu mua'}
             </Button>
           </DialogFooter>

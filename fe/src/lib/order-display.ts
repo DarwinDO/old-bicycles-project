@@ -47,6 +47,36 @@ export function getPaymentOptionLabel(order: Order) {
   return order.paymentOption === 'full' ? 'Thanh toán toàn bộ' : 'Đặt cọc một phần'
 }
 
+export function getOrderPlatformFeeTotal(order: Order) {
+  return order.platformFeeTotal ?? order.serviceFee ?? 0
+}
+
+export function getOrderBuyerFeeAmount(order: Order) {
+  return order.buyerFeeAmount ?? 0
+}
+
+export function getOrderBuyerChargeAmount(order: Order) {
+  return order.buyerChargeAmount ?? order.paidAmount
+}
+
+export function getOrderSellerFeeAmount(order: Order) {
+  return order.sellerFeeAmount ?? 0
+}
+
+export function getOrderSellerGrossPayoutAmount(order: Order) {
+  return order.sellerGrossPayoutAmount ?? order.requiredUpfrontAmount
+}
+
+export function getOrderSellerNetPayoutAmount(order: Order) {
+  const fallbackGrossAmount = getOrderSellerGrossPayoutAmount(order)
+  return order.sellerNetPayoutAmount ?? Math.max(0, fallbackGrossAmount - getOrderSellerFeeAmount(order))
+}
+
+export function getOrderRefundableBuyerAmount(order: Order) {
+  const buyerChargeAmount = order.buyerChargeAmount ?? 0
+  return buyerChargeAmount > 0 ? buyerChargeAmount : order.paidAmount
+}
+
 function getPaymentDeadlineMs(order: Order) {
   if (!order.paymentDeadline) {
     return null
@@ -95,7 +125,7 @@ export function getOrderStatusMeta(order: Order, nowMs = Date.now()): OrderStatu
     return {
       label: 'Chờ giải ngân cho người bán',
       helperText:
-        'Người mua đã xác nhận nhận xe. Hệ thống đang chờ admin chuyển khoản thủ công tiền cọc cho người bán. Nếu người bán chưa khai tài khoản nhận tiền, họ cần cập nhật payout profile.',
+        'Người mua đã xác nhận nhận xe. Hệ thống đang chờ admin chuyển khoản thủ công khoản tiền đang được giữ cho người bán. Nếu người bán chưa khai tài khoản nhận tiền, họ cần cập nhật payout profile.',
       tone: 'warning',
     }
   }
@@ -103,7 +133,8 @@ export function getOrderStatusMeta(order: Order, nowMs = Date.now()): OrderStatu
   if (order.status === 'completed') {
     return {
       label: 'Hoàn tất',
-      helperText: 'Giao dịch đã hoàn tất và tiền cọc đã được giải ngân cho người bán.',
+      helperText:
+        'Giao dịch đã hoàn tất và khoản tiền sàn giữ trung gian đã được giải ngân cho người bán.',
       tone: 'success',
     }
   }
@@ -162,7 +193,7 @@ export function getOrderStatusMeta(order: Order, nowMs = Date.now()): OrderStatu
     return {
       label: 'Đã hoàn tiền',
       helperText:
-        'Khoản đặt cọc đã được hoàn lại và đơn hàng đã đóng. Tin đăng liên quan đã bị ẩn; nếu người bán muốn bán lại thì phải cập nhật, duyệt lại và kiểm định lại.',
+        'Khoản thanh toán đã được hoàn lại và đơn hàng đã đóng. Tin đăng liên quan đã bị ẩn; nếu người bán muốn bán lại thì phải cập nhật, duyệt lại và kiểm định lại.',
       tone: 'success',
     }
   }
@@ -186,7 +217,7 @@ export function getOrderStatusMeta(order: Order, nowMs = Date.now()): OrderStatu
   if (order.status === 'deposited' && order.fundingStatus === 'held') {
     return {
       label: 'Đã đặt cọc',
-      helperText: 'Hệ thống đã giữ tiền đặt cọc và chờ người bán hoàn tất giao dịch.',
+      helperText: 'Hệ thống đã giữ khoản thanh toán hiện tại và đang chờ người bán hoàn tất giao dịch.',
       tone: 'info',
     }
   }
@@ -205,7 +236,7 @@ export function getOrderStatusMeta(order: Order, nowMs = Date.now()): OrderStatu
       helperText:
         order.paymentMethod === 'cash'
           ? 'Người bán đã duyệt đơn, hai bên cần thanh toán trực tiếp để tiếp tục.'
-          : 'Người bán đã duyệt đơn, người mua cần hoàn tất khoản thanh toán ứng trước.',
+          : 'Người bán đã duyệt đơn, người mua cần hoàn tất khoản thanh toán hiện tại theo breakdown được hiển thị.',
       tone: 'warning',
     }
   }

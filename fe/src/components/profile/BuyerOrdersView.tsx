@@ -30,9 +30,13 @@ import {
   canCancelOpenOrder,
   formatOrderCurrency,
   formatOrderDate,
-  getPaymentCountdownText,
   getOrderStatusMeta,
   getOrderToneClass,
+  getOrderBuyerChargeAmount,
+  getOrderBuyerFeeAmount,
+  getOrderPlatformFeeTotal,
+  getOrderRefundableBuyerAmount,
+  getPaymentCountdownText,
   getPaymentMethodLabel,
   getPaymentOptionLabel,
   isPaymentDeadlineExpired,
@@ -239,7 +243,7 @@ export function BuyerOrdersView() {
 
     try {
       await refundsApi.create(selectedOrderForRefund.id, {
-        amount: selectedOrderForRefund.paidAmount,
+        amount: getOrderRefundableBuyerAmount(selectedOrderForRefund),
         reason: values.reason,
         evidenceNote: values.evidenceNote,
       })
@@ -337,6 +341,10 @@ export function BuyerOrdersView() {
             const paymentDeadlineExpired = isPaymentDeadlineExpired(order, nowMs)
             const paymentCountdownText = getPaymentCountdownText(order.paymentDeadline, nowMs)
             const paymentRequest = paymentRequests[order.id]
+            const platformFeeTotal = getOrderPlatformFeeTotal(order)
+            const buyerFeeAmount = getOrderBuyerFeeAmount(order)
+            const buyerChargeAmount = getOrderBuyerChargeAmount(order)
+            const refundableBuyerAmount = getOrderRefundableBuyerAmount(order)
             const paymentActionLoading = actionLoadingKey === `payment:${order.id}`
             const cancelActionLoading = actionLoadingKey === `cancel:${order.id}`
             const refundActionLoading = actionLoadingKey === `refund:${order.id}`
@@ -403,6 +411,29 @@ export function BuyerOrdersView() {
                           <span className="font-medium text-foreground">{formatOrderCurrency(order.remainingAmount)}</span>
                         </p>
                       </div>
+
+                      {platformFeeTotal > 0 && (
+                        <div className="rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 text-sm">
+                          <div className="grid gap-2 sm:grid-cols-2">
+                            <p>
+                              Phí sàn tổng:{' '}
+                              <span className="font-medium text-foreground">{formatOrderCurrency(platformFeeTotal)}</span>
+                            </p>
+                            <p>
+                              Buyer chịu:{' '}
+                              <span className="font-medium text-foreground">{formatOrderCurrency(buyerFeeAmount)}</span>
+                            </p>
+                            <p>
+                              Buyer chuyển ở bước này:{' '}
+                              <span className="font-medium text-foreground">{formatOrderCurrency(buyerChargeAmount)}</span>
+                            </p>
+                            <p>
+                              Refund tối đa cho buyer:{' '}
+                              <span className="font-medium text-foreground">{formatOrderCurrency(refundableBuyerAmount)}</span>
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -553,6 +584,18 @@ export function BuyerOrdersView() {
                             <span className="font-medium text-foreground">{formatOrderCurrency(paymentRequest.amount)}</span>
                           </p>
                           <p>
+                            Khoản sàn giữ cho giao dịch:{' '}
+                            <span className="font-medium text-foreground">
+                              {formatOrderCurrency(paymentRequest.protectedAmount ?? order.requiredUpfrontAmount)}
+                            </span>
+                          </p>
+                          <p>
+                            Phí buyer ở bước này:{' '}
+                            <span className="font-medium text-foreground">
+                              {formatOrderCurrency(paymentRequest.buyerFeeAmount ?? buyerFeeAmount)}
+                            </span>
+                          </p>
+                          <p>
                             Mã chuyển khoản:{' '}
                             <span className="font-medium text-foreground">
                               {paymentRequest.transferContent ?? paymentRequest.gatewayOrderCode ?? 'Không có'}
@@ -574,6 +617,12 @@ export function BuyerOrdersView() {
 
                         {paymentRequest.instructions && (
                           <p className="text-sm text-muted-foreground">{paymentRequest.instructions}</p>
+                        )}
+
+                        {platformFeeTotal > 0 && (
+                          <p className="text-xs text-muted-foreground">
+                            Refund hợp lệ sẽ hoàn lại cho buyer cả phần phí buyer đã trả ở bước thanh toán này.
+                          </p>
                         )}
 
                         {paymentRequest.expiresAt && (
@@ -639,7 +688,7 @@ export function BuyerOrdersView() {
         }}
         onSubmit={handleSubmitRefund}
         orderId={selectedOrderForRefund?.id ?? ''}
-        refundAmount={selectedOrderForRefund?.paidAmount ?? 0}
+        refundAmount={selectedOrderForRefund ? getOrderRefundableBuyerAmount(selectedOrderForRefund) : 0}
         isSubmitting={Boolean(selectedOrderForRefund) && actionLoadingKey === `refund:${selectedOrderForRefund?.id}`}
         error={refundError}
         payoutProfileReady={payoutProfileReady}

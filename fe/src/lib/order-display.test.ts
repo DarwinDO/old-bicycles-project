@@ -8,6 +8,9 @@ import {
   canSellerAcceptOrder,
   canSellerCompleteOrder,
   canSellerConfirmCashDeposit,
+  getOrderBuyerChargeAmount,
+  getOrderRefundableBuyerAmount,
+  getOrderSellerNetPayoutAmount,
   getOrderStatusMeta,
   getPaymentCountdownText,
   getPaymentMethodLabel,
@@ -167,6 +170,20 @@ describe('order-display', () => {
     expect(statusMeta.label).toBe('Chờ giải ngân cho người bán')
     expect(statusMeta.helperText).toContain('payout profile')
     expect(canBuyerSubmitReview(order)).toBe(true)
+  })
+
+  it('prefers buyer charge amount and seller net payout snapshots when fee fields exist', () => {
+    const order = buildOrder({
+      paidAmount: 4000000,
+      buyerChargeAmount: 4200000,
+      sellerFeeAmount: 200000,
+      sellerGrossPayoutAmount: 4000000,
+      sellerNetPayoutAmount: 3800000,
+    })
+
+    expect(getOrderBuyerChargeAmount(order)).toBe(4200000)
+    expect(getOrderRefundableBuyerAmount(order)).toBe(4200000)
+    expect(getOrderSellerNetPayoutAmount(order)).toBe(3800000)
   })
 
   it('shows refund pending transfer after admin approves refund', () => {

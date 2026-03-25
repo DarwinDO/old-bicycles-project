@@ -4,6 +4,8 @@ export type PaymentMethod = 'transfer' | 'cash' | 'online'
 
 export type OrderEvidenceType = 'seller_handover' | 'buyer_receipt'
 
+export type PlatformFeeStatus = 'not_applicable' | 'pending' | 'recognized' | 'reversed'
+
 export interface OrderEvidenceFile {
   id: string
   fileUrl: string
@@ -61,6 +63,17 @@ export interface Order {
   paidAmount: number
   remainingAmount: number
   serviceFee?: number | null
+  feeBaseAmount?: number | null
+  platformFeeRate?: number | null
+  platformFeeTotal?: number | null
+  buyerFeeAmount?: number | null
+  sellerFeeAmount?: number | null
+  buyerChargeAmount?: number | null
+  sellerGrossPayoutAmount?: number | null
+  sellerNetPayoutAmount?: number | null
+  platformFeeStatus?: PlatformFeeStatus | null
+  platformFeeRecognizedAt?: string | null
+  platformFeeReversedAt?: string | null
   paymentOption: PaymentOption
   status: OrderStatus
   fundingStatus: OrderFundingStatus
@@ -80,7 +93,6 @@ export interface OrderCreateRequest {
   productId: string
   upfrontAmount?: number
   depositAmount?: number
-  serviceFee?: number
   paymentOption?: PaymentOption
   paymentMethod: PaymentMethod
 }

@@ -8,9 +8,10 @@ import { ROUTES } from '@/constants/routes'
 import { useAuth } from '@/contexts/AuthContext'
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('')
+  const [email, setEmail] = useState(() => localStorage.getItem('rememberedEmail') || '')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [rememberMe, setRememberMe] = useState(() => !!localStorage.getItem('rememberedEmail'))
   const [isLoading, setIsLoading] = useState(false)
   const [isResending, setIsResending] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -28,16 +29,49 @@ export default function LoginPage() {
     setError(null)
     setResendMessage(null)
     setCanResendVerification(false)
+
+    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setError('Vui lòng nhập địa chỉ email hợp lệ (ví dụ: example@email.com).')
+      return
+    }
+
+    if (!password.trim()) {
+      setError('Vui lòng nhập mật khẩu.')
+      return
+    }
+
     setIsLoading(true)
 
     try {
       await login({ email, password })
+      
+      if (rememberMe) {
+        localStorage.setItem('rememberedEmail', email)
+      } else {
+        localStorage.removeItem('rememberedEmail')
+      }
+
       navigate(from, { replace: true })
     } catch (err: unknown) {
       const errorCode = (err as { response?: { data?: { code?: number } } })?.response?.data?.code
-      const message =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-        'Email hoặc mật khẩu không đúng. Vui lòng thử lại.'
+      let message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+
+      if (!message) {
+        message = 'Email hoặc mật khẩu không đúng. Vui lòng thử lại.'
+      } else {
+        const msgLower = message.toLowerCase()
+        if (msgLower.includes('credential') || msgLower.includes('password') || msgLower.includes('incorrect')) {
+          message = 'Email hoặc mật khẩu không chính xác.'
+        } else if (msgLower.includes('not found') || msgLower.includes('user') || msgLower.includes('exist')) {
+          message = 'Tài khoản không tồn tại.'
+        } else if (msgLower.includes('disable') || msgLower.includes('inactive')) {
+          message = 'Tài khoản đã bị vô hiệu hóa.'
+        } else if (msgLower.includes('lock')) {
+          message = 'Tài khoản đã bị khóa.'
+        } else if (msgLower.includes('verify') || msgLower.includes('verified')) {
+          message = 'Email chưa được xác thực. Vui lòng kiểm tra hộp thư.'
+        }
+      }
 
       setError(message)
       setCanResendVerification(errorCode === 1024)
@@ -83,7 +117,7 @@ export default function LoginPage() {
           </CardHeader>
 
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4" noValidate>
               {error && (
                 <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
                   <AlertCircle className="h-4 w-4 shrink-0" />
@@ -143,6 +177,19 @@ export default function LoginPage() {
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="remember"
+                  className="h-4 w-4 rounded border-input"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                />
+                <label htmlFor="remember" className="text-sm font-medium leading-none cursor-pointer">
+                  Nhớ mật khẩu
+                </label>
               </div>
 
               {canResendVerification && (

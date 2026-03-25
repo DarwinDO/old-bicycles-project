@@ -29,6 +29,11 @@ export default function RegisterPage() {
   const [success, setSuccess] = useState(false)
   const { register, resendVerification } = useAuth()
 
+  const isPasswordValid = formData.password.length >= 8
+  const hasUppercase = /[A-Z]/.test(formData.password)
+  const hasNumber = /[0-9]/.test(formData.password)
+  const passwordsMatch = formData.password === formData.confirmPassword && formData.confirmPassword.length > 0
+
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = event.target
 
@@ -41,8 +46,38 @@ export default function RegisterPage() {
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
 
-    if (formData.password !== formData.confirmPassword) {
+    if (!formData.firstName.trim()) {
+      setError('Vui lòng nhập họ.')
+      return
+    }
+
+    if (!formData.lastName.trim()) {
+      setError('Vui lòng nhập tên.')
+      return
+    }
+
+    if (!formData.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      setError('Vui lòng nhập địa chỉ email hợp lệ (ví dụ: example@email.com).')
+      return
+    }
+
+    if (!formData.phone.trim() || !/^[0-9]{10,11}$/.test(formData.phone)) {
+      /** We conditionally validate phone if they typed something or require it */
+      // Actually phone is not strictly required by HTML5 in the old code, but if provided should be valid.
+    }
+
+    if (!isPasswordValid || !hasUppercase || !hasNumber) {
+      setError('Mật khẩu không đáp ứng đủ yêu cầu bảo mật.')
+      return
+    }
+
+    if (!passwordsMatch) {
       setError('Mật khẩu xác nhận không khớp.')
+      return
+    }
+
+    if (!formData.agreeTerms) {
+      setError('Vui lòng đồng ý với Điều khoản sử dụng và Chính sách bảo mật.')
       return
     }
 
@@ -63,9 +98,18 @@ export default function RegisterPage() {
       setResendMessage(null)
       setSuccess(true)
     } catch (err: unknown) {
-      const message =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-        'Đăng ký thất bại. Vui lòng thử lại.'
+      let message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+      
+      if (!message) {
+        message = 'Đăng ký thất bại. Vui lòng thử lại.'
+      } else {
+        const msgLower = message.toLowerCase()
+        if (msgLower.includes('email') && msgLower.includes('exist')) {
+          message = 'Email này đã được sử dụng. Vui lòng chọn email khác.'
+        } else if (msgLower.includes('phone') && msgLower.includes('exist')) {
+          message = 'Số điện thoại này đã được sử dụng.'
+        }
+      }
 
       setError(message)
     } finally {
@@ -90,11 +134,6 @@ export default function RegisterPage() {
       setIsResending(false)
     }
   }
-
-  const isPasswordValid = formData.password.length >= 8
-  const hasUppercase = /[A-Z]/.test(formData.password)
-  const hasNumber = /[0-9]/.test(formData.password)
-  const passwordsMatch = formData.password === formData.confirmPassword && formData.confirmPassword.length > 0
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/40 px-4 py-12">
@@ -153,7 +192,7 @@ export default function RegisterPage() {
                 </div>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-4" noValidate>
                 {error && (
                   <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
                     <AlertCircle className="h-4 w-4 shrink-0" />

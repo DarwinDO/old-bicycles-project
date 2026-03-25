@@ -17,14 +17,27 @@ export default function ForgotPasswordPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setError(null)
+
+        if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            setError('Vui lòng nhập địa chỉ email hợp lệ.')
+            return
+        }
+
         setIsLoading(true)
         try {
             await authService.forgotPassword({ email })
             setSuccess(true)
         } catch (err: unknown) {
-            const message =
-                (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-                'Không thể gửi email. Vui lòng thử lại.'
+            let message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+            
+            if (!message) {
+                message = 'Không thể gửi email. Vui lòng thử lại.'
+            } else {
+                 const msgLower = message.toLowerCase()
+                 if (msgLower.includes('not found') || msgLower.includes('user')) {
+                     message = 'Không tìm thấy tài khoản với email này.'
+                 }
+            }
             setError(message)
         } finally {
             setIsLoading(false)
@@ -67,7 +80,7 @@ export default function ForgotPasswordPage() {
                                 </Button>
                             </div>
                         ) : (
-                            <form onSubmit={handleSubmit} className="space-y-4">
+                            <form onSubmit={handleSubmit} className="space-y-4" noValidate>
                                 {error && (
                                     <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
                                         <AlertCircle className="h-4 w-4 shrink-0" />

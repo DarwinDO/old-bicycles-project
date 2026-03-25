@@ -1,13 +1,13 @@
-# Notification Dropdown Preview And Scrollable Header Panel Basics
+# Notification Dropdown Preview, Scrollable Panel, Và Time Skew Basics
 
 ## Mục tiêu
 
-Đổi trải nghiệm xem thông báo từ kiểu "bấm chuông rồi sang trang mới ngay" sang kiểu:
+Phần thông báo ở frontend có hai nhiệm vụ khác nhau:
 
-1. bấm chuông ở header
-2. mở dropdown nhỏ
-3. kéo scrollbar để xem nhanh vài thông báo gần nhất
-4. nếu cần mới bấm vào trang `/notifications` để xem đầy đủ
+1. Cho người dùng xem nhanh vài thông báo mới nhất ngay trong header.
+2. Hiển thị thời gian của từng thông báo theo cách dễ hiểu như `Vừa xong`, `19 phút trước`, `2 ngày trước`.
+
+Bug vừa sửa là một ví dụ rất điển hình: nếu timestamp backend bị lệch múi giờ và rơi vào tương lai, frontend cũ vẫn coi nó là `Vừa xong`. Khi đó người dùng thấy thông báo cũ cứ bám ở đầu danh sách.
 
 ## File chính
 
@@ -20,73 +20,113 @@
 - `src/layouts/SellerLayout.tsx`
 - `src/layouts/InspectorLayout.tsx`
 
-## Luồng FE sau khi đổi
+## Luồng FE hiện tại
 
 ### 1. User action
 
-Người dùng bấm vào icon chuông trên header hoặc dashboard header.
+Người dùng bấm icon chuông ở header.
 
 ### 2. Component mở dropdown
 
 `NotificationDropdown.tsx` dùng Radix `DropdownMenu`.
 
-- `NotificationBellButton` chỉ đóng vai trò trigger
-- `DropdownMenuContent` là panel sổ xuống
+- `NotificationBellButton` là nút trigger
+- `DropdownMenuContent` là panel xổ xuống
 
 ### 3. Fetch dữ liệu
 
-Khi dropdown `open = true`, component gọi:
+Khi dropdown mở, component gọi:
 
 - `notificationsApi.getMine(0, 8)`
 
-Nghĩa là panel chỉ lấy 8 thông báo gần nhất để preview nhanh.
+Điều này chỉ lấy 8 thông báo gần nhất để preview nhanh.
 
-### 4. Scrollable preview
+### 4. Hiển thị thời gian
 
-Danh sách nằm trong:
-
-- `div.max-h-96.overflow-y-auto`
-
-Nên khi danh sách dài hơn chiều cao panel, user kéo scrollbar ngay trong dropdown thay vì bị điều hướng sang trang khác.
-
-### 5. Mark as read
-
-Dropdown cho phép:
-
-- bấm từng item để `markAsRead`
-- bấm `Đọc hết` để `markAllAsRead`
-
-Sau khi update, component phát:
-
-- `emitNotificationsUpdated()`
-
-để badge unread ở các layout được refresh đồng bộ.
-
-### 6. Full page fallback
-
-Trang `NotificationsPage.tsx` vẫn giữ lại.
-
-Nó là nơi xem:
-
-- danh sách dài hơn
-- phân trang
-- lịch sử đầy đủ
-
-Dropdown chỉ là lớp preview nhanh trên header.
-
-## Vì sao cần tách helper thời gian riêng
-
-Trước đó phần format thời gian nằm riêng trong page notifications. Dropdown mới cũng cần logic này, nên code được gom vào:
+Cả dropdown và trang `/notifications` đều dùng chung helper:
 
 - `src/lib/notification-time.ts`
 
-Lợi ích:
+Luồng chạy là:
 
-- không lặp code
-- sửa text "vừa xong / phút trước / giờ trước" ở một nơi
-- page và dropdown hiển thị cùng một cách
+1. component nhận `notification.createdAt`
+2. gọi `formatNotificationRelativeTime(createdAt)`
+3. helper parse timestamp
+4. helper quyết định trả về:
+   - `Vừa xong`
+   - `x phút trước`
+   - `x giờ trước`
+   - `x ngày trước`
+   - hoặc ngày/giờ tuyệt đối
 
-## Ghi chú UX
+### 5. Guard cho timestamp tương lai
 
-- Chuông thông báo bây giờ có `aria-label="Mở thông báo"` để dễ test và dễ dùng hơn với screen reader.
-- Route `/notifications` không bị xóa; chỉ đổi entry mặc định từ bell icon sang dropdown preview.
+Đây là phần quan trọng của bug fix.
+
+Nếu `createdAt` nằm trong tương lai hơn hiện tại quá 1 phút, helper **không còn** trả `Vừa xong`.
+
+Thay vào đó, helper trả về ngày giờ tuyệt đối. Cách này giúp:
+
+- không đánh lừa người dùng rằng một bản ghi cũ là “mới xong”
+- lộ rõ dấu hiệu lệch múi giờ để dễ debug
+- tránh che bug backend bằng một nhãn thời gian sai
+
+## Vì sao bug này làm thông báo cũ chiếm slot đầu
+
+Frontend không tự sort lại danh sách notification preview.
+
+Nó hiển thị theo đúng thứ tự backend trả về. Vì vậy nếu backend lưu `createdAt` lớn hơn thời gian thật, bản ghi đó sẽ:
+
+1. bị sort lên đầu ở backend
+2. hiện ở 2 slot đầu của dropdown
+3. đồng thời bị formatter cũ gắn nhãn `Vừa xong`
+
+Kết quả là người dùng thấy “thông báo cũ nhưng cứ đứng đầu”.
+
+## Bài học cần nhớ
+
+### `timestamp` và `timezone` không phải là một
+
+Một chuỗi ngày giờ chỉ có ích khi ta biết nó thuộc múi giờ nào.
+
+Ví dụ:
+
+- `2026-03-25 11:54:00` chỉ là giờ tường
+- `2026-03-25T11:54:00Z` mới nói rõ đây là UTC
+
+Nếu backend và frontend hiểu khác nhau về múi giờ, giao diện sẽ hiển thị sai ngay.
+
+### Helper hiển thị thời gian nên có fallback an toàn
+
+Đừng giả định mọi timestamp đều hợp lệ và luôn ở quá khứ.
+
+Một helper UI tốt nên xử lý được:
+
+- timestamp hợp lệ
+- timestamp lỗi
+- timestamp trong tương lai do clock skew hoặc timezone skew
+
+## Ví dụ ngắn
+
+### Trước khi sửa
+
+- backend trả một timestamp bị lệch sang tương lai
+- helper thấy `diff < 1 phút`
+- UI hiện `Vừa xong`
+
+### Sau khi sửa
+
+- backend vẫn có thể trả timestamp lỗi trong lúc chưa deploy fix
+- helper nhận ra timestamp đang ở tương lai
+- UI hiện ngày giờ tuyệt đối thay vì `Vừa xong`
+
+## Liên hệ với backend
+
+Bug này chỉ được giải quyết triệt để khi backend lưu notification timestamp theo UTC một cách nhất quán.
+
+Frontend chỉ đóng vai trò:
+
+- không hiển thị sai quá rõ
+- giúp người dùng và lập trình viên nhận ra dữ liệu đang lệch
+
+Backend mới là nơi quyết định thứ tự thật của danh sách notification.

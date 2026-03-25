@@ -353,6 +353,14 @@ export default function BikeListingPage() {
     setSearchParams(new URLSearchParams(), { replace: true })
   }
 
+  const sortedCategories = useMemo(() => {
+    return [...categories].sort((a, b) => {
+      if (a.name.toLowerCase() === 'khác') return 1
+      if (b.name.toLowerCase() === 'khác') return -1
+      return a.name.localeCompare(b.name)
+    })
+  }, [categories])
+
   const activeFiltersCount =
     (keyword ? 1 : 0) +
     (province ? 1 : 0) +
@@ -396,7 +404,7 @@ export default function BikeListingPage() {
           >
             Tất cả
           </button>
-          {categories.map((category) => (
+          {sortedCategories.map((category) => (
             <button
               key={category.id}
               className={cn(

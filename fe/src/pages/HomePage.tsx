@@ -39,13 +39,13 @@ const CATEGORY_ICONS: Record<string, string> = {
 const TRUST_FEATURES = [
   {
     icon: Shield,
-    title: 'Kiểm duyệt trước khi public',
-    description: 'Tin đăng phải qua admin và inspection trước khi hiển thị công khai.',
+    title: 'Kiểm duyệt cực kỳ nghiêm ngặt',
+    description: 'Tất cả tin đăng đều được ban quản trị kiểm định chất lượng trước khi hiển thị.',
   },
   {
     icon: Award,
     title: 'Thông tin xe rõ ràng',
-    description: 'Người mua xem được mô tả, ảnh, trạng thái kiểm định và lịch sử giao dịch liên quan.',
+    description: 'Người mua xem được thông tin xe, ảnh, trạng thái kiểm định và lịch sử giao dịch liên quan.',
   },
   {
     icon: Users,
@@ -344,7 +344,7 @@ export default function HomePage() {
               Nền tảng mua bán xe đạp thể thao cũ có kiểm định
             </h1>
             <p className="mt-6 text-lg text-white/90 md:text-xl">
-              Tìm xe theo từ khóa và khu vực, xem tin đã qua admin và inspection trước khi hiển thị công khai.
+              Tìm kiếm linh hoạt, an tâm giao dịch với mọi tin đăng đã được ban quản trị kiểm định kỹ lưỡng.
             </p>
 
             <Card className="mt-10 p-2 shadow-xl">
@@ -463,13 +463,13 @@ export default function HomePage() {
 
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
               <Badge variant="secondary" className="px-3 py-1.5 text-sm">
-                Tin đăng public đều đã qua inspection
+                Mọi tin đăng đều đã qua kiểm định
               </Badge>
               <Badge variant="secondary" className="px-3 py-1.5 text-sm">
-                Đặt cọc và xác nhận giao dịch theo từng bước
+                Đặt cọc và xác nhận giao dịch an toàn
               </Badge>
               <Badge variant="secondary" className="px-3 py-1.5 text-sm">
-                Hoàn tiền và giải ngân có đối soát thủ công
+                Hoàn tiền và giải ngân đối soát kỹ lưỡng
               </Badge>
             </div>
           </div>
@@ -565,7 +565,6 @@ export default function HomePage() {
         <div className="container mx-auto px-4">
           <div className="mb-8 text-center">
             <h2 className="text-2xl font-bold text-foreground md:text-3xl">Danh mục xe đạp</h2>
-            <p className="mt-2 text-muted-foreground">Danh sách danh mục đang lấy từ reference data thật của hệ thống.</p>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -605,7 +604,7 @@ export default function HomePage() {
               Bạn muốn bán xe đạp của mình?
             </h2>
             <p className="mt-4 text-lg text-white/90">
-              Tạo tin mới, chờ admin chuyển qua inspection, rồi chỉ lên public khi xe đạt kiểm định.
+              Tạo tin dễ dàng, chờ ban quản trị kiểm định chất lượng trước khi được đăng bán công khai.
             </p>
             <Button
               size="lg"

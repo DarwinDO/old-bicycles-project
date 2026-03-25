@@ -6,6 +6,7 @@ import type {
   ForgotPasswordRequest,
   LoginRequest,
   RegisterRequest,
+  ResendVerificationRequest,
   ResetPasswordRequest,
   UpdateProfileRequest,
 } from '@/types/auth'
@@ -69,6 +70,10 @@ export const authApi = {
 
   forgotPassword(request: ForgotPasswordRequest) {
     return postResult<string, ForgotPasswordRequest>('/api/auth/forgot-password', request)
+  },
+
+  resendVerification(request: ResendVerificationRequest) {
+    return postResult<string, ResendVerificationRequest>('/api/auth/resend-verification', request)
   },
 
   resetPassword(request: ResetPasswordRequest) {

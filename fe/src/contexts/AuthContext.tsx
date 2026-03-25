@@ -11,6 +11,7 @@ interface AuthContextValue {
   isLoading: boolean
   login: (data: LoginRequest) => Promise<void>
   register: (data: RegisterRequest) => Promise<void>
+  resendVerification: (email: string) => Promise<string>
   logout: () => Promise<void>
   refreshUser: () => Promise<void>
   setUser: (user: User | null) => void
@@ -60,19 +61,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refreshUser()
   }, [refreshUser])
 
-  const login = async (data: LoginRequest) => {
+  const login = useCallback(async (data: LoginRequest) => {
     const session = await authService.login(data)
     setUser(session.user)
-  }
+  }, [])
 
-  const register = async (data: RegisterRequest) => {
+  const register = useCallback(async (data: RegisterRequest) => {
     await authService.register(data)
-  }
+  }, [])
 
-  const logout = async () => {
+  const resendVerification = useCallback(async (email: string) => {
+    return authService.resendVerification({ email: email.trim() })
+  }, [])
+
+  const logout = useCallback(async () => {
     await authService.logout()
     setUser(null)
-  }
+  }, [])
 
   const value = useMemo<AuthContextValue>(
     () => ({
@@ -81,12 +86,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isLoading,
       login,
       register,
+      resendVerification,
       logout,
       refreshUser,
       setUser,
       hasRole: (...roles) => Boolean(user?.role && roles.includes(user.role)),
     }),
-    [user, isLoading, refreshUser],
+    [user, isLoading, login, register, resendVerification, logout, refreshUser],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

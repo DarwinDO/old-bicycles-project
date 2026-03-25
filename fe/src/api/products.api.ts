@@ -1,6 +1,17 @@
 import { deleteResult, getResult, http, patchResult, compactParams } from '@/lib/http'
 import type { PageResult } from '@/types/api'
-import type { Product, ProductFilterRequest, ProductMutationInput } from '@/types/product'
+import type { Product, ProductFilterRequest, ProductImage, ProductMutationInput } from '@/types/product'
+
+type RawProductImage = Omit<ProductImage, 'isPrimary'> & {
+  isPrimary?: boolean
+  primary?: boolean
+}
+
+type RawProduct = Omit<Product, 'images' | 'isVerified'> & {
+  images?: RawProductImage[] | null
+  isVerified?: boolean
+  verified?: boolean
+}
 
 function appendFormField(formData: FormData, key: string, value: unknown) {
   if (value === undefined || value === null || value === '') {
@@ -35,25 +46,47 @@ function buildProductFormData(input: ProductMutationInput) {
   return formData
 }
 
+function normalizeProductImage(image: RawProductImage): ProductImage {
+  return {
+    ...image,
+    isPrimary: Boolean(image.isPrimary ?? image.primary),
+  }
+}
+
+export function normalizeProduct(product: RawProduct): Product {
+  return {
+    ...product,
+    images: (product.images ?? []).map(normalizeProductImage),
+    isVerified: Boolean(product.isVerified ?? product.verified),
+  }
+}
+
+function normalizeProductPage(page: PageResult<RawProduct>): PageResult<Product> {
+  return {
+    ...page,
+    content: page.content.map(normalizeProduct),
+  }
+}
+
 export const productsApi = {
   search(params: ProductFilterRequest & { page?: number; size?: number }) {
-    return getResult<PageResult<Product>>('/api/products', {
+    return getResult<PageResult<RawProduct>>('/api/products', {
       params: compactParams(params),
-    })
+    }).then(normalizeProductPage)
   },
 
   getById(productId: string) {
-    return getResult<Product>(`/api/products/${productId}`)
+    return getResult<RawProduct>(`/api/products/${productId}`).then(normalizeProduct)
   },
 
   getMineById(productId: string) {
-    return getResult<Product>(`/api/products/my/${productId}`)
+    return getResult<RawProduct>(`/api/products/my/${productId}`).then(normalizeProduct)
   },
 
   getMine(page = 0, size = 12) {
-    return getResult<PageResult<Product>>('/api/products/my', {
+    return getResult<PageResult<RawProduct>>('/api/products/my', {
       params: { page, size },
-    })
+    }).then(normalizeProductPage)
   },
 
   async create(payload: ProductMutationInput) {
@@ -63,7 +96,7 @@ export const productsApi = {
       },
     })
 
-    return response.data.result as Product
+    return normalizeProduct(response.data.result as RawProduct)
   },
 
   async update(productId: string, payload: ProductMutationInput) {
@@ -73,7 +106,7 @@ export const productsApi = {
       },
     })
 
-    return response.data.result as Product
+    return normalizeProduct(response.data.result as RawProduct)
   },
 
   delete(productId: string) {
@@ -81,10 +114,10 @@ export const productsApi = {
   },
 
   hide(productId: string) {
-    return patchResult<Product>(`/api/products/${productId}/hide`)
+    return patchResult<RawProduct>(`/api/products/${productId}/hide`).then(normalizeProduct)
   },
 
   show(productId: string) {
-    return patchResult<Product>(`/api/products/${productId}/show`)
+    return patchResult<RawProduct>(`/api/products/${productId}/show`).then(normalizeProduct)
   },
 }

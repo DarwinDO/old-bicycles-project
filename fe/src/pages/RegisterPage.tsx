@@ -22,9 +22,12 @@ export default function RegisterPage() {
   })
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [isResending, setIsResending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [resendError, setResendError] = useState<string | null>(null)
+  const [resendMessage, setResendMessage] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
-  const { register } = useAuth()
+  const { register, resendVerification } = useAuth()
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = event.target
@@ -56,6 +59,8 @@ export default function RegisterPage() {
         role: formData.role,
       })
 
+      setResendError(null)
+      setResendMessage(null)
       setSuccess(true)
     } catch (err: unknown) {
       const message =
@@ -65,6 +70,24 @@ export default function RegisterPage() {
       setError(message)
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handleResendVerification = async () => {
+    setResendError(null)
+    setResendMessage(null)
+    setIsResending(true)
+
+    try {
+      const message = await resendVerification(formData.email)
+      setResendMessage(message)
+    } catch (err: unknown) {
+      const message =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        'Không thể gửi lại email xác thực. Vui lòng thử lại sau.'
+      setResendError(message)
+    } finally {
+      setIsResending(false)
     }
   }
 
@@ -108,6 +131,17 @@ export default function RegisterPage() {
                   </p>
                 </div>
 
+                <div className="w-full rounded-xl border border-border/70 bg-muted/40 p-4 text-left">
+                  <p className="text-sm font-medium text-foreground">Chưa nhận được email?</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Hãy kiểm tra thư mục Spam/Promotion. Nếu vẫn chưa thấy, bạn có thể yêu cầu gửi lại.
+                  </p>
+                  {resendMessage && <p className="mt-3 text-sm text-green-600">{resendMessage}</p>}
+                  {resendError && <p className="mt-3 text-sm text-destructive">{resendError}</p>}
+                  <Button className="mt-4 w-full" variant="outline" onClick={handleResendVerification} disabled={isResending}>
+                    {isResending ? 'Đang gửi lại email...' : 'Gửi lại email xác thực'}
+                  </Button>
+                </div>
 
                 <div className="flex w-full flex-col gap-3 sm:flex-row">
                   <Button className="flex-1" asChild>

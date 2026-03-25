@@ -7,6 +7,7 @@ import type {
   ForgotPasswordRequest,
   LoginRequest,
   RegisterRequest,
+  ResendVerificationRequest,
   ResetPasswordRequest,
   UpdateProfileRequest,
 } from '@/types/auth'
@@ -18,6 +19,7 @@ export type {
   ForgotPasswordRequest,
   LoginRequest,
   RegisterRequest,
+  ResendVerificationRequest,
   ResetPasswordRequest,
   UpdateProfileRequest,
 } from '@/types/auth'
@@ -71,6 +73,10 @@ export const authService = {
 
   forgotPassword(request: ForgotPasswordRequest) {
     return authApi.forgotPassword(request)
+  },
+
+  resendVerification(request: ResendVerificationRequest) {
+    return authApi.resendVerification(request)
   },
 
   resetPassword(request: ResetPasswordRequest) {

@@ -1,21 +1,23 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import LoginPage from './LoginPage'
 
-const { loginMock, navigateMock } = vi.hoisted(() => ({
+const { loginMock, navigateMock, resendVerificationMock } = vi.hoisted(() => ({
   loginMock: vi.fn(),
   navigateMock: vi.fn(),
+  resendVerificationMock: vi.fn(),
 }))
 
 vi.mock('@/contexts/AuthContext', () => ({
   useAuth: () => ({
     login: loginMock,
+    resendVerification: resendVerificationMock,
   }),
 }))
 
 vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual('react-router-dom')
+  const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom')
   return {
     ...actual,
     useNavigate: () => navigateMock,
@@ -24,6 +26,12 @@ vi.mock('react-router-dom', async () => {
 })
 
 describe('LoginPage', () => {
+  beforeEach(() => {
+    loginMock.mockReset()
+    navigateMock.mockReset()
+    resendVerificationMock.mockReset()
+  })
+
   it('renders the email/password login form without social login buttons', () => {
     render(
       <MemoryRouter>
@@ -63,5 +71,46 @@ describe('LoginPage', () => {
     })
 
     expect(navigateMock).toHaveBeenCalledWith('/', { replace: true })
+  })
+
+  it('shows resend verification recovery when backend rejects unverified email login', async () => {
+    loginMock.mockRejectedValueOnce({
+      response: {
+        data: {
+          code: 1024,
+          message: 'Please verify your email before logging in',
+        },
+      },
+    })
+    resendVerificationMock.mockResolvedValueOnce(
+      'Nếu tài khoản tồn tại và chưa được xác thực, hệ thống đã gửi lại email xác thực.',
+    )
+
+    render(
+      <MemoryRouter>
+        <LoginPage />
+      </MemoryRouter>,
+    )
+
+    fireEvent.change(screen.getByLabelText('Email'), {
+      target: { value: 'buyer.alpha@oldbicycle.dev' },
+    })
+    fireEvent.change(screen.getByLabelText('Mật khẩu'), {
+      target: { value: 'Password1' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Đăng nhập' }))
+
+    expect(await screen.findByText('Please verify your email before logging in')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Gửi lại email xác thực' })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Gửi lại email xác thực' }))
+
+    await waitFor(() => {
+      expect(resendVerificationMock).toHaveBeenCalledWith('buyer.alpha@oldbicycle.dev')
+    })
+
+    expect(
+      await screen.findByText('Nếu tài khoản tồn tại và chưa được xác thực, hệ thống đã gửi lại email xác thực.'),
+    ).toBeInTheDocument()
   })
 })

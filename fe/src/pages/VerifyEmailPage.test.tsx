@@ -57,7 +57,9 @@ describe('VerifyEmailPage', () => {
 
     expect(await screen.findByText('Đã nhận phản hồi xác thực')).toBeInTheDocument()
     expect(screen.getByText('Da xac thuc')).toBeInTheDocument()
-    expect(screen.getByText(/Đây mới là phản hồi redirect/i)).toBeInTheDocument()
+    expect(
+      screen.getByText(/Ứng dụng đã nhận tín hiệu thành công từ bước redirect, nhưng chưa thể tự xác nhận phiên đăng nhập/i),
+    ).toBeInTheDocument()
     expect(verifyEmailMock).not.toHaveBeenCalled()
   })
 
@@ -77,7 +79,9 @@ describe('VerifyEmailPage', () => {
       })
 
       expect(await screen.findByText('Email đã được xác thực')).toBeInTheDocument()
-      expect(screen.getByText(/backend đang trả thành công nhưng chưa cập nhật trạng thái tài khoản/i)).toBeInTheDocument()
+      expect(
+        screen.getByText(/Ứng dụng đã gọi API xác thực thành công. Bạn sẽ được đưa tới trang đăng nhập để kiểm tra lại tài khoản/i),
+      ).toBeInTheDocument()
       expect(screen.getByText(/Nguồn xác nhận: gọi verify API bằng token/i)).toBeInTheDocument()
 
       await waitFor(

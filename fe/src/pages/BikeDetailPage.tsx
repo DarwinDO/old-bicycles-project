@@ -480,33 +480,33 @@ export default function BikeDetailPage() {
 
                   {sizeChart && sizeChart.rows.length > 0 ? (
                     <>
-                  <div className="overflow-x-auto rounded-lg border">
-                    <table className="min-w-full text-sm">
-                      <thead className="bg-muted/40 text-left">
-                        <tr>
-                          <th className="px-4 py-3 font-medium">Frame size</th>
-                          <th className="px-4 py-3 font-medium">Chiều cao gợi ý</th>
-                          <th className="px-4 py-3 font-medium">Ghi chú</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {sizeChart.rows.map((row) => {
-                          const isHighlighted = normalizedProductFrameSize !== null
-                            && row.frameSize.trim().toLowerCase() === normalizedProductFrameSize
-                          return (
-                            <tr key={row.id} className={cn('border-t', isHighlighted && 'bg-primary/5')}>
-                              <td className="px-4 py-3 font-medium">{row.frameSize}</td>
-                              <td className="px-4 py-3 text-muted-foreground">{row.heightMinCm} - {row.heightMaxCm} cm</td>
-                              <td className="px-4 py-3 text-muted-foreground">{row.note ?? 'â€”'}</td>
+                      <div className="overflow-x-auto rounded-lg border">
+                        <table className="min-w-full text-sm">
+                          <thead className="bg-muted/40 text-left">
+                            <tr>
+                              <th className="px-4 py-3 font-medium">Frame size</th>
+                              <th className="px-4 py-3 font-medium">Chiều cao gợi ý</th>
+                              <th className="px-4 py-3 font-medium">Ghi chú</th>
                             </tr>
-                          )
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Size chart là bảng tham khảo chung theo danh mục {product.categoryName ?? 'xe đạp'}. Độ phù hợp thực tế còn phụ thuộc geometry từng mẫu xe.
-                  </p>
+                          </thead>
+                          <tbody>
+                            {sizeChart.rows.map((row) => {
+                              const isHighlighted = normalizedProductFrameSize !== null
+                                && row.frameSize.trim().toLowerCase() === normalizedProductFrameSize
+                              return (
+                                <tr key={row.id} className={cn('border-t', isHighlighted && 'bg-primary/5')}>
+                                  <td className="px-4 py-3 font-medium">{row.frameSize}</td>
+                                  <td className="px-4 py-3 text-muted-foreground">{row.heightMinCm} - {row.heightMaxCm} cm</td>
+                                  <td className="px-4 py-3 text-muted-foreground">{row.note ?? 'â€”'}</td>
+                                </tr>
+                              )
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Size chart là bảng tham khảo chung theo danh mục {product.categoryName ?? 'xe đạp'}. Độ phù hợp thực tế còn phụ thuộc geometry từng mẫu xe.
+                      </p>
                     </>
                   ) : (
                     <div className="rounded-lg border border-dashed border-muted-foreground/30 bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
@@ -737,7 +737,7 @@ export default function BikeDetailPage() {
                       onClick={() => navigator.share?.({ title: product.title, url: window.location.href })}
                     >
                       <Share2 className="mr-2 h-4 w-4" />
-                      Chia sáº»
+                      Chia sẻ
                     </Button>
                   </div>
                   {/* Wishlist error feedback */}

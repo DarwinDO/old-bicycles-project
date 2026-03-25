@@ -12,29 +12,55 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [isResending, setIsResending] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { login } = useAuth()
+  const [resendMessage, setResendMessage] = useState<string | null>(null)
+  const [canResendVerification, setCanResendVerification] = useState(false)
+  const { login, resendVerification } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
 
   const fromLocation = (location.state as { from?: { pathname: string; search?: string } })?.from
   const from = fromLocation ? `${fromLocation.pathname}${fromLocation.search ?? ''}` : ROUTES.HOME
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault()
     setError(null)
+    setResendMessage(null)
+    setCanResendVerification(false)
     setIsLoading(true)
 
     try {
       await login({ email, password })
       navigate(from, { replace: true })
     } catch (err: unknown) {
+      const errorCode = (err as { response?: { data?: { code?: number } } })?.response?.data?.code
       const message =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
         'Email hoặc mật khẩu không đúng. Vui lòng thử lại.'
+
       setError(message)
+      setCanResendVerification(errorCode === 1024)
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handleResendVerification = async () => {
+    setError(null)
+    setResendMessage(null)
+    setIsResending(true)
+
+    try {
+      const message = await resendVerification(email)
+      setResendMessage(message)
+    } catch (err: unknown) {
+      const message =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        'Không thể gửi lại email xác thực. Vui lòng thử lại sau.'
+      setError(message)
+    } finally {
+      setIsResending(false)
     }
   }
 
@@ -65,6 +91,10 @@ export default function LoginPage() {
                 </div>
               )}
 
+              {resendMessage && (
+                <div className="rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700">{resendMessage}</div>
+              )}
+
               <div className="space-y-2">
                 <label htmlFor="email" className="text-sm font-medium">
                   Email
@@ -77,7 +107,7 @@ export default function LoginPage() {
                     placeholder="example@email.com"
                     className="pl-10"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(event) => setEmail(event.target.value)}
                     required
                   />
                 </div>
@@ -101,7 +131,7 @@ export default function LoginPage() {
                     placeholder="••••••••"
                     className="pl-10 pr-10"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(event) => setPassword(event.target.value)}
                     required
                   />
                   <button
@@ -114,6 +144,24 @@ export default function LoginPage() {
                   </button>
                 </div>
               </div>
+
+              {canResendVerification && (
+                <div className="rounded-lg border border-border/70 bg-muted/40 px-4 py-3 text-sm">
+                  <p className="font-medium text-foreground">Tài khoản này chưa xác thực email.</p>
+                  <p className="mt-1 text-muted-foreground">
+                    Bạn có thể yêu cầu hệ thống gửi lại email xác thực tới địa chỉ vừa nhập.
+                  </p>
+                  <Button
+                    className="mt-3 w-full"
+                    type="button"
+                    variant="outline"
+                    onClick={handleResendVerification}
+                    disabled={isResending || !email.trim()}
+                  >
+                    {isResending ? 'Đang gửi lại email...' : 'Gửi lại email xác thực'}
+                  </Button>
+                </div>
+              )}
 
               <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
                 {isLoading ? 'Đang đăng nhập...' : 'Đăng nhập'}

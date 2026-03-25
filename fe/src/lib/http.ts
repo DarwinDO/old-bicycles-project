@@ -19,6 +19,7 @@ const publicAuthPaths = [
   '/api/auth/register',
   '/api/auth/refresh',
   '/api/auth/forgot-password',
+  '/api/auth/resend-verification',
   '/api/auth/reset-password',
   '/api/auth/verify-email',
 ]

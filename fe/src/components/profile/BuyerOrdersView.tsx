@@ -246,6 +246,7 @@ export function BuyerOrdersView() {
         amount: getOrderRefundableBuyerAmount(selectedOrderForRefund),
         reason: values.reason,
         evidenceNote: values.evidenceNote,
+        files: values.files,
       })
 
       const refreshedOrders = await ordersApi.getMine()

@@ -68,12 +68,20 @@ vi.mock('@/components/profile/DisputeModal', () => ({
   }: {
     isOpen: boolean
     refundAmount: number
-    onSubmit: (values: { reason: string; evidenceNote?: string }) => Promise<void> | void
+    onSubmit: (values: { reason: string; evidenceNote?: string; files?: File[] }) => Promise<void> | void
   }) =>
     isOpen ? (
       <div>
         <p>RefundAmount:{refundAmount}</p>
-        <button onClick={() => void onSubmit({ reason: 'Xe không giống mô tả', evidenceNote: 'Ảnh kiểm tra' })}>
+        <button
+          onClick={() =>
+            void onSubmit({
+              reason: 'Xe không giống mô tả',
+              evidenceNote: 'Ảnh kiểm tra',
+              files: [new File(['refund-image'], 'refund-proof.jpg', { type: 'image/jpeg' })],
+            })
+          }
+        >
           Submit refund
         </button>
       </div>
@@ -202,7 +210,7 @@ describe('BuyerOrdersView', () => {
     expect(screen.getByText(/Refund hợp lệ sẽ hoàn lại cho buyer/i)).toBeInTheDocument()
   })
 
-  it('submits refund requests using buyerChargeAmount instead of paidAmount', async () => {
+  it('submits refund requests using buyerChargeAmount instead of paidAmount and forwards evidence files', async () => {
     const order = buildOrder({
       status: 'deposited',
       fundingStatus: 'held',
@@ -238,6 +246,7 @@ describe('BuyerOrdersView', () => {
         amount: 4_200_000,
         reason: 'Xe không giống mô tả',
         evidenceNote: 'Ảnh kiểm tra',
+        files: [expect.objectContaining({ name: 'refund-proof.jpg', type: 'image/jpeg' })],
       })
     })
   })

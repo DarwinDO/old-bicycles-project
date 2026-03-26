@@ -13,6 +13,7 @@ const {
   getSizeChartByCategoryMock,
   createOrderMock,
   navigateMock,
+  reportModalPropsMock,
 } = vi.hoisted(() => ({
   getProductByIdMock: vi.fn(),
   getAdminProductByIdMock: vi.fn(),
@@ -22,6 +23,7 @@ const {
   getSizeChartByCategoryMock: vi.fn(),
   createOrderMock: vi.fn(),
   navigateMock: vi.fn(),
+  reportModalPropsMock: vi.fn(),
 }))
 
 vi.mock('@/api/products.api', () => ({
@@ -63,6 +65,21 @@ vi.mock('@/api/reference-data.api', () => ({
 vi.mock('@/api/orders.api', () => ({
   ordersApi: {
     create: createOrderMock,
+  },
+}))
+
+vi.mock('@/components/common/ReportModal', () => ({
+  ReportModal: ({
+    open,
+    targetType,
+    targetName,
+  }: {
+    open: boolean
+    targetType: 'product' | 'user'
+    targetName?: string
+  }) => {
+    reportModalPropsMock({ open, targetType, targetName })
+    return open ? <div>{`ReportModal:${targetType}:${targetName ?? ''}`}</div> : null
   },
 }))
 
@@ -123,6 +140,7 @@ describe('BikeDetailPage', () => {
     getSizeChartByCategoryMock.mockReset()
     createOrderMock.mockReset()
     navigateMock.mockReset()
+    reportModalPropsMock.mockReset()
 
     getProductByIdMock.mockResolvedValue(buildProduct())
     getAdminProductByIdMock.mockResolvedValue(buildProduct())
@@ -162,5 +180,21 @@ describe('BikeDetailPage', () => {
       expect(dialog).toHaveTextContent(/4\.200\.000/)
       expect(submitButton).toBeEnabled()
     })
+  })
+
+  it('mounts product and seller report entry points on the bike detail page', async () => {
+    render(
+      <MemoryRouter>
+        <BikeDetailPage />
+      </MemoryRouter>,
+    )
+
+    await screen.findByRole('heading', { name: 'Trek Domane AL 4' })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Báo cáo tin đăng này' }))
+    expect(await screen.findByText('ReportModal:product:Trek Domane AL 4')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Báo cáo người bán' }))
+    expect(await screen.findByText('ReportModal:user:Road Seller')).toBeInTheDocument()
   })
 })

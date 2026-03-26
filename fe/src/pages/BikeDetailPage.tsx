@@ -2,8 +2,9 @@
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowLeft, CreditCard, MapPin, Shield, MessageCircle, Heart, Share2, ChevronLeft, ChevronRight,
-  Star, Clock, AlertTriangle, Loader2, ExternalLink,
+  Star, Clock, AlertTriangle, Loader2, ExternalLink, Flag,
 } from 'lucide-react'
+import { ReportModal } from '@/components/common/ReportModal'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -95,6 +96,12 @@ export default function BikeDetailPage() {
   const [isOrderDialogOpen, setIsOrderDialogOpen] = useState(false)
   const [orderError, setOrderError] = useState<string | null>(null)
   const [orderLoading, setOrderLoading] = useState(false)
+  const [reportFeedback, setReportFeedback] = useState<string | null>(null)
+  const [reportTarget, setReportTarget] = useState<{
+    targetType: 'product' | 'user'
+    targetId: string
+    targetName?: string
+  } | null>(null)
   const [paymentOption, setPaymentOption] = useState<PaymentOption>('partial')
   const paymentMethod: PaymentMethod = 'transfer'
   const [upfrontAmount, setUpfrontAmount] = useState('')
@@ -261,6 +268,38 @@ export default function BikeDetailPage() {
 
     setOrderError(null)
     setIsOrderDialogOpen(true)
+  }
+
+  const handleOpenReportModal = (targetType: 'product' | 'user') => {
+    if (!product) {
+      return
+    }
+
+    if (!isAuthenticated) {
+      navigate(ROUTES.LOGIN, { state: { from: location } })
+      return
+    }
+
+    if (targetType === 'user') {
+      if (!product.seller?.id || isOwnListing) {
+        return
+      }
+
+      setReportTarget({
+        targetType: 'user',
+        targetId: product.seller.id,
+        targetName: sellerFullName,
+      })
+      setReportFeedback(null)
+      return
+    }
+
+    setReportTarget({
+      targetType: 'product',
+      targetId: product.id,
+      targetName: product.title,
+    })
+    setReportFeedback(null)
   }
 
   const handleCreateOrder = async () => {
@@ -770,6 +809,26 @@ export default function BikeDetailPage() {
                       Chia sẻ
                     </Button>
                   </div>
+                  {!isAdminDetailView && !isOwnListing && (
+                    <div className="rounded-lg border border-border/70 bg-muted/20 p-3">
+                      <p className="text-xs font-medium text-foreground">Cần báo cáo nội dung vi phạm?</p>
+                      <div className="mt-2 grid gap-2">
+                        <Button variant="ghost" size="sm" className="justify-start" onClick={() => handleOpenReportModal('product')}>
+                          <Flag className="mr-2 h-4 w-4" />
+                          Báo cáo tin đăng này
+                        </Button>
+                        {product.seller?.id && (
+                          <Button variant="ghost" size="sm" className="justify-start" onClick={() => handleOpenReportModal('user')}>
+                            <Flag className="mr-2 h-4 w-4" />
+                            Báo cáo người bán
+                          </Button>
+                        )}
+                      </div>
+                      {reportFeedback && (
+                        <p className="mt-2 text-xs text-primary">{reportFeedback}</p>
+                      )}
+                    </div>
+                  )}
                   {/* Wishlist error feedback */}
                   {wishlistError && (
                     <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
@@ -810,6 +869,24 @@ export default function BikeDetailPage() {
           </div>
         </div>
       </div>
+
+      {reportTarget && (
+        <ReportModal
+          open={Boolean(reportTarget)}
+          onOpenChange={(open) => {
+            if (!open) {
+              setReportTarget(null)
+            }
+          }}
+          targetId={reportTarget.targetId}
+          targetType={reportTarget.targetType}
+          targetName={reportTarget.targetName}
+          onSuccess={() => {
+            setReportFeedback('Báo cáo đã được gửi. Admin sẽ xem xét sớm.')
+            setReportTarget(null)
+          }}
+        />
+      )}
 
       <Dialog
         open={isOrderDialogOpen}

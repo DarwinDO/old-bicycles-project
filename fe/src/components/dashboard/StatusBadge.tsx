@@ -17,11 +17,15 @@ type StatusVariant =
   | 'awaiting_buyer_confirmation'
   | 'reviewed'
   | 'resolved'
+  | 'investigating'
+  | 'resolved_upheld'
+  | 'resolved_dismissed'
   | 'unactive'
 
 interface StatusBadgeProps {
   status: StatusVariant
   className?: string
+  labelOverride?: string
 }
 
 const statusConfig: Record<StatusVariant, { label: string; className: string }> = {
@@ -91,18 +95,33 @@ const statusConfig: Record<StatusVariant, { label: string; className: string }> 
     className:
       'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800',
   },
+  investigating: {
+    label: 'Đang điều tra',
+    className:
+      'bg-sky-100 text-sky-800 border-sky-200 dark:bg-sky-900/30 dark:text-sky-300 dark:border-sky-800',
+  },
+  resolved_upheld: {
+    label: 'Xác nhận vi phạm',
+    className:
+      'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800',
+  },
+  resolved_dismissed: {
+    label: 'Bác bỏ báo cáo',
+    className:
+      'bg-slate-100 text-slate-800 border-slate-200 dark:bg-slate-900/30 dark:text-slate-300 dark:border-slate-800',
+  },
   unactive: {
     label: 'Chưa kích hoạt',
     className: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
   },
 }
 
-export function StatusBadge({ status, className }: StatusBadgeProps) {
+export function StatusBadge({ status, className, labelOverride }: StatusBadgeProps) {
   const config = statusConfig[status] ?? { label: status, className: 'bg-gray-100 text-gray-600' }
 
   return (
     <Badge variant="secondary" className={cn(config.className, className)}>
-      {config.label}
+      {labelOverride ?? config.label}
     </Badge>
   )
 }

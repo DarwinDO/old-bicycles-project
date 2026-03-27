@@ -32,4 +32,24 @@ describe('StatusBadge', () => {
     render(<StatusBadge status="awaiting_buyer_confirmation" />)
     expect(screen.getByText('Chờ người mua xác nhận')).toBeInTheDocument()
   })
+
+  it('renders new report workflow labels', () => {
+    render(
+      <>
+        <StatusBadge status="investigating" />
+        <StatusBadge status="resolved_upheld" />
+        <StatusBadge status="resolved_dismissed" />
+      </>,
+    )
+
+    expect(screen.getByText('Đang điều tra')).toBeInTheDocument()
+    expect(screen.getByText('Xác nhận vi phạm')).toBeInTheDocument()
+    expect(screen.getByText('Bác bỏ báo cáo')).toBeInTheDocument()
+  })
+
+  it('prefers label override when provided', () => {
+    render(<StatusBadge status="pending" labelOverride="Chờ xử lý" />)
+    expect(screen.getByText('Chờ xử lý')).toBeInTheDocument()
+    expect(screen.queryByText('Chờ duyệt')).not.toBeInTheDocument()
+  })
 })

@@ -100,6 +100,18 @@ function formatDateTime(value?: string | null) {
   }).format(new Date(value))
 }
 
+function getGrossAmount(payout: AdminPayout) {
+  return payout.grossAmount ?? payout.amount
+}
+
+function getFeeDeductionAmount(payout: AdminPayout) {
+  return payout.feeDeductionAmount ?? 0
+}
+
+function getNetAmount(payout: AdminPayout) {
+  return payout.netAmount ?? payout.amount
+}
+
 function getStatusTone(status: PayoutStatus) {
   switch (status) {
     case 'pending_transfer':
@@ -292,8 +304,18 @@ export default function AdminPayoutsPage() {
     },
     {
       accessorKey: 'amount',
-      header: 'Số tiền',
-      cell: ({ row }) => formatCurrency(row.original.amount),
+      header: 'Gross / Fee / Net',
+      cell: ({ row }) => (
+        <div className="space-y-1 text-sm">
+          <p className="font-semibold text-foreground">{formatCurrency(getNetAmount(row.original))}</p>
+          <p className="text-xs text-muted-foreground">
+            Tổng số tiền: {formatCurrency(getGrossAmount(row.original))}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Khoản phí khấu trừ: {formatCurrency(getFeeDeductionAmount(row.original))}
+          </p>
+        </div>
+      ),
     },
     {
       accessorKey: 'status',
@@ -494,7 +516,9 @@ export default function AdminPayoutsPage() {
                   ['Sản phẩm', detailDialog.payout.productTitle ?? '—'],
                   ['Đơn hàng', detailDialog.payout.orderId ?? '—'],
                   ['Refund request', detailDialog.payout.refundRequestId ?? '—'],
-                  ['Số tiền', formatCurrency(detailDialog.payout.amount)],
+                  ['Tổng số tiền', formatCurrency(getGrossAmount(detailDialog.payout))],
+                  ['Khoản phí khấu trừ', formatCurrency(getFeeDeductionAmount(detailDialog.payout))],
+                  ['Số tiền thực nhận', formatCurrency(getNetAmount(detailDialog.payout))],
                   ['Ngân hàng', detailDialog.payout.bankCode ?? '—'],
                   ['Bank BIN', detailDialog.payout.bankBin ?? '—'],
                   ['Số tài khoản', detailDialog.payout.accountNumber ?? '—'],
@@ -577,7 +601,11 @@ export default function AdminPayoutsPage() {
               <div className="rounded-lg border bg-muted/40 px-4 py-3 text-sm">
                 <p className="font-medium text-foreground">{completeDialog.payout.recipientName}</p>
                 <p className="mt-1 text-muted-foreground">
-                  {typeLabelMap[completeDialog.payout.type]} • {formatCurrency(completeDialog.payout.amount)}
+                  {typeLabelMap[completeDialog.payout.type]} • Số tiền thực nhận: {formatCurrency(getNetAmount(completeDialog.payout))}
+                </p>
+                <p className="mt-1 text-muted-foreground">
+                  Tổng số tiền: {formatCurrency(getGrossAmount(completeDialog.payout))} • Khoản phí khấu trừ:{' '}
+                  {formatCurrency(getFeeDeductionAmount(completeDialog.payout))}
                 </p>
                 <p className="mt-1 text-muted-foreground">
                   Nội dung chuyển khoản: {completeDialog.payout.transferContent ?? '—'}

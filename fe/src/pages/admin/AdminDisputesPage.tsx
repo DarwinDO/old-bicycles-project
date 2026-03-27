@@ -14,6 +14,7 @@ import { refundsApi } from '@/api/refunds.api'
 import { DataTable } from '@/components/dashboard/DataTable'
 import { StatusBadge } from '@/components/dashboard/StatusBadge'
 import { OrderEvidenceSection } from '@/components/profile/OrderEvidenceSection'
+import { RefundEvidenceSection } from '@/components/profile/RefundEvidenceSection'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import {
@@ -463,6 +464,10 @@ export default function AdminDisputesPage() {
                 <OrderEvidenceSection
                   title="Ảnh buyer xác nhận đã nhận"
                   evidence={detailDialog.refund.buyerReceiptEvidence}
+                />
+                <RefundEvidenceSection
+                  title="Ảnh buyer gửi kèm yêu cầu hoàn tiền"
+                  files={detailDialog.refund.evidenceFiles}
                 />
               </div>
             </div>

@@ -13,6 +13,8 @@ export interface PaymentRequestResponse {
   phase: PaymentPhase
   status: PaymentStatus
   amount: number
+  protectedAmount?: number | null
+  buyerFeeAmount?: number | null
   gatewayOrderCode?: string | null
   checkoutUrl?: string | null
   qrCodeUrl?: string | null
@@ -29,6 +31,8 @@ export interface PaymentHistoryItem {
   id: string
   orderId: string
   amount: number
+  protectedAmount?: number | null
+  buyerFeeAmount?: number | null
   gateway: PaymentGateway
   method: PaymentMethod
   phase: PaymentPhase

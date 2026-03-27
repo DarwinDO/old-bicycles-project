@@ -1,6 +1,6 @@
 <mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/29.3.0 Chrome/140.0.7339.249 Electron/38.7.2 Safari/537.36" version="29.3.0">
   <diagram id="conceptual-final" name="Conceptual ERD Final">
-    <mxGraphModel dx="2037" dy="1201" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2400" pageHeight="1400" math="0" shadow="0">
+    <mxGraphModel dx="1501" dy="885" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2400" pageHeight="1400" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -10,8 +10,8 @@
         <mxCell id="3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#2563eb;fontSize=15;fontStyle=1;" value="&lt;b&gt;USER&lt;/b&gt;&lt;br/&gt;Buyer / Seller / Inspector / Admin" vertex="1">
           <mxGeometry height="70" width="170" x="1015" y="180" as="geometry" />
         </mxCell>
-        <mxCell id="4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fef3c7;strokeColor=#d97706;fontSize=13;" value="&lt;b&gt;REPORT&lt;/b&gt;&lt;br/&gt;User reports user or product" vertex="1">
-          <mxGeometry height="70" width="190" x="370" y="250" as="geometry" />
+        <mxCell id="4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fef3c7;strokeColor=#d97706;fontSize=13;" value="&lt;b&gt;REPORT&lt;/b&gt;&lt;br/&gt;User reports user or product with text and image evidence" vertex="1">
+          <mxGeometry height="80" width="220" x="360" y="240" as="geometry" />
         </mxCell>
         <mxCell id="5" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ecfeff;strokeColor=#0891b2;fontSize=13;" value="&lt;b&gt;BRAND&lt;/b&gt;" vertex="1">
           <mxGeometry height="60" width="120" x="470" y="365" as="geometry" />
@@ -40,23 +40,23 @@
         <mxCell id="13" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ede9fe;strokeColor=#7c3aed;fontSize=13;" value="&lt;b&gt;SIZE CHART&lt;/b&gt;&lt;br/&gt;Category-based fit guidance" vertex="1">
           <mxGeometry height="70" width="190" x="740" y="795" as="geometry" />
         </mxCell>
-        <mxCell id="14" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#1d4ed8;fontSize=15;fontStyle=1;" value="&lt;b&gt;ORDER&lt;/b&gt;&lt;br/&gt;Buyer request, funding state, and transaction state" vertex="1">
-          <mxGeometry height="90" width="250" x="1240" y="500" as="geometry" />
+        <mxCell id="14" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#1d4ed8;fontSize=15;fontStyle=1;" value="&lt;b&gt;ORDER&lt;/b&gt;&lt;br/&gt;Buyer request, fee snapshot, funding state, and transaction state" vertex="1">
+          <mxGeometry height="90" width="280" x="1230" y="500" as="geometry" />
         </mxCell>
-        <mxCell id="15" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fef9c3;strokeColor=#ca8a04;fontSize=13;" value="&lt;b&gt;PAYMENT&lt;/b&gt;&lt;br/&gt;SePay or manual transfer" vertex="1">
-          <mxGeometry height="70" width="170" x="1530" y="425" as="geometry" />
+        <mxCell id="15" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fef9c3;strokeColor=#ca8a04;fontSize=13;" value="&lt;b&gt;PAYMENT&lt;/b&gt;&lt;br/&gt;Buyer charge, protected amount, and gateway transfer" vertex="1">
+          <mxGeometry height="80" width="220" x="1540" y="410" as="geometry" />
         </mxCell>
-        <mxCell id="16" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fee2e2;strokeColor=#dc2626;fontSize=13;" value="&lt;b&gt;REFUND REQUEST&lt;/b&gt;&lt;br/&gt;Buyer dispute and refund flow" vertex="1">
-          <mxGeometry height="70" width="190" x="1540" y="650" as="geometry" />
+        <mxCell id="16" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fee2e2;strokeColor=#dc2626;fontSize=13;" value="&lt;b&gt;REFUND REQUEST&lt;/b&gt;&lt;br/&gt;Buyer dispute, refund note, and image evidence" vertex="1">
+          <mxGeometry height="80" width="220" x="1540" y="640" as="geometry" />
         </mxCell>
-        <mxCell id="17" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fee2e2;strokeColor=#dc2626;fontSize=13;" value="&lt;b&gt;PAYOUT&lt;/b&gt;&lt;br/&gt;Manual release and refund transfer" vertex="1">
-          <mxGeometry height="70" width="200" x="1820" y="650" as="geometry" />
+        <mxCell id="17" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fee2e2;strokeColor=#dc2626;fontSize=13;" value="&lt;b&gt;PAYOUT&lt;/b&gt;&lt;br/&gt;Gross / fee deduction / net release or refund transfer" vertex="1">
+          <mxGeometry height="80" width="250" x="1840" y="710" as="geometry" />
         </mxCell>
         <mxCell id="18" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f3e8ff;strokeColor=#9333ea;fontSize=13;" value="&lt;b&gt;PAYOUT PROFILE&lt;/b&gt;&lt;br/&gt;Bank account for refund and release" vertex="1">
           <mxGeometry height="70" width="220" x="1810" y="320" as="geometry" />
         </mxCell>
         <mxCell id="19" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fef2f2;strokeColor=#ef4444;fontSize=13;" value="&lt;b&gt;ORDER EVIDENCE&lt;/b&gt;&lt;br/&gt;Seller handover and buyer receipt proof" vertex="1">
-          <mxGeometry height="70" width="220" x="1255" y="790" as="geometry" />
+          <mxGeometry height="70" width="220" x="1280" y="830" as="geometry" />
         </mxCell>
         <mxCell id="20" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fdf2f8;strokeColor=#ec4899;fontSize=13;" value="&lt;b&gt;REVIEW&lt;/b&gt;&lt;br/&gt;Buyer review and seller reply" vertex="1">
           <mxGeometry height="70" width="190" x="1080" y="980" as="geometry" />
@@ -69,6 +69,38 @@
         </mxCell>
         <mxCell id="23" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e0e7ff;strokeColor=#4f46e5;fontSize=13;" value="&lt;b&gt;NOTIFICATION&lt;/b&gt;&lt;br/&gt;In-app alerts for business events" vertex="1">
           <mxGeometry height="70" width="210" x="1420" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="24" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fef3c7;strokeColor=#d97706;fontSize=13;" value="&lt;b&gt;REPORT FILE&lt;/b&gt;&lt;br/&gt;Stored image evidence for a report" vertex="1">
+          <mxGeometry height="70" width="200" x="360" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="25" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fee2e2;strokeColor=#dc2626;fontSize=13;" value="&lt;b&gt;REFUND REQUEST FILE&lt;/b&gt;&lt;br/&gt;Stored image evidence for a refund request" vertex="1">
+          <mxGeometry height="80" width="220" x="1540" y="780" as="geometry" />
+        </mxCell>
+        <mxCell id="26" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f3f4f6;strokeColor=#64748b;fontSize=13;" value="&lt;b&gt;FINANCIAL TRANSACTION&lt;/b&gt;&lt;br/&gt;Audit trail for payment, refund, payout, and platform fee events" vertex="1">
+          <mxGeometry height="80" width="260" x="2050" y="505" as="geometry" />
+        </mxCell>
+        <mxCell id="68" edge="1" parent="1" source="4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#d97706;" target="24">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="69" edge="1" parent="1" source="16" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#dc2626;" target="25">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="70" edge="1" parent="1" source="14" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#1d4ed8;" target="26">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="71" edge="1" parent="1" source="15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#ca8a04;" target="26">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="72" edge="1" parent="1" source="16" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#dc2626;" target="26">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="73" edge="1" parent="1" source="17" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#dc2626;" target="26">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1990" y="648" />
+              <mxPoint x="2180" y="648" />
+            </Array>
+          </mxGeometry>
         </mxCell>
         <mxCell id="40" edge="1" parent="1" source="3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#64748b;" target="2">
           <mxGeometry relative="1" as="geometry" />
@@ -180,8 +212,11 @@
         <mxCell id="62" edge="1" parent="1" source="14" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#1d4ed8;" target="16">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="63" edge="1" parent="1" source="14" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#1d4ed8;" target="17">
-          <mxGeometry relative="1" as="geometry" />
+        <mxCell id="63" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#1d4ed8;entryX=0.367;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;" target="17">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1490" y="545.030303030303" as="sourcePoint" />
+            <mxPoint x="1934.9696969696975" y="640" as="targetPoint" />
+          </mxGeometry>
         </mxCell>
         <mxCell id="64" edge="1" parent="1" source="14" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#1d4ed8;" target="19">
           <mxGeometry relative="1" as="geometry" />
@@ -193,9 +228,14 @@
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="67" edge="1" parent="1" source="18" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#9333ea;" target="17">
-          <mxGeometry relative="1" as="geometry" />
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1965" y="490" />
+              <mxPoint x="1965" y="490" />
+            </Array>
+          </mxGeometry>
         </mxCell>
-        <mxCell id="68" edge="1" parent="1" source="21" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#0284c7;" target="22">
+        <mxCell id="74" edge="1" parent="1" source="21" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#0284c7;" target="22">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
       </root>

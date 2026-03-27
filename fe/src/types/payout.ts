@@ -29,6 +29,9 @@ export interface AdminPayout {
   status: PayoutStatus
   provider: PayoutProvider
   amount: number
+  grossAmount?: number | null
+  feeDeductionAmount?: number | null
+  netAmount?: number | null
   recipientId: string
   recipientName: string
   bankCode?: string | null

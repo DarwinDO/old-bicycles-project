@@ -7,10 +7,19 @@ import type {
 
 export type RefundStatus = 'pending' | 'approved' | 'rejected' | 'completed'
 
+export interface RefundEvidenceFile {
+  id: string
+  fileUrl: string
+  fileName?: string | null
+  contentType?: string | null
+  sortOrder?: number | null
+}
+
 export interface RefundRequest {
   amount: number
   reason: string
   evidenceNote?: string
+  files?: File[]
 }
 
 export interface RefundReviewRequest {
@@ -28,6 +37,7 @@ export interface Refund {
   amount: number
   reason: string
   evidenceNote?: string | null
+  evidenceFiles?: RefundEvidenceFile[]
   status: RefundStatus
   adminNote?: string | null
   refundReference?: string | null

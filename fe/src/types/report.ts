@@ -1,12 +1,25 @@
 export type ReportReason = 'fraud' | 'fake' | 'wrong_description' | 'spam' | 'other'
 
-export type ReportStatus = 'pending' | 'reviewed' | 'resolved'
+export type ReportStatus =
+  | 'pending'
+  | 'investigating'
+  | 'resolved_upheld'
+  | 'resolved_dismissed'
+
+export interface ReportEvidenceFile {
+  id: string
+  fileUrl: string
+  fileName?: string | null
+  contentType?: string | null
+  sortOrder?: number | null
+}
 
 export interface ReportRequest {
   targetId: string
   targetType: string
   reason: ReportReason
   description?: string
+  files?: File[]
 }
 
 export interface ReportProcessRequest {
@@ -22,6 +35,7 @@ export interface Report {
   targetType: string
   reason: ReportReason
   description?: string | null
+  evidenceFiles?: ReportEvidenceFile[]
   status: ReportStatus
   adminNote?: string | null
   processedById?: string | null

@@ -16,6 +16,10 @@ import {
   formatOrderCurrency,
   formatOrderDate,
   getPaymentCountdownText,
+  getOrderPlatformFeeTotal,
+  getOrderSellerFeeAmount,
+  getOrderSellerGrossPayoutAmount,
+  getOrderSellerNetPayoutAmount,
   getOrderStatusMeta,
   getOrderToneClass,
   getPaymentMethodLabel,
@@ -236,6 +240,10 @@ export default function SellerOrdersPage() {
             const statusMeta = getOrderStatusMeta(order, nowMs)
             const paymentDeadlineExpired = isPaymentDeadlineExpired(order, nowMs)
             const paymentCountdownText = getPaymentCountdownText(order.paymentDeadline, nowMs)
+            const platformFeeTotal = getOrderPlatformFeeTotal(order)
+            const sellerFeeAmount = getOrderSellerFeeAmount(order)
+            const sellerGrossPayoutAmount = getOrderSellerGrossPayoutAmount(order)
+            const sellerNetPayoutAmount = getOrderSellerNetPayoutAmount(order)
 
             return (
               <div key={order.id} className="space-y-4 rounded-xl border bg-card p-5 text-card-foreground shadow-sm">
@@ -268,11 +276,10 @@ export default function SellerOrdersPage() {
 
                       {order.fundingStatus === 'awaiting_payment' && order.paymentDeadline && (
                         <div
-                          className={`rounded-lg border px-3 py-2 text-sm ${
-                            paymentDeadlineExpired
-                              ? 'border-destructive/30 bg-destructive/5 text-destructive'
-                              : 'border-primary/20 bg-primary/5 text-primary'
-                          }`}
+                          className={`rounded-lg border px-3 py-2 text-sm ${paymentDeadlineExpired
+                            ? 'border-destructive/30 bg-destructive/5 text-destructive'
+                            : 'border-primary/20 bg-primary/5 text-primary'
+                            }`}
                         >
                           <p className="font-medium">Hạn thanh toán: {formatOrderDate(order.paymentDeadline)}</p>
                           <p className={paymentDeadlineExpired ? 'text-destructive/90' : 'text-primary/90'}>
@@ -297,6 +304,29 @@ export default function SellerOrdersPage() {
                           <span className="font-medium text-foreground">{formatOrderCurrency(order.paidAmount)}</span>
                         </p>
                       </div>
+
+                      {platformFeeTotal > 0 && (
+                        <div className="rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 text-sm">
+                          <div className="grid gap-2 sm:grid-cols-2">
+                            <p>
+                              Phí sàn tổng:{' '}
+                              <span className="font-medium text-foreground">{formatOrderCurrency(platformFeeTotal)}</span>
+                            </p>
+                            <p>
+                              Seller chịu:{' '}
+                              <span className="font-medium text-foreground">{formatOrderCurrency(sellerFeeAmount)}</span>
+                            </p>
+                            <p>
+                              Tổng số tiền:{' '}
+                              <span className="font-medium text-foreground">{formatOrderCurrency(sellerGrossPayoutAmount)}</span>
+                            </p>
+                            <p>
+                              Số tiền thực nhận dự kiến:{' '}
+                              <span className="font-medium text-foreground">{formatOrderCurrency(sellerNetPayoutAmount)}</span>
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
 

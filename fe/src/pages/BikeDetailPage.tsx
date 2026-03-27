@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowLeft, CreditCard, MapPin, Shield, MessageCircle, Heart, Share2, ChevronLeft, ChevronRight,
-  Star, Clock, AlertTriangle, Loader2, ExternalLink,
+  Star, Clock, AlertTriangle, Loader2, ExternalLink, Flag, ChevronDown,
 } from 'lucide-react'
+import { ReportModal } from '@/components/common/ReportModal'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -15,6 +16,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ROUTES } from '@/constants/routes'
 import { formatCurrencyInput, formatPriceDisplay, parseCurrencyInput } from '@/lib/currency-input'
+import { calculatePlatformFeePreview } from '@/lib/platform-fee-preview'
 import { cn } from '@/lib/utils'
 import { adminProductsApi } from '@/api/admin-products.api'
 import { ordersApi } from '@/api/orders.api'
@@ -90,7 +92,14 @@ export default function BikeDetailPage() {
   const [isOrderDialogOpen, setIsOrderDialogOpen] = useState(false)
   const [orderError, setOrderError] = useState<string | null>(null)
   const [orderLoading, setOrderLoading] = useState(false)
+  const [reportFeedback, setReportFeedback] = useState<string | null>(null)
+  const [reportTarget, setReportTarget] = useState<{
+    targetType: 'product' | 'user'
+    targetId: string
+    targetName?: string
+  } | null>(null)
   const [paymentOption, setPaymentOption] = useState<PaymentOption>('partial')
+  const [isOrderBreakdownExpanded, setIsOrderBreakdownExpanded] = useState(false)
   const paymentMethod: PaymentMethod = 'transfer'
   const [upfrontAmount, setUpfrontAmount] = useState('')
 
@@ -216,6 +225,18 @@ export default function BikeDetailPage() {
   const isAdminDetailView = user?.role === 'admin'
   const listPageHref = isAdminDetailView ? ROUTES.ADMIN_LISTINGS : ROUTES.MARKET
   const listPageLabel = isAdminDetailView ? 'Duyệt tin đăng' : 'Mua xe'
+  const safeProductPrice = product?.price ?? 0
+  const parsedUpfrontAmountForPreview = paymentOption === 'partial' ? parseCurrencyInput(upfrontAmount) ?? 0 : safeProductPrice
+  const protectedAmountForPreview = paymentOption === 'full' ? safeProductPrice : parsedUpfrontAmountForPreview
+  const feePreview = calculatePlatformFeePreview(safeProductPrice, protectedAmountForPreview, paymentMethod)
+  const exceedsProductPrice = paymentOption === 'partial' && protectedAmountForPreview > safeProductPrice
+  const isBelowMinimumAllowedUpfront =
+    paymentOption === 'partial' &&
+    protectedAmountForPreview > 0 &&
+    feePreview.isApplicable &&
+    protectedAmountForPreview < feePreview.minimumAllowedUpfrontAmount
+  const shouldShowPreviewBreakdown =
+    paymentOption === 'full' || (paymentOption === 'partial' && protectedAmountForPreview > 0)
 
   const handleOpenOrderDialog = () => {
     if (!product) {
@@ -243,7 +264,40 @@ export default function BikeDetailPage() {
     }
 
     setOrderError(null)
+    setIsOrderBreakdownExpanded(false)
     setIsOrderDialogOpen(true)
+  }
+
+  const handleOpenReportModal = (targetType: 'product' | 'user') => {
+    if (!product) {
+      return
+    }
+
+    if (!isAuthenticated) {
+      navigate(ROUTES.LOGIN, { state: { from: location } })
+      return
+    }
+
+    if (targetType === 'user') {
+      if (!product.seller?.id || isOwnListing) {
+        return
+      }
+
+      setReportTarget({
+        targetType: 'user',
+        targetId: product.seller.id,
+        targetName: sellerFullName,
+      })
+      setReportFeedback(null)
+      return
+    }
+
+    setReportTarget({
+      targetType: 'product',
+      targetId: product.id,
+      targetName: product.title,
+    })
+    setReportFeedback(null)
   }
 
   const handleCreateOrder = async () => {
@@ -255,6 +309,23 @@ export default function BikeDetailPage() {
 
     if (paymentOption === 'partial' && (!parsedUpfrontAmount || parsedUpfrontAmount <= 0)) {
       setOrderError('Vui lòng nhập số tiền ứng trước hợp lệ.')
+      return
+    }
+
+    if (paymentOption === 'partial' && parsedUpfrontAmount !== null && parsedUpfrontAmount > product.price) {
+      setOrderError('Số tiền ứng trước không được vượt quá giá xe.')
+      return
+    }
+
+    if (
+      paymentOption === 'partial' &&
+      feePreview.isApplicable &&
+      parsedUpfrontAmount &&
+      parsedUpfrontAmount < feePreview.minimumAllowedUpfrontAmount
+    ) {
+      setOrderError(
+        `Số tiền ứng trước phải từ ${formatPrice(feePreview.minimumAllowedUpfrontAmount)} trở lên để đủ cover phần phí seller.`,
+      )
       return
     }
 
@@ -271,6 +342,7 @@ export default function BikeDetailPage() {
 
       setIsOrderDialogOpen(false)
       setUpfrontAmount('')
+      setIsOrderBreakdownExpanded(false)
       navigate(`${ROUTES.PROFILE}?tab=orders`, {
         state: {
           orderCreatedNotice: ORDER_CREATED_NOTICE,
@@ -736,6 +808,26 @@ export default function BikeDetailPage() {
                       Chia sẻ
                     </Button>
                   </div>
+                  {!isAdminDetailView && !isOwnListing && (
+                    <div className="rounded-lg border border-border/70 bg-muted/20 p-3">
+                      <p className="text-xs font-medium text-foreground">Cần báo cáo nội dung vi phạm?</p>
+                      <div className="mt-2 grid gap-2">
+                        <Button variant="ghost" size="sm" className="justify-start" onClick={() => handleOpenReportModal('product')}>
+                          <Flag className="mr-2 h-4 w-4" />
+                          Báo cáo tin đăng này
+                        </Button>
+                        {product.seller?.id && (
+                          <Button variant="ghost" size="sm" className="justify-start" onClick={() => handleOpenReportModal('user')}>
+                            <Flag className="mr-2 h-4 w-4" />
+                            Báo cáo người bán
+                          </Button>
+                        )}
+                      </div>
+                      {reportFeedback && (
+                        <p className="mt-2 text-xs text-primary">{reportFeedback}</p>
+                      )}
+                    </div>
+                  )}
                   {/* Wishlist error feedback */}
                   {wishlistError && (
                     <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
@@ -777,28 +869,55 @@ export default function BikeDetailPage() {
         </div>
       </div>
 
+      {reportTarget && (
+        <ReportModal
+          open={Boolean(reportTarget)}
+          onOpenChange={(open) => {
+            if (!open) {
+              setReportTarget(null)
+            }
+          }}
+          targetId={reportTarget.targetId}
+          targetType={reportTarget.targetType}
+          targetName={reportTarget.targetName}
+          onSuccess={() => {
+            setReportFeedback('Báo cáo đã được gửi. Admin sẽ xem xét sớm.')
+            setReportTarget(null)
+          }}
+        />
+      )}
+
       <Dialog
         open={isOrderDialogOpen}
         onOpenChange={(open) => {
           setIsOrderDialogOpen(open)
           if (!open) {
             setOrderError(null)
+            setIsOrderBreakdownExpanded(false)
           }
         }}
       >
-        <DialogContent className="sm:max-w-[520px]">
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-[520px]">
           <DialogHeader>
             <DialogTitle>Tạo yêu cầu mua xe</DialogTitle>
             <DialogDescription>
               Bạn đang tạo yêu cầu mua cho <span className="font-semibold text-foreground">{product.title}</span>.
-              Sau khi người bán chấp nhận, bạn sẽ thanh toán ở trang đơn mua của mình.
+              Thanh toán sẽ được xác nhận sau khi người bán chấp nhận đơn.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
             <div className="rounded-lg border bg-muted/30 p-4">
-              <div className="text-sm text-muted-foreground">Giá niêm yết</div>
-              <div className="mt-1 text-2xl font-bold text-foreground">{formatPrice(product.price)}</div>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="text-sm text-muted-foreground">Giá niêm yết</div>
+                  <div className="mt-1 text-2xl font-bold text-foreground">{formatPrice(product.price)}</div>
+                </div>
+                <Badge variant="outline" className="shrink-0">Chuyển khoản</Badge>
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Flow công khai hiện chỉ hỗ trợ chuyển khoản để hệ thống theo dõi cọc và đối soát rõ ràng.
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -813,20 +932,7 @@ export default function BikeDetailPage() {
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                Tạm thời chỉ hỗ trợ chuyển khoản để hệ thống theo dõi cọc, timeout thanh toán và đối soát giao dịch rõ ràng hơn.
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="payment-method">Phương thức thanh toán áp dụng</Label>
-              <div
-                id="payment-method"
-                className="flex min-h-11 items-center rounded-md border border-input bg-muted/30 px-3 text-sm font-medium text-foreground"
-              >
-                Chuyển khoản
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Tiền mặt đã được ẩn khỏi flow công khai vì hệ thống hiện chỉ đối soát đặt cọc, timeout thanh toán và webhook ổn định qua chuyển khoản.
+                Chọn số tiền hệ thống sẽ giữ ngay khi đơn được tạo.
               </p>
             </div>
 
@@ -841,8 +947,99 @@ export default function BikeDetailPage() {
                   onChange={(event) => setUpfrontAmount(formatCurrencyInput(event.target.value))}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Số tiền sẽ được tự động định dạng theo VND để buyer dễ đọc. Backend chỉ chấp nhận số tiền ứng trước lớn hơn 0 và không vượt quá giá xe.
+                  Hệ thống chỉ chấp nhận số tiền ứng trước lớn hơn 0, không vượt quá giá xe, và đủ lớn để cover phần phí seller.
                 </p>
+                {feePreview.isApplicable && (
+                  <p className="text-xs text-muted-foreground">
+                    Mức ứng trước tối thiểu hiện tại: {formatPrice(feePreview.minimumAllowedUpfrontAmount)}.
+                  </p>
+                )}
+              </div>
+            )}
+
+            {shouldShowPreviewBreakdown && (
+              <div className="space-y-3 rounded-lg border border-primary/20 bg-primary/5 p-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Tóm tắt thanh toán</p>
+                    <p className="text-xs text-muted-foreground">
+                      {paymentOption === 'full'
+                        ? 'Bạn thanh toán toàn bộ ở bước này qua chuyển khoản.'
+                        : `Hệ thống đang giữ ${formatPrice(feePreview.sellerGrossPayoutAmount)} cho giao dịch hiện tại.`}
+                    </p>
+                  </div>
+                  <Badge variant="secondary">{paymentOption === 'full' ? 'Toàn bộ' : 'Đặt cọc'}</Badge>
+                </div>
+
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <div className="rounded-md bg-background/80 px-3 py-2">
+                    <p className="text-xs text-muted-foreground">Phí buyer</p>
+                    <p className="text-base font-semibold text-foreground">{formatPrice(feePreview.buyerFeeAmount)}</p>
+                  </div>
+                  <div className="rounded-md bg-background/80 px-3 py-2">
+                    <p className="text-xs text-muted-foreground">Bạn cần chuyển ngay</p>
+                    <p className="text-base font-semibold text-foreground">{formatPrice(feePreview.buyerChargeAmount)}</p>
+                  </div>
+                </div>
+
+                {paymentOption === 'partial' && (
+                  <p className="text-xs text-muted-foreground">
+                    Nếu giao dịch hoàn tất, seller dự kiến nhận ròng {formatPrice(feePreview.sellerNetPayoutAmount)} từ khoản hệ thống đang giữ.
+                  </p>
+                )}
+
+                <div className="border-t border-primary/10 pt-3">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-auto px-0 text-sm text-primary hover:text-primary"
+                    onClick={() => setIsOrderBreakdownExpanded((current) => !current)}
+                  >
+                    <ChevronDown
+                      className={cn('mr-2 h-4 w-4 transition-transform', isOrderBreakdownExpanded && 'rotate-180')}
+                    />
+                    {isOrderBreakdownExpanded ? 'Ẩn chi tiết phí và quy tắc' : 'Xem chi tiết phí và quy tắc'}
+                  </Button>
+
+                  {isOrderBreakdownExpanded && (
+                    <div className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
+                      <p>
+                        Giá trị xe:{' '}
+                        <span className="font-medium text-foreground">{formatPrice(product.price)}</span>
+                      </p>
+                      <p>
+                        Khoản hệ thống đang giữ:{' '}
+                        <span className="font-medium text-foreground">{formatPrice(feePreview.sellerGrossPayoutAmount)}</span>
+                      </p>
+                      <p>
+                        Phí sàn tổng:{' '}
+                        <span className="font-medium text-foreground">{formatPrice(feePreview.platformFeeTotal)}</span>
+                      </p>
+                      <p>
+                        Seller chịu:{' '}
+                        <span className="font-medium text-foreground">{formatPrice(feePreview.sellerFeeAmount)}</span>
+                      </p>
+                      <p className="sm:col-span-2 text-xs text-muted-foreground">
+                        Tiền mặt hiện không hiển thị trong flow công khai vì hệ thống chỉ đối soát ổn định với chuyển khoản.
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {exceedsProductPrice && (
+                  <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+                    <AlertTriangle className="h-4 w-4 shrink-0" />
+                    Số tiền ứng trước không được vượt quá giá xe.
+                  </div>
+                )}
+
+                {isBelowMinimumAllowedUpfront && (
+                  <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+                    <AlertTriangle className="h-4 w-4 shrink-0" />
+                    Khoản ứng trước hiện tại chưa đủ cover phần phí seller. Vui lòng tăng lên ít nhất {formatPrice(feePreview.minimumAllowedUpfrontAmount)}.
+                  </div>
+                )}
               </div>
             )}
 
@@ -864,7 +1061,10 @@ export default function BikeDetailPage() {
             >
               Hủy
             </Button>
-            <Button onClick={handleCreateOrder} disabled={orderLoading}>
+            <Button
+              onClick={handleCreateOrder}
+              disabled={orderLoading || exceedsProductPrice || isBelowMinimumAllowedUpfront}
+            >
               {orderLoading ? 'Đang tạo đơn...' : 'Tạo yêu cầu mua'}
             </Button>
           </DialogFooter>

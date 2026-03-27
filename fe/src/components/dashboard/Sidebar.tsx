@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import {
+  Bike,
   ChevronLeft,
   ChevronRight,
   ClipboardCheck,
@@ -16,6 +17,7 @@ import {
   Wallet,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { ROUTES } from '@/constants/routes'
 import { cn } from '@/lib/utils'
 
 interface NavItem {
@@ -29,7 +31,7 @@ interface SidebarProps {
   title?: string
 }
 
-export function Sidebar({ items, title = 'Dashboard' }: SidebarProps) {
+export function Sidebar({ items }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false)
   const location = useLocation()
 
@@ -40,12 +42,29 @@ export function Sidebar({ items, title = 'Dashboard' }: SidebarProps) {
         collapsed ? 'w-16' : 'w-64',
       )}
     >
-      <div className="flex h-16 items-center justify-between border-b border-border px-4">
-        {!collapsed && <span className="truncate text-lg font-semibold text-foreground">{title}</span>}
+      <div className="flex h-16 items-center border-b border-border px-3">
+        {collapsed ? (
+          <Button variant="ghost" size="icon" onClick={() => setCollapsed((current) => !current)} className="mx-auto">
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        ) : (
+          <>
+            <Link
+              to={ROUTES.HOME}
+              className="flex min-w-0 flex-1 items-center gap-2 text-foreground hover:opacity-80"
+              title="Về trang chủ"
+            >
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary">
+                <Bike className="h-4 w-4 text-primary-foreground" />
+              </div>
+              <span className="truncate text-base font-bold">BikeExchange</span>
+            </Link>
 
-        <Button variant="ghost" size="icon" onClick={() => setCollapsed((current) => !current)} className="ml-auto">
-          {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-        </Button>
+            <Button variant="ghost" size="icon" onClick={() => setCollapsed((current) => !current)} className="shrink-0">
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+          </>
+        )}
       </div>
 
       <nav className="flex-1 overflow-y-auto py-4">

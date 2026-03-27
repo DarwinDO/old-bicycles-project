@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   AlertCircle,
@@ -43,13 +43,10 @@ import { productsApi } from '@/api/products.api'
 import type { WishlistItem } from '@/types/wishlist'
 import type { Product } from '@/types/product'
 import { getSellerListingStatusPresentation } from '@/pages/seller/seller-listing-visibility'
+import { formatPriceDisplay } from '@/lib/currency-input'
 
 function formatPrice(price: number): string {
-  return new Intl.NumberFormat('vi-VN', {
-    style: 'currency',
-    currency: 'VND',
-    maximumFractionDigits: 0,
-  }).format(price)
+  return formatPriceDisplay(price)
 }
 
 const tabs = [
@@ -62,15 +59,25 @@ const tabs = [
   { id: 'security', label: 'Bảo mật', icon: Lock },
 ] as const
 
-const tabIds = new Set(tabs.map((tab) => tab.id))
-
 export default function ProfilePage() {
   const { user, logout, setUser } = useAuth()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const requestedTab = searchParams.get('tab')
+
+  const isInspector = user?.role === 'inspector'
+  const isSeller = user?.role === 'seller'
+  
+  const visibleTabs = useMemo(() => tabs.filter(tab => {
+    if (isInspector && ['orders', 'listings', 'reviews', 'payout'].includes(tab.id)) return false
+    if (isSeller && tab.id === 'listings') return false
+    return true
+  }), [isInspector, isSeller])
+  
+  const visibleTabIds = useMemo(() => new Set(visibleTabs.map(t => t.id)), [visibleTabs])
+
   const [activeTab, setActiveTab] = useState(
-    requestedTab && tabIds.has(requestedTab as (typeof tabs)[number]['id']) ? requestedTab : 'profile',
+    requestedTab && visibleTabIds.has(requestedTab as any) ? requestedTab : 'profile',
   )
   const [isEditing, setIsEditing] = useState(false)
   const [profileLoading, setProfileLoading] = useState(false)
@@ -115,10 +122,10 @@ export default function ProfilePage() {
   }, [user])
 
   useEffect(() => {
-    if (requestedTab && tabIds.has(requestedTab as (typeof tabs)[number]['id'])) {
+    if (requestedTab && visibleTabIds.has(requestedTab as any)) {
       setActiveTab(requestedTab)
     }
-  }, [requestedTab])
+  }, [requestedTab, visibleTabIds])
 
   useEffect(() => {
     if (activeTab !== 'wishlist') {
@@ -323,7 +330,7 @@ export default function ProfilePage() {
             <Card>
               <CardContent className="p-2">
                 <nav className="space-y-1">
-                  {tabs.map((tab) => (
+                  {visibleTabs.map((tab) => (
                     <button
                       key={tab.id}
                       onClick={() => handleTabChange(tab.id)}

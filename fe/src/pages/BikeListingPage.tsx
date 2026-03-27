@@ -25,6 +25,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 import { buildRoute } from '@/constants/routes'
 import { buildMarketSearchParams, readMarketSearchState } from '@/lib/market-search'
 import { findAdministrativeOptionByName, type AdministrativeOption } from '@/lib/vietnamese-provinces'
+import { formatPriceDisplay } from '@/lib/currency-input'
 import { cn } from '@/lib/utils'
 import type { Product, ProductFilterRequest } from '@/types/product'
 import type { Brand, Category, ReferenceValue } from '@/types/reference-data'
@@ -39,11 +40,7 @@ const CONDITIONS = [
 ] as const
 
 function formatPrice(price: number): string {
-  return new Intl.NumberFormat('vi-VN', {
-    style: 'currency',
-    currency: 'VND',
-    maximumFractionDigits: 0,
-  }).format(price)
+  return formatPriceDisplay(price)
 }
 
 function getPrimaryImage(product: Product): string {
@@ -132,7 +129,6 @@ export default function BikeListingPage() {
   const [selectedGroupsetId, setSelectedGroupsetId] = useState('')
   const [selectedCategoryId, setSelectedCategoryId] = useState(initialSearchState.categoryId)
   const [selectedCondition, setSelectedCondition] = useState('')
-  const [verifiedOnly, setVerifiedOnly] = useState(false)
   const [minPrice, setMinPrice] = useState('')
   const [maxPrice, setMaxPrice] = useState('')
 
@@ -303,7 +299,6 @@ export default function BikeListingPage() {
     if (selectedGroupsetId) filters.groupsetId = selectedGroupsetId
     if (selectedCategoryId) filters.categoryId = selectedCategoryId
     if (selectedCondition) filters.condition = selectedCondition as ProductFilterRequest['condition']
-    if (verifiedOnly) filters.hasInspection = true
     if (minPrice) filters.minPrice = Number(minPrice)
     if (maxPrice) filters.maxPrice = Number(maxPrice)
 
@@ -317,7 +312,7 @@ export default function BikeListingPage() {
     } finally {
       setIsLoading(false)
     }
-  }, [district, keyword, maxPrice, minPrice, page, province, selectedBrandId, selectedCategoryId, selectedCondition, selectedGroupsetId, verifiedOnly, ward])
+  }, [district, keyword, maxPrice, minPrice, page, province, selectedBrandId, selectedCategoryId, selectedCondition, selectedGroupsetId, ward])
 
   useEffect(() => {
     void fetchProducts()
@@ -346,7 +341,6 @@ export default function BikeListingPage() {
       setSelectedGroupsetId('')
       setSelectedCategoryId('')
     setSelectedCondition('')
-    setVerifiedOnly(false)
     setMinPrice('')
     setMaxPrice('')
     setPage(0)
@@ -362,7 +356,6 @@ export default function BikeListingPage() {
     (selectedGroupsetId ? 1 : 0) +
     (selectedCategoryId ? 1 : 0) +
     (selectedCondition ? 1 : 0) +
-    (verifiedOnly ? 1 : 0) +
     (minPrice ? 1 : 0) +
     (maxPrice ? 1 : 0)
 
@@ -510,25 +503,6 @@ export default function BikeListingPage() {
         </Button>
       </FilterSection>
 
-      <Separator />
-
-      <FilterSection title="Khác">
-        <label className="flex cursor-pointer items-center gap-2">
-          <input
-            type="checkbox"
-            checked={verifiedOnly}
-            onChange={(event) => {
-              setVerifiedOnly(event.target.checked)
-              setPage(0)
-            }}
-            className="h-4 w-4 rounded border-input text-primary focus:ring-primary"
-          />
-          <span className="flex items-center gap-1 text-sm">
-            <Shield className="h-3.5 w-3.5 text-primary" />
-            Chỉ xe đã kiểm định
-          </span>
-        </label>
-      </FilterSection>
     </div>
   )
 
@@ -821,13 +795,6 @@ export default function BikeListingPage() {
                     </Badge>
                   )}
 
-                  {verifiedOnly && (
-                    <Badge variant="secondary" className="gap-1">
-                      Đã kiểm định
-                      <X className="h-3 w-3 cursor-pointer" onClick={() => setVerifiedOnly(false)} />
-                    </Badge>
-                  )}
-
                   {(minPrice || maxPrice) && (
                     <Badge variant="secondary" className="gap-1">
                       Giá: {minPrice ? formatPrice(Number(minPrice)) : '0'} — {maxPrice ? formatPrice(Number(maxPrice)) : '∞'}
@@ -942,7 +909,10 @@ export default function BikeListingPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setPage((currentPage) => Math.max(0, currentPage - 1))}
+                  onClick={() => {
+                    setPage((currentPage) => Math.max(0, currentPage - 1))
+                    window.scrollTo({ top: 0, behavior: 'smooth' })
+                  }}
                   disabled={page === 0}
                 >
                   <ChevronLeft className="mr-1 h-4 w-4" />
@@ -954,7 +924,10 @@ export default function BikeListingPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setPage((currentPage) => Math.min(totalPages - 1, currentPage + 1))}
+                  onClick={() => {
+                    setPage((currentPage) => Math.min(totalPages - 1, currentPage + 1))
+                    window.scrollTo({ top: 0, behavior: 'smooth' })
+                  }}
                   disabled={page >= totalPages - 1}
                 >
                   Tiếp

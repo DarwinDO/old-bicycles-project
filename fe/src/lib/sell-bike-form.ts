@@ -9,6 +9,7 @@ export type SellBikeValidationErrorKey =
   | 'condition'
   | 'images'
   | 'price'
+  | 'originalPrice'
   | 'province'
 
 export type SellBikeValidationErrors = Partial<Record<SellBikeValidationErrorKey, string>>
@@ -19,9 +20,13 @@ export interface SellBikeValidationState {
   brandId: string
   condition: string
   price: string
+  originalPrice: string
   province: string
   images: Array<{ type: SellBikeImageType }>
 }
+
+/** 1.000 tỷ VND */
+const MAX_PRICE = 1_000_000_000_000
 
 const REQUIRED_IMAGE_TYPES: SellBikeImageType[] = ['main', 'groupset', 'serial']
 
@@ -64,6 +69,16 @@ export function validateSellBikeStep(
 
     if (!formData.price.trim() || parsedPrice === null || parsedPrice <= 0) {
       errors.price = 'Vui lòng nhập giá bán hợp lệ.'
+    } else if (parsedPrice > MAX_PRICE) {
+      errors.price = 'Giá bán không được vượt quá 1.000 tỷ VND.'
+    }
+
+    if (formData.originalPrice.trim()) {
+      const parsedOriginalPrice = parseCurrencyInput(formData.originalPrice)
+
+      if (parsedOriginalPrice !== null && parsedOriginalPrice > MAX_PRICE) {
+        errors.originalPrice = 'Giá gốc không được vượt quá 1.000 tỷ VND.'
+      }
     }
 
     if (!formData.province.trim()) {

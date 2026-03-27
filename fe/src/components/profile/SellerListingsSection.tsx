@@ -7,6 +7,7 @@ import { ROUTES, buildRoute } from '@/constants/routes'
 import { cn } from '@/lib/utils'
 import type { Product } from '@/types/product'
 import { getSellerListingStatusPresentation } from '@/pages/seller/seller-listing-visibility'
+import { formatPriceDisplay } from '@/lib/currency-input'
 
 interface SellerListingsSectionProps {
   listings: Product[]
@@ -17,11 +18,7 @@ interface SellerListingsSectionProps {
 }
 
 function formatPrice(price: number): string {
-  return new Intl.NumberFormat('vi-VN', {
-    style: 'currency',
-    currency: 'VND',
-    maximumFractionDigits: 0,
-  }).format(price)
+  return formatPriceDisplay(price)
 }
 
 export function SellerListingsSection({
@@ -62,10 +59,15 @@ export function SellerListingsSection({
               const thumb = item.images?.find((image) => image.isPrimary)?.url ?? item.images?.[0]?.url
               const isToggling = togglingId === item.id
               const statusPresentation = getSellerListingStatusPresentation(item)
+              const canEdit = item.status !== 'sold' && !item.lockedForTransaction
               const canHide =
                 (item.status === 'active' || item.status === 'inspected_passed') &&
                 statusPresentation.isPubliclyVisible
               const canShow = item.status === 'hidden'
+              const canDelete =
+                item.status !== 'sold' &&
+                item.status !== 'pending_inspection' &&
+                !item.lockedForTransaction
 
               return (
                 <div
@@ -101,12 +103,14 @@ export function SellerListingsSection({
                   </div>
 
                   <div className="flex shrink-0 flex-col gap-1.5">
-                    <Button asChild variant="outline" size="sm" className="h-8 px-2 text-xs">
-                      <Link to={buildRoute.sellerEditProduct(item.id)}>
-                        <Pencil className="mr-1 h-3.5 w-3.5" />
-                        Sửa
-                      </Link>
-                    </Button>
+                    {canEdit && (
+                      <Button asChild variant="outline" size="sm" className="h-8 px-2 text-xs">
+                        <Link to={buildRoute.sellerEditProduct(item.id)}>
+                          <Pencil className="mr-1 h-3.5 w-3.5" />
+                          Sửa
+                        </Link>
+                      </Button>
+                    )}
 
                     {item.status !== 'sold' && (canHide || canShow) && (
                       <Button
@@ -127,15 +131,17 @@ export function SellerListingsSection({
                       </Button>
                     )}
 
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 px-2 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
-                      onClick={() => onDeleteListing(item.id)}
-                    >
-                      <Trash2 className="mr-1 h-3.5 w-3.5" />
-                      Xóa
-                    </Button>
+                    {canDelete && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 px-2 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
+                        onClick={() => onDeleteListing(item.id)}
+                      >
+                        <Trash2 className="mr-1 h-3.5 w-3.5" />
+                        Xóa
+                      </Button>
+                    )}
                   </div>
                 </div>
               )

@@ -27,6 +27,7 @@ import type { Category } from '@/types/reference-data'
 import type { Product } from '@/types/product'
 import { useAuth } from '@/contexts/AuthContext'
 import { getSellEntryHref } from '@/layouts/app-header-visibility'
+import { formatPriceDisplay } from '@/lib/currency-input'
 
 const CATEGORY_ICONS: Record<string, string> = {
   bicycles: '🚲',
@@ -57,11 +58,7 @@ const TRUST_FEATURES = [
 const ALL_LOCATION_VALUE = '__all__'
 
 function formatPrice(price: number): string {
-  return new Intl.NumberFormat('vi-VN', {
-    style: 'currency',
-    currency: 'VND',
-    maximumFractionDigits: 0,
-  }).format(price)
+  return formatPriceDisplay(price)
 }
 
 function getPrimaryImage(product: Product): string {

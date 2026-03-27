@@ -389,7 +389,7 @@ export default function BikeDetailPage() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center space-y-3">
           <p className="text-destructive">{error ?? 'Không tìm thấy sản phẩm.'}</p>
-          <Button variant="outline" onClick={() => navigate(listPageHref)}>Quay láº¡i</Button>
+          <Button variant="outline" onClick={() => navigate(listPageHref)}>Quay lại</Button>
         </div>
       </div>
     )

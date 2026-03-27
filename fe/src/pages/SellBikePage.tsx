@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Camera, CheckCircle2, Info, Loader2, Upload, X } from 'lucide-react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { ArrowLeft, Bike, Camera, CheckCircle2, Info, Loader2, Upload, X } from 'lucide-react'
 import { productsApi } from '@/api/products.api'
 import { referenceDataApi } from '@/api/reference-data.api'
 import { AdministrativeLocationFields } from '@/components/AdministrativeLocationFields'
@@ -301,10 +301,19 @@ export default function SellBikePage() {
     <div className="min-h-screen bg-muted/40 py-8">
       <div className="container mx-auto max-w-3xl px-4">
         <div className="mb-8 space-y-4">
-          <Button variant="ghost" className="gap-2 px-0" onClick={handleBackToPreviousPage}>
-            <ArrowLeft className="h-4 w-4" />
-            {isSellerDashboardFlow ? 'Quay lại quản lý tin đăng' : 'Quay lại'}
-          </Button>
+          <div className="flex items-center justify-between">
+            <Button variant="ghost" className="gap-2 px-0" onClick={handleBackToPreviousPage}>
+              <ArrowLeft className="h-4 w-4" />
+              {isSellerDashboardFlow ? 'Quay lại quản lý tin đăng' : 'Quay lại'}
+            </Button>
+
+            <Link to={ROUTES.HOME} className="flex items-center gap-2 text-foreground hover:opacity-80">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
+                <Bike className="h-4 w-4 text-primary-foreground" />
+              </div>
+              <span className="text-base font-bold">BikeExchange</span>
+            </Link>
+          </div>
 
           <div className="text-center">
             <h1 className="text-2xl font-bold text-foreground md:text-3xl">Đăng tin bán xe</h1>
@@ -625,9 +634,11 @@ export default function SellBikePage() {
                     type="text"
                     inputMode="numeric"
                     placeholder="VD: 36.000.000"
+                    className={cn(formErrors.originalPrice && 'border-destructive focus-visible:ring-destructive')}
                     value={formData.originalPrice}
                     onChange={(event) => handlePriceChange('originalPrice', event.target.value)}
                   />
+                  {formErrors.originalPrice ? <p className="text-sm text-destructive">{formErrors.originalPrice}</p> : null}
                 </div>
               </div>
 

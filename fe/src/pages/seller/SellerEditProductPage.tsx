@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, CheckCircle2, Info, Loader2, Upload, X } from 'lucide-react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import { ArrowLeft, Bike, CheckCircle2, Info, Loader2, Upload, X } from 'lucide-react'
 import { productsApi } from '@/api/products.api'
 import { referenceDataApi } from '@/api/reference-data.api'
 import { AdministrativeLocationFields } from '@/components/AdministrativeLocationFields'
@@ -105,6 +105,7 @@ export default function SellerEditProductPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isLoadingProduct, setIsLoadingProduct] = useState(true)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [priceErrors, setPriceErrors] = useState<{ price?: string; originalPrice?: string }>({})
   const [formData, setFormData] = useState<FormState>({
     title: '',
     categoryId: '',
@@ -239,6 +240,32 @@ export default function SellerEditProductPage() {
       return
     }
 
+    // Client-side price validation
+    const MAX_PRICE = 1_000_000_000_000
+    const nextPriceErrors: { price?: string; originalPrice?: string } = {}
+    const parsedPrice = parseCurrencyInput(formData.price)
+
+    if (!formData.price.trim() || parsedPrice === null || parsedPrice <= 0) {
+      nextPriceErrors.price = 'Vui lòng nhập giá bán hợp lệ.'
+    } else if (parsedPrice > MAX_PRICE) {
+      nextPriceErrors.price = 'Giá bán không được vượt quá 1.000 tỷ VND.'
+    }
+
+    if (formData.originalPrice.trim()) {
+      const parsedOriginalPrice = parseCurrencyInput(formData.originalPrice)
+
+      if (parsedOriginalPrice !== null && parsedOriginalPrice > MAX_PRICE) {
+        nextPriceErrors.originalPrice = 'Giá gốc không được vượt quá 1.000 tỷ VND.'
+      }
+    }
+
+    setPriceErrors(nextPriceErrors)
+
+    if (Object.keys(nextPriceErrors).length > 0) {
+      setStep(4)
+      return
+    }
+
     setIsSubmitting(true)
     setSubmitError(null)
 
@@ -317,10 +344,19 @@ export default function SellerEditProductPage() {
     <div className="min-h-screen bg-muted/40 py-8">
       <div className="container mx-auto max-w-3xl px-4">
         <div className="mb-8 space-y-4">
-          <Button variant="ghost" className="gap-2 px-0" onClick={() => navigate(ROUTES.SELLER_LISTINGS)}>
-            <ArrowLeft className="h-4 w-4" />
-            Quay lại quản lý tin đăng
-          </Button>
+          <div className="flex items-center justify-between">
+            <Button variant="ghost" className="gap-2 px-0" onClick={() => navigate(ROUTES.SELLER_LISTINGS)}>
+              <ArrowLeft className="h-4 w-4" />
+              Quay lại quản lý tin đăng
+            </Button>
+
+            <Link to={ROUTES.HOME} className="flex items-center gap-2 text-foreground hover:opacity-80">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
+                <Bike className="h-4 w-4 text-primary-foreground" />
+              </div>
+              <span className="text-base font-bold">BikeExchange</span>
+            </Link>
+          </div>
 
           <div className="text-center">
             <h1 className="text-2xl font-bold text-foreground md:text-3xl">Chỉnh sửa tin đăng</h1>
@@ -550,10 +586,12 @@ export default function SellerEditProductPage() {
                     type="text"
                     inputMode="numeric"
                     placeholder="VD: 25.000.000"
+                    className={cn(priceErrors.price && 'border-destructive focus-visible:ring-destructive')}
                     value={formData.price}
                     onChange={(event) => handlePriceChange('price', event.target.value)}
                   />
                   <p className="text-xs text-muted-foreground">Số tiền sẽ được tự động định dạng theo VND để người mua dễ đọc.</p>
+                  {priceErrors.price ? <p className="text-sm text-destructive">{priceErrors.price}</p> : null}
                 </div>
 
                 <div className="space-y-2">
@@ -562,9 +600,11 @@ export default function SellerEditProductPage() {
                     type="text"
                     inputMode="numeric"
                     placeholder="VD: 36.000.000"
+                    className={cn(priceErrors.originalPrice && 'border-destructive focus-visible:ring-destructive')}
                     value={formData.originalPrice}
                     onChange={(event) => handlePriceChange('originalPrice', event.target.value)}
                   />
+                  {priceErrors.originalPrice ? <p className="text-sm text-destructive">{priceErrors.originalPrice}</p> : null}
                 </div>
               </div>
 

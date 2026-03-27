@@ -16,17 +16,14 @@ import { productsApi } from '@/api/products.api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ROUTES, buildRoute } from '@/constants/routes'
+import { formatPriceDisplay } from '@/lib/currency-input'
 import type { Product } from '@/types/product'
 import { getSellerListingStatusPresentation } from './seller-listing-visibility'
 
 const PAGE_SIZE = 10
 
 function formatPrice(price: number): string {
-  return new Intl.NumberFormat('vi-VN', {
-    style: 'currency',
-    currency: 'VND',
-    maximumFractionDigits: 0,
-  }).format(price)
+  return formatPriceDisplay(price)
 }
 
 function formatDate(dateStr: string): string {
@@ -182,7 +179,11 @@ export default function SellerListingsPage() {
               ) : (
                 filteredProducts.map((product) => {
                   const isActing = actionLoading === product.id
-                  const canEdit = product.status !== 'sold'
+                  const canEdit = product.status !== 'sold' && !product.lockedForTransaction
+                  const canDelete =
+                    product.status !== 'sold' &&
+                    product.status !== 'pending_inspection' &&
+                    !product.lockedForTransaction
                   const statusPresentation = getSellerListingStatusPresentation(product)
                   const canHide =
                     (product.status === 'active' || product.status === 'inspected_passed') &&
@@ -263,7 +264,7 @@ export default function SellerListingsPage() {
                                   <Eye className="h-4 w-4" />
                                 </Button>
                               )}
-                              {canEdit && (
+                              {canDelete && (
                                 <Button
                                   variant="ghost"
                                   size="icon"

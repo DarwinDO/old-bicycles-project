@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { buildRoute } from '@/constants/routes'
 import { wishlistApi } from '@/api/wishlist.api'
+import { formatPriceDisplay } from '@/lib/currency-input'
 import type { WishlistItem } from '@/types/wishlist'
 
 const STATUS_LABEL: Record<string, string> = {
@@ -19,11 +20,7 @@ const STATUS_LABEL: Record<string, string> = {
 }
 
 function formatPrice(price: number): string {
-  return new Intl.NumberFormat('vi-VN', {
-    style: 'currency',
-    currency: 'VND',
-    maximumFractionDigits: 0,
-  }).format(price)
+  return formatPriceDisplay(price)
 }
 
 export default function WishlistPage() {

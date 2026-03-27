@@ -1,6 +1,7 @@
 import { useDeferredValue, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { type ColumnDef } from '@tanstack/react-table'
+import { formatPriceDisplay } from '@/lib/currency-input'
 import { ClipboardCheck, Eye, EyeOff, MoreHorizontal, Search } from 'lucide-react'
 import { adminProductsApi } from '@/api/admin-products.api'
 import { ConfirmDialog } from '@/components/dashboard/ConfirmDialog'
@@ -46,11 +47,7 @@ const statusOptions: Array<{ value: StatusFilter; label: string }> = [
 ]
 
 function formatPrice(price: number) {
-  return new Intl.NumberFormat('vi-VN', {
-    style: 'currency',
-    currency: 'VND',
-    maximumFractionDigits: 0,
-  }).format(price)
+  return formatPriceDisplay(price)
 }
 
 function formatDate(value: string) {

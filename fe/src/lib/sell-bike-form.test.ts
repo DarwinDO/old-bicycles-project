@@ -11,6 +11,7 @@ const completeForm = {
   brandId: 'giant',
   condition: 'used',
   price: '25000000',
+  originalPrice: '',
   province: 'Hà Nội',
   images: [{ type: 'main' }, { type: 'groupset' }, { type: 'serial' }] as Array<{
     type: 'main' | 'groupset' | 'serial' | 'other'
@@ -58,6 +59,37 @@ describe('sell-bike-form validation', () => {
       price: 'Vui lòng nhập giá bán hợp lệ.',
       province: 'Vui lòng chọn tỉnh / thành phố.',
     })
+  })
+
+  it('rejects selling price above 1000 tỷ', () => {
+    expect(
+      validateSellBikeStep(4, {
+        ...completeForm,
+        price: '1000000000001',
+      }),
+    ).toEqual({
+      price: 'Giá bán không được vượt quá 1.000 tỷ VND.',
+    })
+  })
+
+  it('rejects original price above 1000 tỷ', () => {
+    expect(
+      validateSellBikeStep(4, {
+        ...completeForm,
+        originalPrice: '1000000000001',
+      }),
+    ).toEqual({
+      originalPrice: 'Giá gốc không được vượt quá 1.000 tỷ VND.',
+    })
+  })
+
+  it('accepts original price exactly at 1000 tỷ', () => {
+    expect(
+      validateSellBikeStep(4, {
+        ...completeForm,
+        originalPrice: '1000000000000',
+      }),
+    ).toEqual({})
   })
 
   it('returns the first invalid step when validating the full form', () => {

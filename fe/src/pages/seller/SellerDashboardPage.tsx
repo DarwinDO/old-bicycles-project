@@ -9,13 +9,10 @@ import { ROUTES } from '@/constants/routes'
 import type { Order } from '@/types/order'
 import type { Product } from '@/types/product'
 import { getSellerListingStatusPresentation } from './seller-listing-visibility'
+import { formatPriceDisplay } from '@/lib/currency-input'
 
 function formatPrice(amount: number): string {
-  return new Intl.NumberFormat('vi-VN', {
-    style: 'currency',
-    currency: 'VND',
-    maximumFractionDigits: 0,
-  }).format(amount)
+  return formatPriceDisplay(amount)
 }
 
 function formatDate(dateStr: string): string {

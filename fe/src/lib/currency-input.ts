@@ -22,3 +22,16 @@ export function parseCurrencyInput(value: string | number | null | undefined): n
   const parsedValue = Number(digits)
   return Number.isFinite(parsedValue) ? parsedValue : null
 }
+
+export function formatPriceDisplay(price: number): string {
+  if (!Number.isFinite(price) || price < 0) {
+    return '—'
+  }
+
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND',
+    maximumFractionDigits: 0,
+  }).format(price)
+}
+

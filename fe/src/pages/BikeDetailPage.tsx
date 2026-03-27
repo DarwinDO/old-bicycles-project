@@ -412,7 +412,7 @@ export default function BikeDetailPage() {
             </Button>
           )}
           <nav className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Link to={ROUTES.HOME} className="hover:text-foreground">Trang chá»§</Link>
+            <Link to={ROUTES.HOME} className="hover:text-foreground">Trang chủ</Link>
             <span>/</span>
             <Link to={listPageHref} className="hover:text-foreground">{listPageLabel}</Link>
             <span>/</span>

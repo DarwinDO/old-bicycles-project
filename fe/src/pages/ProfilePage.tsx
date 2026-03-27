@@ -229,14 +229,25 @@ export default function ProfilePage() {
   const handleSaveProfile = async () => {
     setProfileError(null)
     setProfileSuccess(false)
+
+    if (!formData.firstName.trim()) {
+      setProfileError('Vui lòng nhập họ.')
+      return
+    }
+
+    if (!formData.lastName.trim()) {
+      setProfileError('Vui lòng nhập tên.')
+      return
+    }
+
     setProfileLoading(true)
 
     try {
       const updated = await authService.updateProfile({
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        phone: formData.phone,
-        defaultAddress: formData.address,
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName.trim(),
+        phone: formData.phone.trim(),
+        defaultAddress: formData.address.trim(),
       })
 
       setUser({ ...user!, ...updated })
@@ -244,9 +255,16 @@ export default function ProfilePage() {
       setProfileSuccess(true)
       window.setTimeout(() => setProfileSuccess(false), 3000)
     } catch (error: unknown) {
-      const message =
-        (error as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-        'Cập nhật thất bại. Vui lòng thử lại.'
+      let message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message
+      
+      if (!message) {
+        message = 'Cập nhật thất bại. Vui lòng thử lại.'
+      } else {
+        const msgLower = message.toLowerCase()
+        if (msgLower.includes('phone') && msgLower.includes('exist')) {
+           message = 'Số điện thoại này đã được sử dụng.'
+        }
+      }
       setProfileError(message)
     } finally {
       setProfileLoading(false)
@@ -260,6 +278,16 @@ export default function ProfilePage() {
 
   const handleChangePassword = async (event: React.FormEvent) => {
     event.preventDefault()
+
+    if (!pwData.currentPassword) {
+      setPwError('Vui lòng nhập mật khẩu hiện tại.')
+      return
+    }
+
+    if (!pwData.newPassword || pwData.newPassword.length < 8) {
+      setPwError('Mật khẩu mới phải có ít nhất 8 ký tự.')
+      return
+    }
 
     if (pwData.newPassword !== pwData.confirmNewPassword) {
       setPwError('Mật khẩu mới xác nhận không khớp.')
@@ -278,9 +306,16 @@ export default function ProfilePage() {
       setPwSuccess(true)
       setPwData({ currentPassword: '', newPassword: '', confirmNewPassword: '' })
     } catch (error: unknown) {
-      const message =
-        (error as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-        'Đổi mật khẩu thất bại. Vui lòng thử lại.'
+      let message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message
+      
+      if (!message) {
+        message = 'Đổi mật khẩu thất bại. Vui lòng thử lại.'
+      } else {
+        const msgLower = message.toLowerCase()
+        if (msgLower.includes('incorrect') || msgLower.includes('wrong') || msgLower.includes('invalid') || msgLower.includes('credential')) {
+           message = 'Mật khẩu hiện tại không chính xác.'
+        }
+      }
       setPwError(message)
     } finally {
       setPwLoading(false)
@@ -477,7 +512,7 @@ export default function ProfilePage() {
                   <CardTitle>Đổi mật khẩu</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <form onSubmit={handleChangePassword} className="max-w-md space-y-4">
+                  <form onSubmit={handleChangePassword} className="max-w-md space-y-4" noValidate>
                     {pwError && (
                       <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
                         <AlertCircle className="h-4 w-4 shrink-0" />

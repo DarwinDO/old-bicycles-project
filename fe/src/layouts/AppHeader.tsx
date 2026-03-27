@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { Bike, ChevronDown, LayoutDashboard, LogIn, LogOut, Menu, MessageCircle, Plus, User } from 'lucide-react'
+import { Bike, ChevronDown, LayoutDashboard, LogIn, LogOut, Menu, MessageCircle, Plus, User, UserPlus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -230,6 +230,10 @@ export default function AppHeader() {
                 <LogIn className="mr-2 h-4 w-4" />
                 Đăng nhập
               </Button>
+              <Button variant="outline" size="sm" onClick={() => navigate(ROUTES.REGISTER)}>
+                <UserPlus className="mr-2 h-4 w-4" />
+                Đăng ký
+              </Button>
               <Button size="sm" onClick={() => navigate(sellEntryHref)}>
                 <Plus className="mr-2 h-4 w-4" />
                 Đăng tin
@@ -376,6 +380,17 @@ export default function AppHeader() {
                     >
                       <User className="mr-2 h-4 w-4" />
                       Đăng nhập
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="justify-start"
+                      onClick={() => {
+                        navigate(ROUTES.REGISTER)
+                        setMobileMenuOpen(false)
+                      }}
+                    >
+                      <UserPlus className="mr-2 h-4 w-4" />
+                      Đăng ký
                     </Button>
                     {showSellerEntry && (
                       <Button

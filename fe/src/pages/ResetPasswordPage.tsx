@@ -47,6 +47,12 @@ export default function ResetPasswordPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
+
+        if (!isPasswordValid || !hasUppercase || !hasNumber) {
+            setError('Mật khẩu không đáp ứng đủ yêu cầu bảo mật.')
+            return
+        }
+
         if (newPassword !== confirmPassword) {
             setError('Mật khẩu xác nhận không khớp.')
             return
@@ -58,9 +64,16 @@ export default function ResetPasswordPage() {
             setSuccess(true)
             setTimeout(() => navigate(ROUTES.LOGIN), 3000)
         } catch (err: unknown) {
-            const message =
-                (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-                'Đặt lại mật khẩu thất bại. Link có thể đã hết hạn.'
+            let message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+            
+            if (!message) {
+                message = 'Đặt lại mật khẩu thất bại. Link có thể đã hết hạn.'
+            } else {
+                const msgLower = message.toLowerCase()
+                if (msgLower.includes('expire') || msgLower.includes('invalid')) {
+                    message = 'Link đặt lại mật khẩu đã hết hạn hoặc không hợp lệ.'
+                }
+            }
             setError(message)
         } finally {
             setIsLoading(false)
@@ -97,7 +110,7 @@ export default function ResetPasswordPage() {
                                 <p className="text-sm text-muted-foreground">Đang chuyển hướng về trang đăng nhập...</p>
                             </div>
                         ) : (
-                            <form onSubmit={handleSubmit} className="space-y-4">
+                            <form onSubmit={handleSubmit} className="space-y-4" noValidate>
                                 {!token && (
                                     <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
                                         <AlertCircle className="h-4 w-4 shrink-0" />

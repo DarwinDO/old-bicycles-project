@@ -14,7 +14,7 @@ vi.mock('@/api/reports.api', () => ({
   },
 }))
 
-function buildPageResult() {
+function buildPageResult(status: 'pending' | 'investigating' = 'pending') {
   return {
     content: [
       {
@@ -34,7 +34,7 @@ function buildPageResult() {
             sortOrder: 0,
           },
         ],
-        status: 'pending' as const,
+        status,
         adminNote: null,
         processedById: null,
         processedByName: null,
@@ -100,5 +100,36 @@ describe('AdminReportsPage', () => {
       'href',
       'https://cdn.example.com/report-proof.jpg',
     )
+  })
+
+  it('lets admin close an investigating report by dismissing it', async () => {
+    getAdminReportsMock.mockResolvedValue(buildPageResult('investigating'))
+    processMock.mockResolvedValue({})
+
+    render(<AdminReportsPage />)
+
+    const reporter = await screen.findByText('Nguyen Buyer')
+    const row = reporter.closest('tr')
+    expect(row).not.toBeNull()
+
+    fireEvent.pointerDown(within(row as HTMLElement).getAllByRole('button')[0])
+    fireEvent.click(await screen.findByText('Cập nhật xử lý'))
+
+    const dialog = await screen.findByRole('dialog', { name: 'Cập nhật xử lý báo cáo' })
+
+    fireEvent.click(within(dialog).getByRole('combobox'))
+    fireEvent.click(await screen.findByRole('option', { name: 'Bác bỏ báo cáo' }))
+    fireEvent.change(within(dialog).getByPlaceholderText('Nhập ghi chú...'), {
+      target: { value: 'Không đủ bằng chứng để kết luận vi phạm' },
+    })
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Xác nhận' }))
+
+    await waitFor(() => {
+      expect(processMock).toHaveBeenCalledWith('report-1', {
+        status: 'resolved_dismissed',
+        adminNote: 'Không đủ bằng chứng để kết luận vi phạm',
+      })
+    })
   })
 })

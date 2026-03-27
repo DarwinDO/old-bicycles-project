@@ -1,6 +1,10 @@
 export type ReportReason = 'fraud' | 'fake' | 'wrong_description' | 'spam' | 'other'
 
-export type ReportStatus = 'pending' | 'reviewed' | 'resolved'
+export type ReportStatus =
+  | 'pending'
+  | 'investigating'
+  | 'resolved_upheld'
+  | 'resolved_dismissed'
 
 export interface ReportEvidenceFile {
   id: string

@@ -81,5 +81,6 @@ describe('MyReportsPage', () => {
       'https://cdn.example.com/report-proof.jpg',
     )
     expect(screen.getByText(/Đã tiếp nhận báo cáo/)).toBeInTheDocument()
+    expect(screen.getByText('Chờ xử lý')).toBeInTheDocument()
   })
 })

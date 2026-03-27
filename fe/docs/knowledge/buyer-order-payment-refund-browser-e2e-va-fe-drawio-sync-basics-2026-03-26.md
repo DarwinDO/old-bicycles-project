@@ -63,7 +63,7 @@ Test chặn các request có `pathname` bắt đầu bằng `/api/` rồi mock c
 
 Khi chỉ có unit test hoặc component test, ta biết từng mảnh nhỏ chạy đúng.
 
-Nhưng với flow order -> payment -> refund, lỗi thường xuất hiện ở chỗ nối giữa nhiều màn:
+Nhưng với flow `order -> payment -> refund`, lỗi thường xuất hiện ở chỗ nối giữa nhiều màn:
 
 - điều hướng route
 - state sau khi tạo order
@@ -108,6 +108,22 @@ Nghĩa là nếu bạn search bên trong `fe/` thì sẽ không thấy, nhưng d
 - bảng mới `refund_request_files`
 - bảng mới `financial_transactions`
 
+## Lỗi duplicate ID trong Conceptual ERD
+
+Sau khi sync diagram, `CONCEPTUAL-ERD.drawio` đã từng mở lỗi với thông báo:
+
+- `Error loading file`
+- `Duplicate ID 68`
+
+Nguyên nhân là file XML của draw.io yêu cầu mỗi `mxCell id` phải là duy nhất trên toàn bộ file. Trong diagram này đã có hai edge cùng dùng `id="68"`, nên draw.io từ chối mở file.
+
+Phần đã được sửa:
+
+- giữ cạnh `REPORT -> REPORT FILE` với `id="68"`
+- đổi cạnh `CONVERSATION -> MESSAGE` từ `id="68"` sang `id="74"`
+
+Sau khi sửa, file không còn duplicate ID nghiệp vụ nữa và có thể mở lại bình thường.
+
 ## Ý nghĩa cho người mới
 
 Nếu bạn là sinh viên năm đầu hoặc mới đọc dự án:
@@ -115,8 +131,10 @@ Nếu bạn là sinh viên năm đầu hoặc mới đọc dự án:
 - `buyer charge amount` là tổng tiền buyer thực sự chuyển
 - `protected amount` là phần tiền giao dịch hệ thống đang giữ để bảo chứng
 - `financial transaction` là bảng ghi log tài chính để sau này đối soát payment, refund, payout
+- `mxCell id` trong draw.io là mã định danh nội bộ của từng box hoặc từng đường nối; nếu bị trùng thì file diagram có thể không mở được
 
 Nói ngắn gọn:
 
 - FE test mới giúp khóa luồng nghiệp vụ thực hơn
 - drawio đã được kéo theo để không bị lệch khỏi code hiện tại
+- lỗi mở file conceptual lần này là lỗi kỹ thuật của XML diagram, không phải lỗi nghiệp vụ của hệ thống

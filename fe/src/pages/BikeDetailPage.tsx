@@ -2,7 +2,7 @@
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowLeft, CreditCard, MapPin, Shield, MessageCircle, Heart, Share2, ChevronLeft, ChevronRight,
-  Star, Clock, AlertTriangle, Loader2, ExternalLink, Flag,
+  Star, Clock, AlertTriangle, Loader2, ExternalLink, Flag, ChevronDown,
 } from 'lucide-react'
 import { ReportModal } from '@/components/common/ReportModal'
 import { Button } from '@/components/ui/button'
@@ -103,6 +103,7 @@ export default function BikeDetailPage() {
     targetName?: string
   } | null>(null)
   const [paymentOption, setPaymentOption] = useState<PaymentOption>('partial')
+  const [isOrderBreakdownExpanded, setIsOrderBreakdownExpanded] = useState(false)
   const paymentMethod: PaymentMethod = 'transfer'
   const [upfrontAmount, setUpfrontAmount] = useState('')
 
@@ -267,6 +268,7 @@ export default function BikeDetailPage() {
     }
 
     setOrderError(null)
+    setIsOrderBreakdownExpanded(false)
     setIsOrderDialogOpen(true)
   }
 
@@ -344,6 +346,7 @@ export default function BikeDetailPage() {
 
       setIsOrderDialogOpen(false)
       setUpfrontAmount('')
+      setIsOrderBreakdownExpanded(false)
       navigate(`${ROUTES.PROFILE}?tab=orders`, {
         state: {
           orderCreatedNotice: ORDER_CREATED_NOTICE,
@@ -894,22 +897,31 @@ export default function BikeDetailPage() {
           setIsOrderDialogOpen(open)
           if (!open) {
             setOrderError(null)
+            setIsOrderBreakdownExpanded(false)
           }
         }}
       >
-        <DialogContent className="sm:max-w-[520px]">
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-[520px]">
           <DialogHeader>
             <DialogTitle>Tạo yêu cầu mua xe</DialogTitle>
             <DialogDescription>
               Bạn đang tạo yêu cầu mua cho <span className="font-semibold text-foreground">{product.title}</span>.
-              Sau khi người bán chấp nhận, bạn sẽ thanh toán ở trang đơn mua của mình.
+              Thanh toán sẽ được xác nhận sau khi người bán chấp nhận đơn.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
             <div className="rounded-lg border bg-muted/30 p-4">
-              <div className="text-sm text-muted-foreground">Giá niêm yết</div>
-              <div className="mt-1 text-2xl font-bold text-foreground">{formatPrice(product.price)}</div>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="text-sm text-muted-foreground">Giá niêm yết</div>
+                  <div className="mt-1 text-2xl font-bold text-foreground">{formatPrice(product.price)}</div>
+                </div>
+                <Badge variant="outline" className="shrink-0">Chuyển khoản</Badge>
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Flow công khai hiện chỉ hỗ trợ chuyển khoản để hệ thống theo dõi cọc và đối soát rõ ràng.
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -924,20 +936,7 @@ export default function BikeDetailPage() {
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                Tạm thời chỉ hỗ trợ chuyển khoản để hệ thống theo dõi cọc, timeout thanh toán và đối soát giao dịch rõ ràng hơn.
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="payment-method">Phương thức thanh toán áp dụng</Label>
-              <div
-                id="payment-method"
-                className="flex min-h-11 items-center rounded-md border border-input bg-muted/30 px-3 text-sm font-medium text-foreground"
-              >
-                Chuyển khoản
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Tiền mặt đã được ẩn khỏi flow công khai vì hệ thống hiện chỉ đối soát đặt cọc, timeout thanh toán và webhook ổn định qua chuyển khoản.
+                Chọn số tiền hệ thống sẽ giữ ngay khi đơn được tạo.
               </p>
             </div>
 
@@ -966,39 +965,25 @@ export default function BikeDetailPage() {
               <div className="space-y-3 rounded-lg border border-primary/20 bg-primary/5 p-4">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-sm font-medium text-foreground">Preview khoản thanh toán</p>
+                    <p className="text-sm font-medium text-foreground">Tóm tắt thanh toán</p>
                     <p className="text-xs text-muted-foreground">
-                      Phí sàn đang được tính trên toàn bộ giá trị xe và chia đôi cho buyer và seller.
+                      {paymentOption === 'full'
+                        ? 'Bạn thanh toán toàn bộ ở bước này qua chuyển khoản.'
+                        : `Hệ thống đang giữ ${formatPrice(feePreview.sellerGrossPayoutAmount)} cho giao dịch hiện tại.`}
                     </p>
                   </div>
-                  {paymentOption === 'full' && <Badge variant="secondary">Full</Badge>}
+                  <Badge variant="secondary">{paymentOption === 'full' ? 'Toàn bộ' : 'Đặt cọc'}</Badge>
                 </div>
 
-                <div className="grid gap-2 text-sm sm:grid-cols-2">
-                  <p>
-                    Giá trị xe:{' '}
-                    <span className="font-medium text-foreground">{formatPrice(product.price)}</span>
-                  </p>
-                  <p>
-                    Khoản sàn giữ cho giao dịch hiện tại:{' '}
-                    <span className="font-medium text-foreground">{formatPrice(feePreview.sellerGrossPayoutAmount)}</span>
-                  </p>
-                  <p>
-                    Phí sàn tổng:{' '}
-                    <span className="font-medium text-foreground">{formatPrice(feePreview.platformFeeTotal)}</span>
-                  </p>
-                  <p>
-                    Buyer chịu:{' '}
-                    <span className="font-medium text-foreground">{formatPrice(feePreview.buyerFeeAmount)}</span>
-                  </p>
-                  <p>
-                    Seller chịu:{' '}
-                    <span className="font-medium text-foreground">{formatPrice(feePreview.sellerFeeAmount)}</span>
-                  </p>
-                  <p>
-                    Buyer cần chuyển ngay:{' '}
-                    <span className="font-medium text-foreground">{formatPrice(feePreview.buyerChargeAmount)}</span>
-                  </p>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <div className="rounded-md bg-background/80 px-3 py-2">
+                    <p className="text-xs text-muted-foreground">Phí buyer</p>
+                    <p className="text-base font-semibold text-foreground">{formatPrice(feePreview.buyerFeeAmount)}</p>
+                  </div>
+                  <div className="rounded-md bg-background/80 px-3 py-2">
+                    <p className="text-xs text-muted-foreground">Bạn cần chuyển ngay</p>
+                    <p className="text-base font-semibold text-foreground">{formatPrice(feePreview.buyerChargeAmount)}</p>
+                  </div>
                 </div>
 
                 {paymentOption === 'partial' && (
@@ -1006,6 +991,45 @@ export default function BikeDetailPage() {
                     Nếu giao dịch hoàn tất, seller dự kiến nhận ròng {formatPrice(feePreview.sellerNetPayoutAmount)} từ khoản hệ thống đang giữ.
                   </p>
                 )}
+
+                <div className="border-t border-primary/10 pt-3">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-auto px-0 text-sm text-primary hover:text-primary"
+                    onClick={() => setIsOrderBreakdownExpanded((current) => !current)}
+                  >
+                    <ChevronDown
+                      className={cn('mr-2 h-4 w-4 transition-transform', isOrderBreakdownExpanded && 'rotate-180')}
+                    />
+                    {isOrderBreakdownExpanded ? 'Ẩn chi tiết phí và quy tắc' : 'Xem chi tiết phí và quy tắc'}
+                  </Button>
+
+                  {isOrderBreakdownExpanded && (
+                    <div className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
+                      <p>
+                        Giá trị xe:{' '}
+                        <span className="font-medium text-foreground">{formatPrice(product.price)}</span>
+                      </p>
+                      <p>
+                        Khoản hệ thống đang giữ:{' '}
+                        <span className="font-medium text-foreground">{formatPrice(feePreview.sellerGrossPayoutAmount)}</span>
+                      </p>
+                      <p>
+                        Phí sàn tổng:{' '}
+                        <span className="font-medium text-foreground">{formatPrice(feePreview.platformFeeTotal)}</span>
+                      </p>
+                      <p>
+                        Seller chịu:{' '}
+                        <span className="font-medium text-foreground">{formatPrice(feePreview.sellerFeeAmount)}</span>
+                      </p>
+                      <p className="sm:col-span-2 text-xs text-muted-foreground">
+                        Tiền mặt hiện không hiển thị trong flow công khai vì hệ thống chỉ đối soát ổn định với chuyển khoản.
+                      </p>
+                    </div>
+                  )}
+                </div>
 
                 {exceedsProductPrice && (
                   <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">

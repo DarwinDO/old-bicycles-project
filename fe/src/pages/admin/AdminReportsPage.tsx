@@ -25,10 +25,17 @@ const targetTypeLabels: Record<string, string> = {
   USER: 'Người dùng',
 }
 
-const statusLabels: Record<string, string> = {
+const statusLabels: Record<ReportStatus, string> = {
   pending: 'Chờ xử lý',
-  reviewed: 'Đã xem xét',
-  resolved: 'Đã giải quyết',
+  investigating: 'Đang điều tra',
+  resolved_upheld: 'Xác nhận vi phạm',
+  resolved_dismissed: 'Bác bỏ báo cáo',
+}
+
+type ProcessStatusSelection = ReportStatus | ''
+
+function canProcessReport(status: ReportStatus) {
+  return status === 'pending' || status === 'investigating'
 }
 
 export default function AdminReportsPage() {
@@ -48,13 +55,15 @@ export default function AdminReportsPage() {
   const [processDialog, setProcessDialog] = useState<{
     open: boolean
     reportId: string
-    status: ReportStatus
+    currentStatus: ReportStatus | null
+    status: ProcessStatusSelection
     adminNote: string
     loading: boolean
   }>({
     open: false,
     reportId: '',
-    status: 'resolved',
+    currentStatus: null,
+    status: '',
     adminNote: '',
     loading: false,
   })
@@ -73,13 +82,13 @@ export default function AdminReportsPage() {
 
       const filtered = searchQuery
         ? result.content.filter((report) => {
-            const needle = searchQuery.toLowerCase()
-            return (
-              report.reporterName?.toLowerCase().includes(needle) ||
-              report.targetId?.toLowerCase().includes(needle) ||
-              report.reason?.toLowerCase().includes(needle)
-            )
-          })
+          const needle = searchQuery.toLowerCase()
+          return (
+            report.reporterName?.toLowerCase().includes(needle) ||
+            report.targetId?.toLowerCase().includes(needle) ||
+            report.reason?.toLowerCase().includes(needle)
+          )
+        })
         : result.content
 
       setReports(filtered)
@@ -96,7 +105,22 @@ export default function AdminReportsPage() {
     void fetchReports()
   }, [fetchReports])
 
+  function openProcessDialog(report: Report) {
+    setProcessDialog({
+      open: true,
+      reportId: report.id,
+      currentStatus: report.status,
+      status: '',
+      adminNote: '',
+      loading: false,
+    })
+  }
+
   async function handleProcess() {
+    if (!processDialog.status) {
+      return
+    }
+
     setProcessDialog((prev) => ({ ...prev, loading: true }))
 
     try {
@@ -104,10 +128,18 @@ export default function AdminReportsPage() {
         status: processDialog.status,
         adminNote: processDialog.adminNote || undefined,
       })
-      setProcessDialog({ open: false, reportId: '', status: 'resolved', adminNote: '', loading: false })
+      setProcessDialog({
+        open: false,
+        reportId: '',
+        currentStatus: null,
+        status: '',
+        adminNote: '',
+        loading: false,
+      })
       await fetchReports()
     } catch {
       setProcessDialog((prev) => ({ ...prev, loading: false }))
+      setError('Xử lý báo cáo thất bại')
     }
   }
 
@@ -135,7 +167,12 @@ export default function AdminReportsPage() {
     {
       accessorKey: 'status',
       header: 'Trạng thái',
-      cell: ({ row }) => <StatusBadge status={row.original.status} />,
+      cell: ({ row }) => (
+        <StatusBadge
+          status={row.original.status}
+          labelOverride={statusLabels[row.original.status]}
+        />
+      ),
     },
     {
       accessorKey: 'createdAt',
@@ -157,20 +194,10 @@ export default function AdminReportsPage() {
               <Eye className="mr-2 h-4 w-4" />
               Xem chi tiết
             </DropdownMenuItem>
-            {row.original.status === 'pending' && (
-              <DropdownMenuItem
-                onClick={() =>
-                  setProcessDialog({
-                    open: true,
-                    reportId: row.original.id,
-                    status: 'resolved',
-                    adminNote: '',
-                    loading: false,
-                  })
-                }
-              >
+            {canProcessReport(row.original.status) && (
+              <DropdownMenuItem onClick={() => openProcessDialog(row.original)}>
                 <CheckCircle className="mr-2 h-4 w-4" />
-                Xử lý báo cáo
+                Cập nhật xử lý
               </DropdownMenuItem>
             )}
           </DropdownMenuContent>
@@ -210,14 +237,15 @@ export default function AdminReportsPage() {
             setPage(0)
           }}
         >
-          <SelectTrigger className="w-40">
+          <SelectTrigger className="w-44">
             <SelectValue placeholder="Trạng thái" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Tất cả</SelectItem>
             <SelectItem value="pending">Chờ xử lý</SelectItem>
-            <SelectItem value="reviewed">Đã xem xét</SelectItem>
-            <SelectItem value="resolved">Đã giải quyết</SelectItem>
+            <SelectItem value="investigating">Đang điều tra</SelectItem>
+            <SelectItem value="resolved_upheld">Xác nhận vi phạm</SelectItem>
+            <SelectItem value="resolved_dismissed">Bác bỏ báo cáo</SelectItem>
           </SelectContent>
         </Select>
 
@@ -305,25 +333,17 @@ export default function AdminReportsPage() {
                 files={detailDialog.report.evidenceFiles}
               />
 
-              {detailDialog.report.status === 'pending' && (
+              {canProcessReport(detailDialog.report.status) && (
                 <div className="flex justify-end">
                   <Button
                     onClick={() => {
-                      const reportId = detailDialog.report!.id
+                      const report = detailDialog.report!
                       setDetailDialog({ open: false, report: null })
-                      setTimeout(() => {
-                        setProcessDialog({
-                          open: true,
-                          reportId,
-                          status: 'resolved',
-                          adminNote: '',
-                          loading: false,
-                        })
-                      }, 100)
+                      setTimeout(() => openProcessDialog(report), 100)
                     }}
                   >
                     <CheckCircle className="mr-2 h-4 w-4" />
-                    Xử lý báo cáo này
+                    Cập nhật xử lý báo cáo này
                   </Button>
                 </div>
               )}
@@ -335,9 +355,11 @@ export default function AdminReportsPage() {
       <Dialog open={processDialog.open} onOpenChange={(open) => setProcessDialog((prev) => ({ ...prev, open }))}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Xử lý báo cáo</DialogTitle>
+            <DialogTitle>Cập nhật xử lý báo cáo</DialogTitle>
             <DialogDescription>
-              Chọn trạng thái xử lý và ghi chú nội bộ để cập nhật kết quả cho báo cáo này.
+              {processDialog.currentStatus === 'pending'
+                ? 'Chọn bước xử lý tiếp theo cho báo cáo mới.'
+                : 'Báo cáo đang điều tra. Chọn kết quả cuối cùng cho case này.'}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -348,11 +370,14 @@ export default function AdminReportsPage() {
                 onValueChange={(value) => setProcessDialog((prev) => ({ ...prev, status: value as ReportStatus }))}
               >
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Chọn kết quả xử lý" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="reviewed">Đã xem xét</SelectItem>
-                  <SelectItem value="resolved">Đã giải quyết</SelectItem>
+                  {processDialog.currentStatus === 'pending' && (
+                    <SelectItem value="investigating">Chuyển sang đang điều tra</SelectItem>
+                  )}
+                  <SelectItem value="resolved_upheld">Xác nhận vi phạm</SelectItem>
+                  <SelectItem value="resolved_dismissed">Bác bỏ báo cáo</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -370,11 +395,20 @@ export default function AdminReportsPage() {
             <div className="flex justify-end gap-2">
               <Button
                 variant="outline"
-                onClick={() => setProcessDialog({ open: false, reportId: '', status: 'resolved', adminNote: '', loading: false })}
+                onClick={() =>
+                  setProcessDialog({
+                    open: false,
+                    reportId: '',
+                    currentStatus: null,
+                    status: '',
+                    adminNote: '',
+                    loading: false,
+                  })
+                }
               >
                 Hủy
               </Button>
-              <Button onClick={() => void handleProcess()} disabled={processDialog.loading}>
+              <Button onClick={() => void handleProcess()} disabled={processDialog.loading || !processDialog.status}>
                 {processDialog.loading ? 'Đang lưu...' : 'Xác nhận'}
               </Button>
             </div>

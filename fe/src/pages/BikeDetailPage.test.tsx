@@ -151,7 +151,7 @@ describe('BikeDetailPage', () => {
     createOrderMock.mockResolvedValue({ id: 'order-1' })
   })
 
-  it('shows fee preview and blocks partial upfront values below the seller fee threshold', async () => {
+  it('shows a compact order summary and keeps fee details collapsible', async () => {
     render(
       <MemoryRouter>
         <BikeDetailPage />
@@ -176,10 +176,16 @@ describe('BikeDetailPage', () => {
     fireEvent.change(upfrontInput, { target: { value: '4000000' } })
 
     await waitFor(() => {
-      expect(dialog).toHaveTextContent(/400\.000/)
       expect(dialog).toHaveTextContent(/4\.200\.000/)
       expect(submitButton).toBeEnabled()
     })
+
+    expect(dialog).not.toHaveTextContent(/Phí sàn tổng:/i)
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Xem chi tiết phí và quy tắc' }))
+
+    expect(dialog).toHaveTextContent(/Phí sàn tổng:/i)
+    expect(dialog).toHaveTextContent(/400\.000/)
   })
 
   it('mounts product and seller report entry points on the bike detail page', async () => {

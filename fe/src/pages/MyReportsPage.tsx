@@ -5,13 +5,20 @@ import { ReportEvidenceSection } from '@/components/common/ReportEvidenceSection
 import { StatusBadge } from '@/components/dashboard/StatusBadge'
 import { Button } from '@/components/ui/button'
 import type { PageResult } from '@/types/api'
-import type { Report } from '@/types/report'
+import type { Report, ReportStatus } from '@/types/report'
 
 const targetTypeLabels: Record<string, string> = {
   product: 'Tin đăng',
   user: 'Người dùng',
   PRODUCT: 'Tin đăng',
   USER: 'Người dùng',
+}
+
+const reportStatusLabels: Record<ReportStatus, string> = {
+  pending: 'Chờ xử lý',
+  investigating: 'Đang điều tra',
+  resolved_upheld: 'Xác nhận vi phạm',
+  resolved_dismissed: 'Bác bỏ báo cáo',
 }
 
 export default function MyReportsPage() {
@@ -74,7 +81,10 @@ export default function MyReportsPage() {
                       </span>
                       <span className="font-mono text-xs text-muted-foreground">{report.targetId}</span>
                     </div>
-                    <StatusBadge status={report.status} />
+                    <StatusBadge
+                      status={report.status}
+                      labelOverride={reportStatusLabels[report.status]}
+                    />
                   </div>
 
                   <p className="text-sm font-medium text-foreground">{report.reason}</p>

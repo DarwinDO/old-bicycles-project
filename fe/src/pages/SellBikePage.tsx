@@ -150,6 +150,21 @@ export default function SellBikePage() {
   const [frameMaterials, setFrameMaterials] = useState<ReferenceValue[]>([])
   const [groupsets, setGroupsets] = useState<ReferenceValue[]>([])
   const [referenceLoading, setReferenceLoading] = useState(true)
+  const validationState = {
+    title: formData.title,
+    categoryId: formData.categoryId,
+    brandId: formData.brandId,
+    condition: formData.condition,
+    frameSize: formData.frameSize,
+    wheelSize: formData.wheelSize,
+    brakeTypeId: formData.brakeTypeId,
+    frameMaterialId: formData.frameMaterialId,
+    groupsetId: formData.groupsetId,
+    price: formData.price,
+    originalPrice: formData.originalPrice,
+    province: formData.province,
+    images: formData.images,
+  }
 
   useEffect(() => {
     Promise.all([
@@ -234,7 +249,7 @@ export default function SellBikePage() {
   }
 
   function validateCurrentStep(currentStep: SellBikeStep) {
-    const nextErrors = validateSellBikeStep(currentStep, formData)
+    const nextErrors = validateSellBikeStep(currentStep, validationState)
     setFormErrors(nextErrors)
     return Object.keys(nextErrors).length === 0
   }
@@ -251,7 +266,7 @@ export default function SellBikePage() {
   }
 
   async function handleSubmit() {
-    const validationResult = validateSellBikeForm(formData)
+    const validationResult = validateSellBikeForm(validationState)
 
     if (validationResult) {
       setFormErrors(validationResult.errors)
@@ -435,7 +450,9 @@ export default function SellBikePage() {
             <CardContent className="space-y-6">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Size khung</label>
+                  <label className="text-sm font-medium">
+                    Size khung <span className="text-red-500">*</span>
+                  </label>
                   <div className="flex flex-wrap gap-2">
                     {FRAME_SIZES.map((frameSize) => (
                       <Button
@@ -449,10 +466,13 @@ export default function SellBikePage() {
                       </Button>
                     ))}
                   </div>
+                  {formErrors.frameSize ? <p className="text-sm text-destructive">{formErrors.frameSize}</p> : null}
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Kích thước bánh</label>
+                  <label className="text-sm font-medium">
+                    Kích thước bánh <span className="text-red-500">*</span>
+                  </label>
                   <div className="flex flex-wrap gap-2">
                     {WHEEL_SIZES.map((wheelSize) => (
                       <Button
@@ -466,6 +486,7 @@ export default function SellBikePage() {
                       </Button>
                     ))}
                   </div>
+                  {formErrors.wheelSize ? <p className="text-sm text-destructive">{formErrors.wheelSize}</p> : null}
                 </div>
               </div>
 
@@ -476,7 +497,9 @@ export default function SellBikePage() {
                   onChange={(value) => handleChange('brakeTypeId', value)}
                   options={brakeTypes}
                   placeholder="Chọn loại phanh"
+                  required
                   loading={referenceLoading}
+                  error={formErrors.brakeTypeId}
                 />
 
                 <SelectField
@@ -485,14 +508,21 @@ export default function SellBikePage() {
                   onChange={(value) => handleChange('frameMaterialId', value)}
                   options={frameMaterials}
                   placeholder="Chọn chất liệu"
+                  required
                   loading={referenceLoading}
+                  error={formErrors.frameMaterialId}
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">Bộ truyền động (Groupset)</label>
+                <label className="text-sm font-medium">
+                  Bộ truyền động (Groupset) <span className="text-red-500">*</span>
+                </label>
                 <select
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  className={cn(
+                    'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring',
+                    formErrors.groupsetId && 'border-destructive focus:ring-destructive',
+                  )}
                   value={formData.groupsetId}
                   onChange={(event) => handleChange('groupsetId', event.target.value)}
                 >
@@ -503,6 +533,7 @@ export default function SellBikePage() {
                     </option>
                   ))}
                 </select>
+                {formErrors.groupsetId ? <p className="text-sm text-destructive">{formErrors.groupsetId}</p> : null}
               </div>
             </CardContent>
           </Card>

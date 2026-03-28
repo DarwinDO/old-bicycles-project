@@ -84,8 +84,10 @@ export default function SellerOrdersPage() {
 
     let cancelled = false
 
-    async function loadOrders() {
-      setLoading(true)
+    async function loadOrders(showLoading = true) {
+      if (showLoading) {
+        setLoading(true)
+      }
 
       try {
         const result = await ordersApi.getMine()
@@ -99,13 +101,13 @@ export default function SellerOrdersPage() {
           setError(getErrorMessage(requestError, 'Không thể tải danh sách đơn bán.'))
         }
       } finally {
-        if (!cancelled) {
+        if (!cancelled && showLoading) {
           setLoading(false)
         }
       }
     }
 
-    void loadOrders()
+    void loadOrders(true)
 
     return () => {
       cancelled = true
@@ -146,6 +148,15 @@ export default function SellerOrdersPage() {
     )
   }
 
+  async function refreshSellerOrders() {
+    if (!sellerId) {
+      return
+    }
+
+    const result = await ordersApi.getMine()
+    setOrders(result.filter((order) => order.sellerId === sellerId))
+  }
+
   async function runOrderAction(order: Order, action: 'accept' | 'confirmDeposit' | 'cancel') {
     setActionLoadingKey(`${action}:${order.id}`)
 
@@ -157,7 +168,11 @@ export default function SellerOrdersPage() {
             ? await ordersApi.confirmDeposit(order.id)
             : await ordersApi.cancel(order.id)
 
-      replaceOrder(updatedOrder)
+      if (action === 'accept') {
+        await refreshSellerOrders()
+      } else {
+        replaceOrder(updatedOrder)
+      }
       setError(null)
     } catch (requestError) {
       setError(

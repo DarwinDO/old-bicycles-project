@@ -59,15 +59,16 @@ export function SellerListingsSection({
               const thumb = item.images?.find((image) => image.isPrimary)?.url ?? item.images?.[0]?.url
               const isToggling = togglingId === item.id
               const statusPresentation = getSellerListingStatusPresentation(item)
-              const canEdit = item.status !== 'sold' && !item.lockedForTransaction
+              const canEdit = item.status !== 'sold' && !item.sellerActionLocked
               const canHide =
                 (item.status === 'active' || item.status === 'inspected_passed') &&
-                statusPresentation.isPubliclyVisible
-              const canShow = item.status === 'hidden'
+                statusPresentation.isPubliclyVisible &&
+                !item.sellerActionLocked
+              const canShow = item.status === 'hidden' && !item.sellerActionLocked
               const canDelete =
                 item.status !== 'sold' &&
                 item.status !== 'pending_inspection' &&
-                !item.lockedForTransaction
+                !item.sellerActionLocked
 
               return (
                 <div

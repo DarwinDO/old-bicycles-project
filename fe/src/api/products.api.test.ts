@@ -11,6 +11,7 @@ describe('normalizeProduct', () => {
       createdAt: '2026-03-25T11:48:29.966713Z',
       verified: true,
       lockedForTransaction: false,
+      sellerActionLocked: true,
       images: [
         {
           id: 'image-1',
@@ -22,6 +23,7 @@ describe('normalizeProduct', () => {
     })
 
     expect(product.isVerified).toBe(true)
+    expect(product.sellerActionLocked).toBe(true)
     expect(product.images[0]?.isPrimary).toBe(true)
   })
 
@@ -46,6 +48,7 @@ describe('normalizeProduct', () => {
     })
 
     expect(product.isVerified).toBe(true)
+    expect(product.sellerActionLocked).toBe(false)
     expect(product.images[0]?.isPrimary).toBe(true)
   })
 })

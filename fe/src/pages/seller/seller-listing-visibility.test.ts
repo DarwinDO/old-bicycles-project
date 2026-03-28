@@ -12,6 +12,7 @@ function buildProduct(overrides: Partial<Product> = {}): Product {
     images: [],
     isVerified: true,
     lockedForTransaction: false,
+    sellerActionLocked: false,
     ...overrides,
   }
 }
@@ -31,7 +32,7 @@ describe('seller-listing-visibility', () => {
     expect(presentation.hint).toBeNull()
   })
 
-  it('explains when a listing is locked by an active transaction', () => {
+  it('explains when a listing is locked by an accepted transaction', () => {
     const presentation = getSellerListingStatusPresentation(
       buildProduct({
         status: 'inspected_passed',
@@ -40,9 +41,24 @@ describe('seller-listing-visibility', () => {
       }),
     )
 
-    expect(presentation.label).toBe('Tạm khóa do đang có giao dịch')
+    expect(presentation.label).toBe('Tạm khóa vì đã chốt giao dịch')
     expect(presentation.isPubliclyVisible).toBe(false)
-    expect(presentation.hint).toContain('buyer khác sẽ không thấy')
+    expect(presentation.hint).toContain('không còn thấy ngoài marketplace')
+  })
+
+  it('explains when seller actions are locked by open buyer requests', () => {
+    const presentation = getSellerListingStatusPresentation(
+      buildProduct({
+        status: 'active',
+        isVerified: true,
+        lockedForTransaction: false,
+        sellerActionLocked: true,
+      }),
+    )
+
+    expect(presentation.label).toBe('Đang có yêu cầu mua chờ phản hồi')
+    expect(presentation.isPubliclyVisible).toBe(true)
+    expect(presentation.hint).toContain('sửa, ẩn hoặc xóa')
   })
 
   it('explains when a raw active listing is not yet eligible for marketplace visibility', () => {

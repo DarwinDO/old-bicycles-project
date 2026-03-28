@@ -58,6 +58,7 @@ export function normalizeProduct(product: RawProduct): Product {
     ...product,
     images: (product.images ?? []).map(normalizeProductImage),
     isVerified: Boolean(product.isVerified ?? product.verified),
+    sellerActionLocked: Boolean(product.sellerActionLocked),
   }
 }
 

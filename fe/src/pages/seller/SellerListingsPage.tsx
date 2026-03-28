@@ -179,16 +179,17 @@ export default function SellerListingsPage() {
               ) : (
                 filteredProducts.map((product) => {
                   const isActing = actionLoading === product.id
-                  const canEdit = product.status !== 'sold' && !product.lockedForTransaction
+                  const canEdit = product.status !== 'sold' && !product.sellerActionLocked
                   const canDelete =
                     product.status !== 'sold' &&
                     product.status !== 'pending_inspection' &&
-                    !product.lockedForTransaction
+                    !product.sellerActionLocked
                   const statusPresentation = getSellerListingStatusPresentation(product)
                   const canHide =
                     (product.status === 'active' || product.status === 'inspected_passed') &&
-                    statusPresentation.isPubliclyVisible
-                  const canShow = product.status === 'hidden'
+                    statusPresentation.isPubliclyVisible &&
+                    !product.sellerActionLocked
+                  const canShow = product.status === 'hidden' && !product.sellerActionLocked
 
                   return (
                     <tr key={product.id} className="border-b transition-colors hover:bg-muted/50">

@@ -52,11 +52,12 @@ function buildOrder(overrides: Partial<Order> = {}): Order {
 }
 
 describe('order-display', () => {
-  it('maps pending unpaid orders to waiting for seller confirmation', () => {
+  it('maps pending unpaid orders to waiting for seller review', () => {
     const order = buildOrder()
     const statusMeta = getOrderStatusMeta(order)
 
-    expect(statusMeta.label).toBe('Chờ người bán xác nhận')
+    expect(statusMeta.label).toBe('Chờ người bán xem xét')
+    expect(statusMeta.helperText).toContain('nhiều yêu cầu mua')
     expect(canSellerAcceptOrder(order)).toBe(true)
     expect(canBuyerRequestPayment(order)).toBe(false)
   })
@@ -228,6 +229,20 @@ describe('order-display', () => {
 
     expect(statusMeta.label).toBe('Đã hết hạn thanh toán')
     expect(statusMeta.helperText).toContain('tự hủy')
+  })
+
+  it('maps seller rejected requests to a rejected state', () => {
+    const order = buildOrder({
+      status: 'cancelled',
+      fundingStatus: 'unpaid',
+      cancelReason: 'seller_rejected',
+      cancelledAt: '2026-03-17T14:05:00Z',
+    })
+
+    const statusMeta = getOrderStatusMeta(order)
+
+    expect(statusMeta.label).toBe('Bị người bán từ chối')
+    expect(statusMeta.helperText).toContain('chọn một yêu cầu mua khác')
   })
 
   it('maps refunded cancelled orders to refunded state and mentions relisting workflow', () => {

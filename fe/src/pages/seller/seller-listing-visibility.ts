@@ -20,10 +20,19 @@ interface SellerListingStatusPresentation {
 export function getSellerListingStatusPresentation(product: Product): SellerListingStatusPresentation {
   if (product.lockedForTransaction) {
     return {
-      label: 'Tạm khóa do đang có giao dịch',
+      label: 'Tạm khóa vì đã chốt giao dịch',
       className: 'bg-sky-100 text-sky-800 dark:bg-sky-900/30 dark:text-sky-300',
-      hint: 'Xe đang có đơn mở hoặc đã đặt cọc, nên buyer khác sẽ không thấy ngoài marketplace.',
+      hint: 'Listing đã có đơn được seller chấp nhận hoặc đã nhận tiền đặt trước, nên buyer khác không còn thấy ngoài marketplace.',
       isPubliclyVisible: false,
+    }
+  }
+
+  if (product.sellerActionLocked) {
+    return {
+      label: 'Đang có yêu cầu mua chờ phản hồi',
+      className: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+      hint: 'Listing vẫn đang hiển thị công khai, nhưng người bán chưa thể sửa, ẩn hoặc xóa khi còn yêu cầu mua mở.',
+      isPubliclyVisible: true,
     }
   }
 

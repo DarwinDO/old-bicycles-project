@@ -58,6 +58,7 @@ export interface Product {
   images: ProductImage[]
   isVerified: boolean
   lockedForTransaction: boolean
+  sellerActionLocked?: boolean
   inspection?: ProductInspectionInfo | null
 }
 

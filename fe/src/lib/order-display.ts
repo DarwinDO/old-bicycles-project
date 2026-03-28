@@ -198,6 +198,15 @@ export function getOrderStatusMeta(order: Order, nowMs = Date.now()): OrderStatu
     }
   }
 
+  if (order.status === 'cancelled' && order.cancelReason === 'seller_rejected') {
+    return {
+      label: 'Bị người bán từ chối',
+      helperText:
+        'Người bán đã chọn một yêu cầu mua khác hoặc không tiếp tục yêu cầu này. Bạn có thể theo dõi listing khác hoặc thử lại nếu xe được mở bán trở lại.',
+      tone: 'danger',
+    }
+  }
+
   if (order.status === 'cancelled' && order.cancelReason === 'payment_expired') {
     return {
       label: 'Đã hết hạn thanh toán',
@@ -243,8 +252,9 @@ export function getOrderStatusMeta(order: Order, nowMs = Date.now()): OrderStatu
 
   if (order.status === 'pending' && order.fundingStatus === 'unpaid') {
     return {
-      label: 'Chờ người bán xác nhận',
-      helperText: 'Đơn hàng đã được tạo nhưng người bán chưa chấp nhận.',
+      label: 'Chờ người bán xem xét',
+      helperText:
+        'Yêu cầu mua đã được gửi. Người bán có thể đang xem nhiều yêu cầu mua cho cùng listing và sẽ chọn đơn đi tiếp.',
       tone: 'muted',
     }
   }

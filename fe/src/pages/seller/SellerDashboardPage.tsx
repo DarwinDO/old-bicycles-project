@@ -6,6 +6,7 @@ import { ordersApi } from '@/api/orders.api'
 import { productsApi } from '@/api/products.api'
 import { useAuth } from '@/contexts/AuthContext'
 import { ROUTES } from '@/constants/routes'
+import { canSellerAcceptOrder } from '@/lib/order-display'
 import type { Order } from '@/types/order'
 import type { Product } from '@/types/product'
 import { getSellerListingStatusPresentation } from './seller-listing-visibility'
@@ -31,6 +32,18 @@ function formatDate(dateStr: string): string {
   return `${Math.floor(diffMinutes / 1440)} ngày trước`
 }
 
+function getAttentionText(order: Order): string {
+  if (canSellerAcceptOrder(order)) {
+    return 'Chờ người bán phản hồi'
+  }
+
+  if (order.status === 'pending' && order.fundingStatus === 'awaiting_payment') {
+    return 'Đã chốt buyer, đang chờ thanh toán'
+  }
+
+  return 'Đang theo dõi giao dịch'
+}
+
 export default function SellerDashboardPage() {
   const { user } = useAuth()
   const [products, setProducts] = useState<Product[]>([])
@@ -54,7 +67,11 @@ export default function SellerDashboardPage() {
 
   const activeListings = products.filter((product) => getSellerListingStatusPresentation(product).isPubliclyVisible).length
   const pendingListings = products.filter((product) => product.status === 'pending').length
-  const pendingOrders = orders.filter((order) => order.status === 'pending')
+  const incomingRequests = orders.filter((order) => canSellerAcceptOrder(order))
+  const acceptedWaitingPayment = orders.filter(
+    (order) => order.status === 'pending' && order.fundingStatus === 'awaiting_payment',
+  )
+  const attentionOrders = incomingRequests.length > 0 ? incomingRequests : acceptedWaitingPayment
   const completedOrders = orders.filter((order) => order.status === 'completed')
   const totalRevenue = completedOrders.reduce((sum, order) => sum + order.totalAmount, 0)
 
@@ -71,17 +88,23 @@ export default function SellerDashboardPage() {
       <div>
         <h2 className="text-2xl font-bold tracking-tight">Tổng quan cửa hàng</h2>
         <p className="text-muted-foreground">
-          Theo dõi hoạt động kinh doanh và tương tác với tin đăng của bạn.
+          Theo dõi hoạt động kinh doanh và các yêu cầu mua đang đi vào workflow giao dịch.
         </p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          title="Đơn chờ xử lý"
-          value={String(pendingOrders.length)}
+          title="Yêu cầu cần phản hồi"
+          value={String(incomingRequests.length)}
           icon={ShoppingBag}
-          description={pendingOrders.length > 0 ? 'Cần xác nhận ngay' : 'Không có đơn mới'}
-          trend={pendingOrders.length > 0 ? { value: pendingOrders.length, isPositive: false } : undefined}
+          description={
+            incomingRequests.length > 0
+              ? 'Seller cần chọn buyer hoặc từ chối yêu cầu còn lại'
+              : acceptedWaitingPayment.length > 0
+                ? `${acceptedWaitingPayment.length} đơn đã chốt đang chờ buyer thanh toán`
+                : 'Không có yêu cầu mới'
+          }
+          trend={incomingRequests.length > 0 ? { value: incomingRequests.length, isPositive: false } : undefined}
         />
         <StatCard
           title="Tin đang bật"
@@ -93,7 +116,7 @@ export default function SellerDashboardPage() {
           title="Đơn hoàn thành"
           value={String(completedOrders.length)}
           icon={Eye}
-          description="Tổng giao dịch thành công"
+          description="Tổng giao dịch đã hoàn tất"
           trend={completedOrders.length > 0 ? { value: completedOrders.length, isPositive: true } : undefined}
         />
         <StatCard
@@ -132,7 +155,7 @@ export default function SellerDashboardPage() {
                       />
                     ) : (
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-muted text-xs text-muted-foreground">
-                        🚲
+                        Xe
                       </div>
                     )}
                     <div className="min-w-0 flex-1">
@@ -159,13 +182,13 @@ export default function SellerDashboardPage() {
             </Link>
           </div>
           <div className="space-y-4 p-6 pt-2">
-            {pendingOrders.length === 0 ? (
+            {attentionOrders.length === 0 ? (
               <div className="flex flex-col items-center justify-center gap-2 py-8 text-center text-muted-foreground">
                 <Clock className="h-8 w-8 opacity-40" />
-                <p className="text-sm">Không có đơn hàng chờ xử lý</p>
+                <p className="text-sm">Không có yêu cầu mua cần theo dõi ngay</p>
               </div>
             ) : (
-              pendingOrders.slice(0, 4).map((order) => (
+              attentionOrders.slice(0, 4).map((order) => (
                 <div key={order.id} className="flex items-center gap-4">
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-900/20">
                     <ShoppingBag className="h-4 w-4 text-orange-600 dark:text-orange-400" />
@@ -175,7 +198,7 @@ export default function SellerDashboardPage() {
                       {order.buyerName} muốn mua {order.productTitle}
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      {formatDate(order.createdAt)} · Chờ xác nhận
+                      {formatDate(order.createdAt)} · {getAttentionText(order)}
                     </p>
                   </div>
                 </div>

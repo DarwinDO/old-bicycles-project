@@ -259,7 +259,7 @@ export default function BikeDetailPage() {
     }
 
     if (isLockedForTransaction) {
-      setOrderError('Xe này đang có giao dịch đang xử lý. Bạn chưa thể tạo thêm đơn mua mới.')
+      setOrderError('Xe này đã có đơn được chấp nhận hoặc đã vào bước giao dịch độc quyền. Bạn chưa thể tạo thêm yêu cầu mua mới.')
       return
     }
 
@@ -755,7 +755,7 @@ export default function BikeDetailPage() {
                 {isLockedForTransaction && (
                   <div className="mt-4 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-3 text-sm text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
                     <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-                    Xe này đang có giao dịch đang xử lý. Tạm thời hệ thống không nhận thêm đơn mua mới cho xe này.
+                    Xe này đã có một giao dịch được chốt hoặc đã nhận cọc. Tạm thời hệ thống không nhận thêm yêu cầu mua mới cho xe này.
                   </div>
                 )}
 
@@ -902,7 +902,7 @@ export default function BikeDetailPage() {
             <DialogTitle>Tạo yêu cầu mua xe</DialogTitle>
             <DialogDescription>
               Bạn đang tạo yêu cầu mua cho <span className="font-semibold text-foreground">{product.title}</span>.
-              Thanh toán sẽ được xác nhận sau khi người bán chấp nhận đơn.
+              Thanh toán chỉ bắt đầu sau khi người bán chấp nhận yêu cầu này.
             </DialogDescription>
           </DialogHeader>
 
@@ -932,7 +932,7 @@ export default function BikeDetailPage() {
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                Chọn số tiền hệ thống sẽ giữ ngay khi đơn được tạo.
+                Bạn đang gửi yêu cầu mua. Nếu người bán chấp nhận, hệ thống sẽ chuyển sang bước thanh toán tương ứng.
               </p>
             </div>
 
@@ -964,8 +964,8 @@ export default function BikeDetailPage() {
                     <p className="text-sm font-medium text-foreground">Tóm tắt thanh toán</p>
                     <p className="text-xs text-muted-foreground">
                       {paymentOption === 'full'
-                        ? 'Bạn thanh toán toàn bộ ở bước này qua chuyển khoản.'
-                        : `Hệ thống đang giữ ${formatPrice(feePreview.sellerGrossPayoutAmount)} cho giao dịch hiện tại.`}
+                        ? 'Nếu người bán chấp nhận, bạn sẽ thanh toán toàn bộ ở bước tiếp theo qua chuyển khoản.'
+                        : `Nếu người bán chấp nhận, hệ thống sẽ giữ ${formatPrice(feePreview.sellerGrossPayoutAmount)} cho giao dịch này.`}
                     </p>
                   </div>
                   <Badge variant="secondary">{paymentOption === 'full' ? 'Toàn bộ' : 'Đặt cọc'}</Badge>
@@ -984,7 +984,7 @@ export default function BikeDetailPage() {
 
                 {paymentOption === 'partial' && (
                   <p className="text-xs text-muted-foreground">
-                    Nếu giao dịch hoàn tất, seller dự kiến nhận ròng {formatPrice(feePreview.sellerNetPayoutAmount)} từ khoản hệ thống đang giữ.
+                    Nếu giao dịch hoàn tất, seller dự kiến nhận ròng {formatPrice(feePreview.sellerNetPayoutAmount)} từ khoản hệ thống sẽ giữ sau bước thanh toán.
                   </p>
                 )}
 
@@ -1009,7 +1009,7 @@ export default function BikeDetailPage() {
                         <span className="font-medium text-foreground">{formatPrice(product.price)}</span>
                       </p>
                       <p>
-                        Khoản hệ thống đang giữ:{' '}
+                        Khoản hệ thống sẽ giữ sau khi seller chấp nhận:{' '}
                         <span className="font-medium text-foreground">{formatPrice(feePreview.sellerGrossPayoutAmount)}</span>
                       </p>
                       <p>

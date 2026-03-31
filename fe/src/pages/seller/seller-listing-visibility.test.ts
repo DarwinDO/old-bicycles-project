@@ -61,17 +61,23 @@ describe('seller-listing-visibility', () => {
     expect(presentation.hint).toContain('sửa, ẩn hoặc xóa')
   })
 
-  it('explains when a raw active listing is not yet eligible for marketplace visibility', () => {
+  it('shows an expired-inspection warning when a raw active listing is no longer public', () => {
     const presentation = getSellerListingStatusPresentation(
       buildProduct({
         status: 'active',
         isVerified: false,
         lockedForTransaction: false,
+        inspection: {
+          id: 'inspection-1',
+          passed: true,
+          validUntil: '2026-03-20T10:00:00.000Z',
+          createdAt: '2026-03-19T10:00:00.000Z',
+        },
       }),
     )
 
-    expect(presentation.label).toBe('Chưa đủ điều kiện hiển thị công khai')
+    expect(presentation.label).toBe('Hết hạn kiểm định')
     expect(presentation.isPubliclyVisible).toBe(false)
-    expect(presentation.hint).toContain('seller vẫn thấy nhưng buyer chưa thấy')
+    expect(presentation.hint).toContain('kiểm định đã hết hạn')
   })
 })

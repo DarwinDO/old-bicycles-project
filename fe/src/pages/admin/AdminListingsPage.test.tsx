@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import AdminListingsPage from './AdminListingsPage'
 
 const { getAllMock, approveMock, routeToInspectionMock, hideMock, navigateMock } = vi.hoisted(() => ({
@@ -35,24 +35,26 @@ describe('AdminListingsPage', () => {
     routeToInspectionMock.mockReset()
     hideMock.mockReset()
     navigateMock.mockReset()
+  })
 
+  it('shows transaction-lock badge while keeping inspection timeline under the product title', async () => {
     getAllMock.mockResolvedValue({
       content: [
         {
           id: 'product-1',
-          title: 'Carbon Race Build',
+          title: 'Locked Carbon Build',
           description: 'Demo listing',
-          price: 45000000,
+          price: 45_000_000,
           originalPrice: null,
           condition: 'used',
-          status: 'pending',
+          status: 'inspected_passed',
           province: 'Ho Chi Minh',
           district: 'District 1',
           frameSize: 'M',
           wheelSize: '700C',
           groupset: 'Shimano 105',
           createdAt: '2026-03-17T00:00:00Z',
-          expiresAt: null,
+          expiresAt: '2026-04-17T00:00:00Z',
           seller: {
             id: 'seller-1',
             firstName: 'Bao',
@@ -66,8 +68,14 @@ describe('AdminListingsPage', () => {
           frameMaterialName: 'Carbon',
           images: [],
           isVerified: false,
-          lockedForTransaction: false,
-          inspection: null,
+          lockedForTransaction: true,
+          inspection: {
+            id: 'inspection-1',
+            overallScore: 90,
+            passed: true,
+            validUntil: '2026-03-20T10:00:00Z',
+            createdAt: '2026-03-19T10:00:00Z',
+          },
         },
       ],
       pageable: {
@@ -96,9 +104,7 @@ describe('AdminListingsPage', () => {
       numberOfElements: 1,
       empty: false,
     })
-  })
 
-  it('loads admin listings from the API and renders product rows', async () => {
     render(<AdminListingsPage />)
 
     await waitFor(() => {
@@ -110,9 +116,96 @@ describe('AdminListingsPage', () => {
       })
     })
 
+    expect(await screen.findByText('Locked Carbon Build')).toBeInTheDocument()
+    expect(screen.getByText('Đang bị khóa bởi giao dịch mở')).toBeInTheDocument()
+    expect(screen.getByText(/Kiểm định hết hạn:/i)).toBeInTheDocument()
+    expect(screen.getByText(/Hạn tin:/i)).toBeInTheDocument()
+    expect(screen.queryByText(/Buyer không còn thấy tin này ngoài marketplace/i)).not.toBeInTheDocument()
+
+    const actionTrigger = document.querySelector('button[aria-haspopup="menu"]')
+    expect(actionTrigger).not.toBeNull()
+
+    fireEvent.pointerDown(actionTrigger as HTMLButtonElement)
+    expect(screen.queryByText('Đưa qua kiểm định')).not.toBeInTheDocument()
+  })
+
+  it('still allows routing to inspection for an expired inspection when the listing is not transaction-locked', async () => {
+    getAllMock.mockResolvedValue({
+      content: [
+        {
+          id: 'product-2',
+          title: 'Carbon Race Build',
+          description: 'Demo listing',
+          price: 45_000_000,
+          originalPrice: null,
+          condition: 'used',
+          status: 'inspected_passed',
+          province: 'Ho Chi Minh',
+          district: 'District 1',
+          frameSize: 'M',
+          wheelSize: '700C',
+          groupset: 'Shimano 105',
+          createdAt: '2026-03-17T00:00:00Z',
+          expiresAt: '2026-04-17T00:00:00Z',
+          seller: {
+            id: 'seller-1',
+            firstName: 'Bao',
+            lastName: 'Tran',
+            avatarUrl: null,
+            phone: '0909000000',
+          },
+          brandName: 'Giant',
+          categoryName: 'Road Bike',
+          brakeTypeName: 'Disc',
+          frameMaterialName: 'Carbon',
+          images: [],
+          isVerified: false,
+          lockedForTransaction: false,
+          inspection: {
+            id: 'inspection-2',
+            overallScore: 90,
+            passed: true,
+            validUntil: '2026-03-20T10:00:00Z',
+            createdAt: '2026-03-19T10:00:00Z',
+          },
+        },
+      ],
+      pageable: {
+        pageNumber: 0,
+        pageSize: 12,
+        offset: 0,
+        paged: true,
+        unpaged: false,
+        sort: {
+          empty: false,
+          sorted: true,
+          unsorted: false,
+        },
+      },
+      totalPages: 1,
+      totalElements: 1,
+      last: true,
+      size: 12,
+      number: 0,
+      sort: {
+        empty: false,
+        sorted: true,
+        unsorted: false,
+      },
+      first: true,
+      numberOfElements: 1,
+      empty: false,
+    })
+
+    render(<AdminListingsPage />)
+
     expect(await screen.findByText('Carbon Race Build')).toBeInTheDocument()
-    expect(screen.getByText('Road Bike')).toBeInTheDocument()
-    expect(screen.getByText('Bao Tran')).toBeInTheDocument()
-    expect(screen.getByText('Chờ duyệt')).toBeInTheDocument()
+    expect(screen.getByText('Hết hạn kiểm định')).toBeInTheDocument()
+
+    const actionTrigger = document.querySelector('button[aria-haspopup="menu"]')
+    expect(actionTrigger).not.toBeNull()
+
+    fireEvent.pointerDown(actionTrigger as HTMLButtonElement)
+    expect(await screen.findByText('Đưa qua kiểm định')).toBeInTheDocument()
   })
 })

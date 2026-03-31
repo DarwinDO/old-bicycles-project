@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ROUTES, buildRoute } from '@/constants/routes'
 import { formatPriceDisplay } from '@/lib/currency-input'
+import { getProductTimelineEntries } from '@/lib/product-visibility'
 import type { Product } from '@/types/product'
 import { getSellerListingStatusPresentation } from './seller-listing-visibility'
 
@@ -93,10 +94,13 @@ export default function SellerListingsPage() {
   }
 
   const filteredProducts = searchQuery
-    ? products.filter((product) =>
-        product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.id.toLowerCase().includes(searchQuery.toLowerCase()),
-      )
+    ? products.filter((product) => {
+        const normalizedQuery = searchQuery.toLowerCase()
+        return (
+          product.title.toLowerCase().includes(normalizedQuery) ||
+          product.id.toLowerCase().includes(normalizedQuery)
+        )
+      })
     : products
 
   return (
@@ -110,7 +114,8 @@ export default function SellerListingsPage() {
         </div>
         <Link to={ROUTES.SELLER_NEW_PRODUCT}>
           <Button className="w-full gap-2 sm:w-auto">
-            <PlusCircle className="h-4 w-4" /> Đăng tin mới
+            <PlusCircle className="h-4 w-4" />
+            Đăng tin mới
           </Button>
         </Link>
       </div>
@@ -190,6 +195,7 @@ export default function SellerListingsPage() {
                     statusPresentation.isPubliclyVisible &&
                     !product.sellerActionLocked
                   const canShow = product.status === 'hidden' && !product.sellerActionLocked
+                  const timelineEntries = getProductTimelineEntries(product)
 
                   return (
                     <tr key={product.id} className="border-b transition-colors hover:bg-muted/50">
@@ -208,13 +214,21 @@ export default function SellerListingsPage() {
                           )}
                           <div className="min-w-0">
                             <p className="line-clamp-1 font-medium text-foreground">{product.title}</p>
-                            <p className="truncate text-xs text-muted-foreground">
-                              #{product.id.slice(0, 8)}
-                            </p>
-                            {statusPresentation.hint && (
-                              <p className="mt-1 text-xs text-muted-foreground">
-                                {statusPresentation.hint}
+                            <p className="truncate text-xs text-muted-foreground">#{product.id.slice(0, 8)}</p>
+                            {timelineEntries.map((entry) => (
+                              <p
+                                key={`${product.id}-${entry.label}`}
+                                className={`mt-1 text-xs ${
+                                  entry.tone === 'warning'
+                                    ? 'text-amber-700 dark:text-amber-300'
+                                    : 'text-muted-foreground'
+                                }`}
+                              >
+                                <span className="font-medium">{entry.label}:</span> {entry.value}
                               </p>
+                            ))}
+                            {statusPresentation.hint && (
+                              <p className="mt-1 text-xs text-muted-foreground">{statusPresentation.hint}</p>
                             )}
                           </div>
                         </div>

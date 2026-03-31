@@ -1,3 +1,4 @@
+import { getPublicVisibilityHint, hasExpiredInspection, isBlockedFromPublicVisibility } from '@/lib/product-visibility'
 import type { Product, ProductStatus } from '@/types/product'
 
 const STATUS_CLASS: Record<ProductStatus, string> = {
@@ -36,11 +37,11 @@ export function getSellerListingStatusPresentation(product: Product): SellerList
     }
   }
 
-  if ((product.status === 'active' || product.status === 'inspected_passed') && !product.isVerified) {
+  if (isBlockedFromPublicVisibility(product)) {
     return {
-      label: 'Chưa đủ điều kiện hiển thị công khai',
+      label: hasExpiredInspection(product) ? 'Hết hạn kiểm định' : 'Chưa đủ điều kiện hiển thị công khai',
       className: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
-      hint: 'Tin chưa có inspection hợp lệ, nên seller vẫn thấy nhưng buyer chưa thấy ngoài marketplace.',
+      hint: getPublicVisibilityHint(product),
       isPubliclyVisible: false,
     }
   }

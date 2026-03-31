@@ -1,173 +1,280 @@
-# Seller Listing Public Visibility Vs Seller Action Lock Basics - 2026-03-28
+# Seller Listing Public Visibility Vs Raw Status Basics - 2026-04-01
 
 ## 1. Vấn đề là gì?
 
-Sau khi backend đổi sang flow nhiều buyer cùng gửi request mua, FE không thể tiếp tục dùng một cờ duy nhất để quyết định mọi thứ.
+Trong dự án này, một tin đăng có thể vẫn mang raw status là `active`, nhưng buyer ngoài marketplace vẫn không nhìn thấy.
 
-Nếu chỉ nhìn `lockedForTransaction`, FE rất dễ hiểu sai:
+Điều này xảy ra vì FE không được phép chỉ nhìn mỗi `product.status`. FE còn phải nhìn thêm:
 
-- listing có còn public cho buyer khác hay không
-- seller có còn được sửa, ẩn, xóa listing hay không
+- `isVerified`
+- `lockedForTransaction`
+- `sellerActionLocked`
+- `inspection.validUntil`
+- `expiresAt`
 
-Hai câu hỏi này không còn là một nữa.
+Nếu không tách các ý này ra rõ ràng, seller và admin sẽ rất dễ hiểu nhầm:
 
-## 2. Hai loại “khóa” khác nhau
+- thấy badge `Hoạt động` rồi tưởng buyer vẫn đang thấy tin
+- không biết kiểm định đã hết hạn lúc nào
+- không biết tin đăng còn hạn hiển thị đến lúc nào
 
-### `lockedForTransaction`
+## 2. Các khái niệm quan trọng
 
-Đây là khóa dành cho phía public/buyer.
+### `product.status`
 
-Khi `lockedForTransaction = true`, nghĩa là:
+Đây là trạng thái thô của tin đăng, ví dụ:
 
-- seller đã chấp nhận một request và order đó đang chờ thanh toán
-- hoặc order đã vào nhánh `deposited`
-- hoặc order đã sang `awaiting_buyer_confirmation`
+- `pending`
+- `active`
+- `hidden`
+- `pending_inspection`
+- `sold`
 
-Khi đó:
+Trạng thái này cho biết tin đang nằm ở nhánh nghiệp vụ nào, nhưng chưa đủ để kết luận buyer có đang thấy ngoài marketplace hay không.
 
-- buyer khác không còn thấy listing ngoài marketplace
-- trang detail cũng không cho tạo thêm yêu cầu mua
+### `isVerified`
 
-### `sellerActionLocked`
+Đây là cờ FE nhận từ backend để biết tin có còn đủ điều kiện hiển thị công khai hay không.
 
-Đây là khóa dành cho seller UI.
+Một tin có thể:
 
-Khi `sellerActionLocked = true`, seller chưa được:
+- `status = active`
+- nhưng `isVerified = false`
 
-- sửa tin
-- ẩn tin
-- xóa tin
+Lúc đó seller/admin vẫn thấy tin trong màn quản lý, nhưng buyer bên ngoài không thấy nữa.
 
-Lý do:
+### `inspection.validUntil`
 
-- đang có order mở liên quan đến listing
-- seller không nên đổi thông tin listing giữa lúc buyer đang chờ
+Đây là thời điểm hết hiệu lực của kết quả kiểm định.
 
-Điểm quan trọng:
+Nếu thời gian này đã qua, thì kết quả kiểm định cũ không còn dùng để cho buyer xem tin công khai nữa.
 
-- một listing có thể `sellerActionLocked = true`
-- nhưng vẫn `lockedForTransaction = false`
-- tức là seller bị khóa thao tác, còn buyer khác vẫn thấy listing ngoài marketplace
+### `expiresAt`
 
-Đó chính là giai đoạn seller đang nhận nhiều request và chưa chọn buyer.
+Đây là hạn hiển thị của tin đăng.
 
-## 3. FE đã sửa theo hướng nào?
+Seller và admin cần nhìn thấy mốc này để hiểu vòng đời của listing, thay vì chỉ nhìn một badge chung chung.
 
-### Trang/API nào tham gia?
+## 3. Luồng dữ liệu FE đi như thế nào?
 
-- `productsApi.getMine(...)`
-- `SellerListingsPage.tsx`
-- `SellerListingsSection.tsx`
-- `SellerDashboardPage.tsx`
-- `seller-listing-visibility.ts`
+### Seller listings
 
-### Data flow mới
-
-1. FE gọi `productsApi.getMine(...)`.
-2. API module chuẩn hóa dữ liệu product từ backend.
-3. Product bây giờ có thêm `sellerActionLocked`.
-4. `seller-listing-visibility.ts` suy ra:
+1. Seller mở route `/seller/listings`.
+2. FE page [SellerListingsPage.tsx](/e:/Old_bicycle_system/old-bicycles-project/fe/src/pages/seller/SellerListingsPage.tsx) gọi [products.api.ts](/e:/Old_bicycle_system/old-bicycles-project/fe/src/api/products.api.ts) với `GET /api/products/my`.
+3. API trả về danh sách `Product`, trong đó đã có:
+   - `status`
+   - `isVerified`
+   - `inspection.validUntil`
+   - `expiresAt`
+4. FE dùng [product-visibility.ts](/e:/Old_bicycle_system/old-bicycles-project/fe/src/lib/product-visibility.ts) để suy ra:
+   - hạn kiểm định
+   - hạn tin
+   - lý do vì sao buyer không còn thấy tin
+5. FE dùng [seller-listing-visibility.ts](/e:/Old_bicycle_system/old-bicycles-project/fe/src/pages/seller/seller-listing-visibility.ts) để đổi những dữ liệu đó thành:
    - `label`
    - `className`
    - `hint`
    - `isPubliclyVisible`
-5. Các page seller dùng `sellerActionLocked` để khóa nút sửa/ẩn/xóa.
-6. Dashboard seller dùng `canSellerAcceptOrder(...)` để đếm đúng “request cần phản hồi”, thay vì gom tất cả order `pending` vào cùng một nghĩa.
+6. Page render badge, hint và timeline ngay trên từng row.
 
-## 4. Vì sao không khóa theo raw `status` nữa?
+### Admin listings
 
-Vì raw `status` của product hoặc order không đủ chi tiết.
+1. Admin mở route `/admin/listings`.
+2. FE page [AdminListingsPage.tsx](/e:/Old_bicycle_system/old-bicycles-project/fe/src/pages/admin/AdminListingsPage.tsx) gọi [admin-products.api.ts](/e:/Old_bicycle_system/old-bicycles-project/fe/src/api/admin-products.api.ts) với `GET /api/admin/products`.
+3. FE dùng lại [product-visibility.ts](/e:/Old_bicycle_system/old-bicycles-project/fe/src/lib/product-visibility.ts).
+4. Nếu product đang bị khóa bởi giao dịch mở (`lockedForTransaction = true`), FE ưu tiên badge `Đang bị khóa bởi giao dịch mở`.
+5. Nếu không bị khóa giao dịch nhưng raw status vẫn thuộc nhóm public cũ và `isVerified = false`, FE đổi badge sang kiểu:
+   - `Hết hạn kiểm định`
+   - hoặc `Chưa đủ điều kiện public`
+6. FE vẫn đồng thời hiển thị dưới tên product:
+   - `Kiểm định hết hạn: ...`
+   - `Hạn tin: ...`
+7. Nghĩa là badge chính trả lời câu hỏi “admin có thao tác được không”, còn dòng timeline trả lời câu hỏi “inspection và hạn tin đang ra sao”.
+
+## 4. Helper mới làm gì?
+
+Helper chính nằm ở [product-visibility.ts](/e:/Old_bicycle_system/old-bicycles-project/fe/src/lib/product-visibility.ts).
+
+### `hasExpiredInspection(product)`
+
+Hàm này đọc `product.inspection?.validUntil`.
+
+- Nếu không có dữ liệu, trả về `false`
+- Nếu có nhưng đã nhỏ hơn thời điểm hiện tại, trả về `true`
+
+Nói dễ hiểu: hàm này chỉ trả lời câu hỏi “kiểm định này đã hết hạn chưa?”.
+
+### `getProductTimelineEntries(product)`
+
+Hàm này gom các mốc thời gian mà UI cần hiển thị.
+
+Hiện tại nó trả ra tối đa 2 mốc:
+
+- `Kiểm định hết hạn` hoặc `Hạn kiểm định`
+- `Hạn tin`
+
+Mỗi mốc có:
+
+- `label`
+- `value`
+- `tone`
+
+`tone = warning` được dùng cho trường hợp inspection đã hết hạn, để UI nhấn mạnh bằng màu cảnh báo.
+
+### `getPublicVisibilityHint(product)`
+
+Hàm này sinh ra câu giải thích dễ hiểu cho seller/admin.
 
 Ví dụ:
 
-- Product `active` không chắc buyer còn thấy ngoài marketplace
-- Order `pending` không chắc seller còn phải phản hồi
+- `Buyer không còn thấy tin này ngoài marketplace vì kiểm định đã hết hạn lúc ...`
+- hoặc `Buyer chưa thấy tin này ngoài marketplace vì tin chưa có kiểm định hợp lệ.`
 
-Sau cập nhật:
+### `getAdminListingStatusPresentation(product)`
 
-- product visibility phải nhìn thêm `lockedForTransaction`
-- seller actions phải nhìn thêm `sellerActionLocked`
-- seller dashboard phải nhìn `status + fundingStatus` của order
+Hàm này dành riêng cho màn admin.
 
-## 5. Helper mới làm gì?
+Nếu product đang có `lockedForTransaction = true`, hàm sẽ trả về:
 
-Trong `seller-listing-visibility.ts`, helper ưu tiên xử lý theo thứ tự:
+- `labelOverride = Đang bị khóa bởi giao dịch mở`
+- `hint = null`
 
-1. Nếu `lockedForTransaction = true`
-   - hiện badge kiểu “đã chốt giao dịch”
-   - `isPubliclyVisible = false`
-2. Nếu `sellerActionLocked = true`
-   - hiện badge kiểu “đang có yêu cầu mua chờ phản hồi”
-   - `isPubliclyVisible = true`
-3. Nếu listing chưa có inspection hợp lệ
-   - báo “chưa đủ điều kiện hiển thị công khai”
-4. Nếu không rơi vào các case trên
-   - mới dùng logic status bình thường
+Nếu không bị khóa giao dịch nhưng product vẫn thuộc nhóm public cũ và `isVerified = false`, hàm sẽ trả về:
 
-## 6. Ví dụ dễ hiểu
+- `labelOverride`
+- `className` cảnh báo
+- `hint`
 
-Giả sử listing đang `active` và đã verified.
+Nhờ vậy admin không còn bị lừa bởi raw status `active`, đồng thời vẫn nhìn đúng ưu tiên vận hành hiện tại.
 
-### Trường hợp A: mới có 2 buyer gửi request
+## 5. Ví dụ rất dễ hiểu
 
-Backend trả:
+Giả sử có một product như sau:
 
-- `lockedForTransaction = false`
-- `sellerActionLocked = true`
+```ts
+{
+  status: 'active',
+  isVerified: false,
+  inspection: {
+    validUntil: '2026-03-30T08:00:00Z',
+  },
+  expiresAt: '2026-04-25T08:00:00Z',
+}
+```
 
-FE phải hiểu:
+### Nếu nhìn kiểu cũ
 
-- listing vẫn public
-- seller không được sửa/ẩn/xóa
-- seller dashboard phải hiện đây là request cần phản hồi
+FE chỉ thấy:
 
-### Trường hợp B: seller đã chấp nhận 1 buyer
+- `status = active`
 
-Backend trả:
+và render:
 
-- `lockedForTransaction = true`
-- `sellerActionLocked = true`
+- badge `Hoạt động`
 
-FE phải hiểu:
+Điều này làm người xem tưởng buyer vẫn còn thấy tin.
 
-- listing không còn public
-- seller vẫn không được sửa/ẩn/xóa
-- đây không còn là “request mới”, mà là đơn đã chốt đang chờ thanh toán
+### Nếu nhìn kiểu mới
 
-## 7. File chính của lần sửa này
+FE thấy thêm:
 
-- [products.api.ts](/e:/Old_bicycle_system/old-bicycles-project/fe/src/api/products.api.ts)
-- [product.ts](/e:/Old_bicycle_system/old-bicycles-project/fe/src/types/product.ts)
-- [seller-listing-visibility.ts](/e:/Old_bicycle_system/old-bicycles-project/fe/src/pages/seller/seller-listing-visibility.ts)
+- `isVerified = false`
+- `inspection.validUntil` đã qua
+
+nên render:
+
+- badge `Hết hạn kiểm định`
+- `Kiểm định hết hạn: ...`
+- `Hạn tin: ...`
+- câu giải thích vì sao buyer không còn thấy tin
+
+### Nếu tin còn đang bị khóa giao dịch
+
+FE sẽ ưu tiên:
+
+- badge `Đang bị khóa bởi giao dịch mở`
+
+nhưng vẫn giữ:
+
+- `Kiểm định hết hạn: ...`
+- `Hạn tin: ...`
+
+Lý do là hai ý này khác nhau:
+
+- badge chính nói vì sao admin chưa xử lý được ngay
+- dòng timeline nói inspection đã hết hạn và listing còn hạn tới đâu
+
+## 6. Tại sao cách mới đúng hơn?
+
+Vì nó tách rõ 2 lớp ý nghĩa:
+
+### Lớp 1: trạng thái nghiệp vụ thô
+
+Ví dụ:
+
+- `active`
+- `hidden`
+- `pending_inspection`
+
+### Lớp 2: khả năng hiển thị công khai thật
+
+Buyer có còn thấy ngoài marketplace hay không còn phụ thuộc vào:
+
+- kiểm định còn hiệu lực không
+- listing có đang bị khóa giao dịch không
+- listing có còn đủ điều kiện public không
+
+Nếu chỉ hiển thị lớp 1 mà bỏ qua lớp 2, UI sẽ gây hiểu lầm.
+
+## 7. Những file chính của lần sửa này
+
+- [product-visibility.ts](/e:/Old_bicycle_system/old-bicycles-project/fe/src/lib/product-visibility.ts)
+- [AdminListingsPage.tsx](/e:/Old_bicycle_system/old-bicycles-project/fe/src/pages/admin/AdminListingsPage.tsx)
 - [SellerListingsPage.tsx](/e:/Old_bicycle_system/old-bicycles-project/fe/src/pages/seller/SellerListingsPage.tsx)
-- [SellerListingsSection.tsx](/e:/Old_bicycle_system/old-bicycles-project/fe/src/components/profile/SellerListingsSection.tsx)
-- [SellerDashboardPage.tsx](/e:/Old_bicycle_system/old-bicycles-project/fe/src/pages/seller/SellerDashboardPage.tsx)
+- [seller-listing-visibility.ts](/e:/Old_bicycle_system/old-bicycles-project/fe/src/pages/seller/seller-listing-visibility.ts)
+- [AdminListingsPage.test.tsx](/e:/Old_bicycle_system/old-bicycles-project/fe/src/pages/admin/AdminListingsPage.test.tsx)
+- [SellerListingsPage.test.tsx](/e:/Old_bicycle_system/old-bicycles-project/fe/src/pages/seller/SellerListingsPage.test.tsx)
+- [seller-listing-visibility.test.ts](/e:/Old_bicycle_system/old-bicycles-project/fe/src/pages/seller/seller-listing-visibility.test.ts)
 
 ## 8. Hiểu lầm dễ gặp
 
-### Hiểu lầm 1: listing public thì seller chắc chắn vẫn sửa được
+### Hiểu lầm 1: `active` là chắc chắn public
 
-Không đúng.
+Sai.
 
-Giai đoạn đang chờ seller chọn buyer là ví dụ ngược lại.
+`active` chỉ là raw status. Buyer có còn thấy hay không còn phụ thuộc vào `isVerified` và inspection còn hạn hay không.
 
-### Hiểu lầm 2: seller dashboard chỉ cần đếm order `pending`
+### Hiểu lầm 2: seller chỉ cần biết mỗi badge trạng thái
 
-Không đủ.
+Sai.
 
-`pending + unpaid` và `pending + awaiting_payment` là hai ý nghĩa khác nhau.
+Seller còn cần biết:
 
-### Hiểu lầm 3: FE chỉ cần bám raw status là đủ
+- kiểm định hết hạn lúc nào
+- tin hết hạn lúc nào
+- vì sao buyer không còn thấy tin
 
-Không đúng.
+### Hiểu lầm 3: admin badge raw status là đủ
 
-FE phải bám cả business flags mà backend tính sẵn.
+Sai.
+
+Với admin, hiển thị raw status mà không nói `public thật hay không` là rất dễ dẫn đến xử lý nhầm.
+
+### Hiểu lầm 4: nếu đã có `Đang bị khóa bởi giao dịch mở` thì không cần hiện `Kiểm định hết hạn`
+
+Sai.
+
+Hai thông tin này bổ sung cho nhau, không thay thế nhau.
+
+- `Đang bị khóa bởi giao dịch mở` là trạng thái vận hành trước mắt
+- `Kiểm định hết hạn` là trạng thái chất lượng/hiệu lực kiểm định
 
 ## 9. Kết luận ngắn
 
-Lần sửa này giúp FE bám đúng nghiệp vụ hơn:
+Lần sửa này không đổi business rule ở backend.
 
-- request mua chưa được chấp nhận vẫn có thể song song
-- listing chưa bị ẩn public ngay ở giai đoạn đó
-- seller UI vẫn bị khóa thao tác khi cần
-- dashboard seller phân biệt rõ “request cần phản hồi” với “đơn đã chốt đang chờ thanh toán”
+Nó sửa cách FE giải thích rule đó cho đúng hơn:
+
+- admin thấy đúng tình trạng `active nhưng không còn public`
+- seller thấy rõ hạn kiểm định và hạn tin
+- UI không còn gây hiểu nhầm rằng `Hoạt động` luôn đồng nghĩa với `buyer vẫn đang thấy`

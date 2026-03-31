@@ -519,6 +519,12 @@ Không yêu cầu hardware interface đặc biệt. Hệ thống hoạt động 
 |**Description**|Seller shall có thể theo dõi trạng thái kiểm định của tin đăng và chỉnh sửa/gửi lại tin khi inspection failed|
 |**Priority**|Should|
 
+**Behavior bổ sung:**
+
+- Seller listings page shall hiển thị rõ `inspection.valid_until` và `expires_at` khi dữ liệu có sẵn.
+- Nếu tin vẫn có raw status `active` hoặc `inspected_passed` nhưng `inspection.valid_until` đã hết hạn, seller UI shall giải thích rõ rằng buyer không còn thấy tin ngoài marketplace.
+- Seller UI không được chỉ hiển thị badge chung chung; phải nói rõ lý do mất public visibility khi inspection hết hạn hoặc không còn hợp lệ.
+
 
 #### **FR-SELL-007: Reply to Review**
 
@@ -891,6 +897,13 @@ Không yêu cầu hardware interface đặc biệt. Hệ thống hoạt động 
 |**ID**|FR-ADM-002|
 |**Description**|Admin shall kiểm duyệt nội dung tin đăng, từ chối hoặc chuyển tin sang inspection; không đưa thẳng public khi chưa inspection pass|
 |**Priority**|Must|
+
+**Behavior bổ sung:**
+
+- Admin listings page shall hiển thị các mốc `inspection.valid_until` và `expires_at` để admin hiểu vì sao tin đang hoặc không còn public.
+- Nếu product có raw status `active` nhưng `isVerified = false` do inspection đã hết hạn hoặc không còn hợp lệ, admin UI shall không chỉ hiển thị badge `Hoạt động` đơn thuần.
+- Admin UI shall hiển thị nhãn cảnh báo như `Hết hạn kiểm định` hoặc trạng thái tương đương để phản ánh đúng public visibility thực tế.
+- Nếu product đang bị khóa bởi giao dịch mở, admin UI shall ưu tiên badge kiểu `Đang bị khóa bởi giao dịch mở`; thông tin `inspection.valid_until` và `expires_at` vẫn phải giữ ở phần timeline/phụ trợ thay vì bị ẩn đi.
 
 
 #### **FR-ADM-003: Report Management**

@@ -1,12 +1,12 @@
 import { useDeferredValue, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { type ColumnDef } from '@tanstack/react-table'
-import { formatPriceDisplay } from '@/lib/currency-input'
 import { ClipboardCheck, Eye, EyeOff, MoreHorizontal, Search } from 'lucide-react'
 import { adminProductsApi } from '@/api/admin-products.api'
+import { StatusBadge } from '@/components/dashboard/StatusBadge'
 import { ConfirmDialog } from '@/components/dashboard/ConfirmDialog'
 import { DataTable } from '@/components/dashboard/DataTable'
-import { StatusBadge } from '@/components/dashboard/StatusBadge'
+import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,14 +21,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Button } from '@/components/ui/button'
 import { buildRoute } from '@/constants/routes'
+import { formatPriceDisplay } from '@/lib/currency-input'
+import { getAdminListingStatusPresentation, getProductTimelineEntries } from '@/lib/product-visibility'
 import type { Product, ProductStatus } from '@/types/product'
 
 type ListingAction = 'route_to_inspection' | 'hide'
 type StatusFilter = 'all' | ProductStatus
 
 const PAGE_SIZE = 12
+
 const initialDialogState: {
   open: boolean
   product: Product | null
@@ -95,7 +97,7 @@ function canRouteToInspection(product: Product) {
     return true
   }
 
-  return product.status === 'active' && !product.isVerified
+  return (product.status === 'active' || product.status === 'inspected_passed') && !product.isVerified
 }
 
 export default function AdminListingsPage() {
@@ -197,14 +199,30 @@ export default function AdminListingsPage() {
     {
       accessorKey: 'title',
       header: 'Tiêu đề',
-      cell: ({ row }) => (
-        <div>
-          <p className="font-medium">{row.original.title}</p>
-          <p className="text-xs text-muted-foreground">
-            {row.original.categoryName ?? 'Chưa gắn danh mục'}
-          </p>
-        </div>
-      ),
+      cell: ({ row }) => {
+        const timelineEntries = getProductTimelineEntries(row.original)
+
+        return (
+          <div>
+            <p className="font-medium">{row.original.title}</p>
+            <p className="text-xs text-muted-foreground">
+              {row.original.categoryName ?? 'Chưa gắn danh mục'}
+            </p>
+            {timelineEntries.map((entry) => (
+              <p
+                key={`${row.original.id}-${entry.label}`}
+                className={`mt-1 text-xs ${
+                  entry.tone === 'warning'
+                    ? 'text-amber-700 dark:text-amber-300'
+                    : 'text-muted-foreground'
+                }`}
+              >
+                <span className="font-medium">{entry.label}:</span> {entry.value}
+              </p>
+            ))}
+          </div>
+        )
+      },
     },
     {
       id: 'seller',
@@ -226,7 +244,22 @@ export default function AdminListingsPage() {
     {
       accessorKey: 'status',
       header: 'Trạng thái',
-      cell: ({ row }) => <StatusBadge status={row.original.status} />,
+      cell: ({ row }) => {
+        const statusPresentation = getAdminListingStatusPresentation(row.original)
+
+        return (
+          <div className="space-y-1">
+            <StatusBadge
+              status={statusPresentation.status}
+              className={statusPresentation.className}
+              labelOverride={statusPresentation.labelOverride}
+            />
+            {statusPresentation.hint && (
+              <p className="max-w-64 text-xs text-muted-foreground">{statusPresentation.hint}</p>
+            )}
+          </div>
+        )
+      },
     },
     {
       accessorKey: 'createdAt',
@@ -273,8 +306,7 @@ export default function AdminListingsPage() {
       <div>
         <h2 className="text-2xl font-bold text-foreground">Duyệt và điều phối kiểm định</h2>
         <p className="text-muted-foreground">
-          Mọi tin đăng phải được admin chuyển sang kiểm định trước khi đủ điều kiện hiển thị công
-          khai.
+          Mọi tin đăng phải được admin chuyển sang kiểm định trước khi đủ điều kiện hiển thị công khai.
         </p>
       </div>
 

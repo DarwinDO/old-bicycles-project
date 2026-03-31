@@ -3,6 +3,7 @@ import { AlertCircle, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { PASSWORD_POLICY_GUIDANCE } from '@/lib/password-policy'
 import type { PasswordFormData } from './profile.types'
 
 interface ProfileSecuritySectionProps {
@@ -61,6 +62,7 @@ export function ProfileSecuritySection({
               onChange={(event) => onFieldChange('newPassword', event.target.value)}
               required
             />
+            <p className="text-sm text-muted-foreground">{PASSWORD_POLICY_GUIDANCE}</p>
           </div>
 
           <div className="space-y-2">

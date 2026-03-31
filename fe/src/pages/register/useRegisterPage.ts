@@ -1,5 +1,6 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
+import { PASSWORD_POLICY_GUIDANCE, getPasswordPolicyChecks } from '@/lib/password-policy'
 import {
   INITIAL_REGISTER_FORM_DATA,
   type RegisterFormData,
@@ -9,11 +10,13 @@ import {
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-function getPasswordChecks(formData: RegisterFormData): RegisterPasswordChecks {
+function getRegisterPasswordChecks(formData: RegisterFormData): RegisterPasswordChecks {
+  const passwordChecks = getPasswordPolicyChecks(formData.password)
+
   return {
-    isPasswordValid: formData.password.length >= 8,
-    hasUppercase: /[A-Z]/.test(formData.password),
-    hasNumber: /[0-9]/.test(formData.password),
+    isPasswordValid: passwordChecks.hasMinimumLength,
+    hasUppercase: passwordChecks.hasUppercase,
+    hasNumber: passwordChecks.hasNumber,
     passwordsMatch:
       formData.password === formData.confirmPassword && formData.confirmPassword.length > 0,
   }
@@ -40,7 +43,7 @@ function getRegisterErrorMessage(
     !passwordChecks.hasUppercase ||
     !passwordChecks.hasNumber
   ) {
-    return 'Mật khẩu không đáp ứng đủ yêu cầu bảo mật.'
+    return PASSWORD_POLICY_GUIDANCE
   }
 
   if (!passwordChecks.passwordsMatch) {
@@ -55,7 +58,7 @@ function getRegisterErrorMessage(
 }
 
 function mapRegisterErrorMessage(error: unknown) {
-  let message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message
+  const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message
 
   if (!message) {
     return 'Đăng ký thất bại. Vui lòng thử lại.'
@@ -92,7 +95,7 @@ export function useRegisterPage() {
   const [success, setSuccess] = useState(false)
   const { register, resendVerification } = useAuth()
 
-  const passwordChecks = getPasswordChecks(formData)
+  const passwordChecks = getRegisterPasswordChecks(formData)
 
   function handleFieldChange(event: ChangeEvent<HTMLInputElement>) {
     const { name, value, type, checked } = event.target

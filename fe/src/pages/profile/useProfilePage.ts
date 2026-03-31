@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { wishlistApi } from '@/api/wishlist.api'
 import { productsApi } from '@/api/products.api'
+import { wishlistApi } from '@/api/wishlist.api'
 import { ROUTES } from '@/constants/routes'
 import { useAuth } from '@/contexts/AuthContext'
+import { PASSWORD_POLICY_GUIDANCE, getPasswordPolicyChecks } from '@/lib/password-policy'
 import { authService } from '@/services/authService'
 import type { Product } from '@/types/product'
 import type { WishlistItem } from '@/types/wishlist'
@@ -17,7 +18,7 @@ import {
 } from './profile.types'
 
 function mapProfileUpdateError(error: unknown) {
-  let message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message
+  const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message
 
   if (!message) {
     return 'Cập nhật thất bại. Vui lòng thử lại.'
@@ -33,7 +34,7 @@ function mapProfileUpdateError(error: unknown) {
 }
 
 function mapPasswordError(error: unknown) {
-  let message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message
+  const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message
 
   if (!message) {
     return 'Đổi mật khẩu thất bại. Vui lòng thử lại.'
@@ -210,8 +211,10 @@ export function useProfilePage() {
       return
     }
 
-    if (!passwordData.newPassword || passwordData.newPassword.length < 8) {
-      setPasswordError('Mật khẩu mới phải có ít nhất 8 ký tự.')
+    const passwordChecks = getPasswordPolicyChecks(passwordData.newPassword)
+
+    if (!passwordChecks.isValid) {
+      setPasswordError(PASSWORD_POLICY_GUIDANCE)
       return
     }
 
@@ -250,8 +253,9 @@ export function useProfilePage() {
       await wishlistApi.remove(productId)
       setWishlistItems((currentItems) => currentItems.filter((item) => item.productId !== productId))
     } catch {
-      // Giữ silent như flow cũ.
-    } finally {
+      // Preserve the previous silent failure behavior for wishlist removal.
+    }
+    finally {
       setRemovingWishlistId(null)
     }
   }
@@ -276,8 +280,9 @@ export function useProfilePage() {
         )
       }
     } catch {
-      // Giữ silent như flow cũ.
-    } finally {
+      // Preserve the previous silent failure behavior for listing visibility updates.
+    }
+    finally {
       setTogglingId(null)
     }
   }
@@ -291,7 +296,7 @@ export function useProfilePage() {
       await productsApi.delete(id)
       setListings((currentListings) => currentListings.filter((product) => product.id !== id))
     } catch {
-      // Giữ silent như flow cũ.
+      // Preserve the previous silent failure behavior for listing deletion.
     }
   }
 

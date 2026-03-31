@@ -220,6 +220,11 @@ export function useProfilePage() {
       return
     }
 
+    if (passwordData.newPassword === passwordData.currentPassword) {
+      setPasswordError('Mật khẩu mới phải khác mật khẩu hiện tại.')
+      return
+    }
+
     setPasswordError(null)
     setPasswordSuccess(false)
     setPasswordLoading(true)

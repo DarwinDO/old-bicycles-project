@@ -1,142 +1,24 @@
-import { useState } from 'react'
+import { Bike } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { AlertCircle, Bike, Check, Eye, EyeOff, Lock, Mail, Phone, User } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { ROUTES } from '@/constants/routes'
-import { cn } from '@/lib/utils'
-import { useAuth } from '@/contexts/AuthContext'
+import { RegisterForm } from './register/RegisterForm'
+import { RegisterSuccessState } from './register/RegisterSuccessState'
+import { useRegisterPage } from './register/useRegisterPage'
 
 export default function RegisterPage() {
-  const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    password: '',
-    confirmPassword: '',
-    role: 'buyer' as 'buyer' | 'seller',
-    agreeTerms: false,
-  })
-  const [showPassword, setShowPassword] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [isResending, setIsResending] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [resendError, setResendError] = useState<string | null>(null)
-  const [resendMessage, setResendMessage] = useState<string | null>(null)
-  const [success, setSuccess] = useState(false)
-  const { register, resendVerification } = useAuth()
-
-  const isPasswordValid = formData.password.length >= 8
-  const hasUppercase = /[A-Z]/.test(formData.password)
-  const hasNumber = /[0-9]/.test(formData.password)
-  const passwordsMatch = formData.password === formData.confirmPassword && formData.confirmPassword.length > 0
-
-  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = event.target
-
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }))
-  }
-
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault()
-
-    if (!formData.firstName.trim()) {
-      setError('Vui lòng nhập họ.')
-      return
-    }
-
-    if (!formData.lastName.trim()) {
-      setError('Vui lòng nhập tên.')
-      return
-    }
-
-    if (!formData.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      setError('Vui lòng nhập địa chỉ email hợp lệ (ví dụ: example@email.com).')
-      return
-    }
-
-    if (!formData.phone.trim() || !/^[0-9]{10,11}$/.test(formData.phone)) {
-      /** We conditionally validate phone if they typed something or require it */
-      // Actually phone is not strictly required by HTML5 in the old code, but if provided should be valid.
-    }
-
-    if (!isPasswordValid || !hasUppercase || !hasNumber) {
-      setError('Mật khẩu không đáp ứng đủ yêu cầu bảo mật.')
-      return
-    }
-
-    if (!passwordsMatch) {
-      setError('Mật khẩu xác nhận không khớp.')
-      return
-    }
-
-    if (!formData.agreeTerms) {
-      setError('Vui lòng đồng ý với Điều khoản sử dụng và Chính sách bảo mật.')
-      return
-    }
-
-    setError(null)
-    setIsLoading(true)
-
-    try {
-      await register({
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email,
-        phone: formData.phone,
-        password: formData.password,
-        role: formData.role,
-      })
-
-      setResendError(null)
-      setResendMessage(null)
-      setSuccess(true)
-    } catch (err: unknown) {
-      let message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
-
-      if (!message) {
-        message = 'Đăng ký thất bại. Vui lòng thử lại.'
-      } else {
-        const msgLower = message.toLowerCase()
-        if (msgLower.includes('email') && msgLower.includes('exist')) {
-          message = 'Email này đã được sử dụng. Vui lòng chọn email khác.'
-        } else if (msgLower.includes('phone') && msgLower.includes('exist')) {
-          message = 'Số điện thoại này đã được sử dụng.'
-        }
-      }
-
-      setError(message)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleResendVerification = async () => {
-    setResendError(null)
-    setResendMessage(null)
-    setIsResending(true)
-
-    try {
-      const message = await resendVerification(formData.email)
-      setResendMessage(message)
-    } catch (err: unknown) {
-      const message =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-        'Không thể gửi lại email xác thực. Vui lòng thử lại sau.'
-      setResendError(message)
-    } finally {
-      setIsResending(false)
-    }
-  }
+  const registerPage = useRegisterPage()
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/40 px-4 py-12">
+    <div className="flex min-h-screen items-center justify-center bg-muted/40 px-4 py-12">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
           <Link to={ROUTES.HOME} className="inline-flex items-center gap-2">
@@ -154,260 +36,35 @@ export default function RegisterPage() {
           </CardHeader>
 
           <CardContent>
-            {success ? (
-              <div className="flex flex-col items-center gap-4 py-6 text-center">
-                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-green-100 dark:bg-green-950">
-                  <Check className="h-7 w-7 text-green-600" />
-                </div>
-
-                <div className="space-y-2">
-                  <p className="text-lg font-semibold">Kiểm tra email để xác thực tài khoản</p>
-                  <p className="text-sm text-muted-foreground">
-                    Chúng tôi đã gửi liên kết xác thực tới <span className="font-medium text-foreground">{formData.email}</span>.
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Bạn chưa thể đăng nhập cho đến khi nhấn vào liên kết xác thực trong email.
-                  </p>
-                </div>
-
-                <div className="w-full rounded-xl border border-border/70 bg-muted/40 p-4 text-left">
-                  <p className="text-sm font-medium text-foreground">Chưa nhận được email?</p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Hãy kiểm tra thư mục Spam/Promotion. Nếu vẫn chưa thấy, bạn có thể yêu cầu gửi lại.
-                  </p>
-                  {resendMessage && <p className="mt-3 text-sm text-green-600">{resendMessage}</p>}
-                  {resendError && <p className="mt-3 text-sm text-destructive">{resendError}</p>}
-                  <Button className="mt-4 w-full" variant="outline" onClick={handleResendVerification} disabled={isResending}>
-                    {isResending ? 'Đang gửi lại email...' : 'Gửi lại email xác thực'}
-                  </Button>
-                </div>
-
-                <div className="flex w-full flex-col gap-3 sm:flex-row">
-                  <Button className="flex-1" asChild>
-                    <Link to={ROUTES.LOGIN}>Tới trang đăng nhập</Link>
-                  </Button>
-                  <Button className="flex-1" variant="outline" asChild>
-                    <Link to={ROUTES.REGISTER}>Đăng ký tài khoản khác</Link>
-                  </Button>
-                </div>
-              </div>
+            {registerPage.success ? (
+              <RegisterSuccessState
+                email={registerPage.formData.email}
+                isResending={registerPage.isResending}
+                resendError={registerPage.resendError}
+                resendMessage={registerPage.resendMessage}
+                onResendVerification={registerPage.handleResendVerification}
+                onReset={registerPage.resetForm}
+              />
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-                {error && (
-                  <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
-                    <AlertCircle className="h-4 w-4 shrink-0" />
-                    {error}
-                  </div>
-                )}
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Bạn muốn</label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setFormData((prev) => ({ ...prev, role: 'buyer' }))}
-                      className={cn(
-                        'rounded-lg border-2 p-4 text-center transition-all',
-                        formData.role === 'buyer' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50',
-                      )}
-                    >
-                      <div className="font-medium">Mua xe</div>
-                      <div className="text-sm text-muted-foreground">Tìm xe đạp phù hợp</div>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setFormData((prev) => ({ ...prev, role: 'seller' }))}
-                      className={cn(
-                        'rounded-lg border-2 p-4 text-center transition-all',
-                        formData.role === 'seller' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50',
-                      )}
-                    >
-                      <div className="font-medium">Bán xe</div>
-                      <div className="text-sm text-muted-foreground">Đăng tin bán xe</div>
-                    </button>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label htmlFor="firstName" className="text-sm font-medium">
-                    Họ
-                  </label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      id="firstName"
-                      name="firstName"
-                      placeholder="Nguyễn"
-                      className="pl-10"
-                      value={formData.firstName}
-                      onChange={handleChange}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label htmlFor="lastName" className="text-sm font-medium">
-                    Tên
-                  </label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      id="lastName"
-                      name="lastName"
-                      placeholder="Văn A"
-                      className="pl-10"
-                      value={formData.lastName}
-                      onChange={handleChange}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label htmlFor="email" className="text-sm font-medium">
-                    Email
-                  </label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      id="email"
-                      name="email"
-                      type="email"
-                      placeholder="example@email.com"
-                      className="pl-10"
-                      value={formData.email}
-                      onChange={handleChange}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label htmlFor="phone" className="text-sm font-medium">
-                    Số điện thoại
-                  </label>
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      id="phone"
-                      name="phone"
-                      type="tel"
-                      placeholder="0901234567"
-                      className="pl-10"
-                      value={formData.phone}
-                      onChange={handleChange}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label htmlFor="password" className="text-sm font-medium">
-                    Mật khẩu
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      id="password"
-                      name="password"
-                      type={showPassword ? 'text' : 'password'}
-                      placeholder="••••••••"
-                      className="pl-10 pr-10"
-                      value={formData.password}
-                      onChange={handleChange}
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
-
-                  <div className="space-y-1 text-xs">
-                    <div className={cn('flex items-center gap-1', isPasswordValid ? 'text-green-600' : 'text-muted-foreground')}>
-                      <Check className="h-3 w-3" /> Ít nhất 8 ký tự
-                    </div>
-                    <div className={cn('flex items-center gap-1', hasUppercase ? 'text-green-600' : 'text-muted-foreground')}>
-                      <Check className="h-3 w-3" /> Có chữ hoa
-                    </div>
-                    <div className={cn('flex items-center gap-1', hasNumber ? 'text-green-600' : 'text-muted-foreground')}>
-                      <Check className="h-3 w-3" /> Có số
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label htmlFor="confirmPassword" className="text-sm font-medium">
-                    Xác nhận mật khẩu
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      id="confirmPassword"
-                      name="confirmPassword"
-                      type="password"
-                      placeholder="••••••••"
-                      className="pl-10"
-                      value={formData.confirmPassword}
-                      onChange={handleChange}
-                      required
-                    />
-
-                    {formData.confirmPassword && (
-                      <div
-                        className={cn(
-                          'absolute right-3 top-1/2 -translate-y-1/2',
-                          passwordsMatch ? 'text-green-600' : 'text-red-500',
-                        )}
-                      >
-                        {passwordsMatch ? <Check className="h-4 w-4" /> : '×'}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-2">
-                  <input
-                    type="checkbox"
-                    id="agreeTerms"
-                    name="agreeTerms"
-                    checked={formData.agreeTerms}
-                    onChange={handleChange}
-                    className="mt-1 h-4 w-4 rounded border-input text-primary focus:ring-primary"
-                    required
-                  />
-                  <label htmlFor="agreeTerms" className="text-sm text-muted-foreground">
-                    Tôi đồng ý với{' '}
-                    <Link to="/terms" className="text-primary hover:underline">
-                      Điều khoản sử dụng
-                    </Link>{' '}
-                    và{' '}
-                    <Link to="/privacy" className="text-primary hover:underline">
-                      Chính sách bảo mật
-                    </Link>
-                  </label>
-                </div>
-
-                <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
-                  {isLoading ? 'Đang đăng ký...' : 'Đăng ký'}
-                </Button>
-              </form>
-            )}
-
-            {!success && (
               <>
+                <RegisterForm
+                  formData={registerPage.formData}
+                  error={registerPage.error}
+                  isLoading={registerPage.isLoading}
+                  showPassword={registerPage.showPassword}
+                  passwordChecks={registerPage.passwordChecks}
+                  onSubmit={registerPage.handleSubmit}
+                  onFieldChange={registerPage.handleFieldChange}
+                  onRoleChange={registerPage.setRole}
+                  onTogglePasswordVisibility={registerPage.togglePasswordVisibility}
+                />
+
                 <div className="relative my-6">
                   <Separator />
                   <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">
                     hoặc
                   </span>
                 </div>
-
-
               </>
             )}
           </CardContent>

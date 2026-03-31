@@ -63,11 +63,9 @@ export function HomeFeaturedProductsSection({
         <div className="mb-8 flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold text-foreground md:text-3xl">
-              Xe công khai mới cập nhật
+              Xe mới cập nhật
             </h2>
-            <p className="mt-1 text-muted-foreground">
-              Dữ liệu lấy trực tiếp từ marketplace công khai, không còn dùng mock.
-            </p>
+
           </div>
           <Button variant="ghost" asChild className="hidden md:inline-flex">
             <Link to={ROUTES.MARKET}>

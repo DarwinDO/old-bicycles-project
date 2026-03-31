@@ -7,6 +7,7 @@ export interface Conversation {
   sellerId: string
   sellerName: string
   lastMessage?: string | null
+  unreadCount?: number
   updatedAt: string
 }
 

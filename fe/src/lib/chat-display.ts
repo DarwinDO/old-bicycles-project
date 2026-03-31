@@ -13,8 +13,16 @@ export function getConversationPreview(conversation: Conversation) {
   return conversation.lastMessage?.trim() || 'Chưa có tin nhắn nào.'
 }
 
-export function shouldShowConversationInList(conversation: Conversation, selectedId: string | null) {
-  return Boolean(conversation.lastMessage?.trim()) || conversation.id === selectedId
+export function shouldShowConversationInList(_conversation: Conversation, _selectedId: string | null) {
+  return true
+}
+
+export function getConversationUnreadCount(conversation: Conversation, selectedId: string | null) {
+  if (conversation.id === selectedId) {
+    return 0
+  }
+
+  return Math.max(0, conversation.unreadCount ?? 0)
 }
 
 export function formatConversationTimestamp(value: string) {

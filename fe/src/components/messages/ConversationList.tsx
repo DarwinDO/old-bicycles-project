@@ -5,14 +5,18 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useAuth } from '@/contexts/AuthContext'
 import { chatApi } from '@/api/chat.api'
+import { authService } from '@/services/authService'
 import {
   formatConversationTimestamp,
   getConversationPartner,
   getConversationPreview,
+  getConversationUnreadCount,
   shouldShowConversationInList,
   sortConversationsNewestFirst,
 } from '@/lib/chat-display'
+import { NOTIFICATIONS_UPDATED_EVENT } from '@/lib/notification-unread'
 import { cn } from '@/lib/utils'
+import { createChatSocketClient } from '@/sockets/chat.stomp'
 import type { Conversation } from '@/types/chat'
 
 interface ConversationListProps {
@@ -35,6 +39,9 @@ export function ConversationList({ selectedId, onSelect }: ConversationListProps
     }
 
     let cancelled = false
+    let unsubscribeInbox: (() => void) | null = null
+    let disconnectSocket: (() => Promise<void>) | null = null
+    const token = authService.getToken()
 
     async function loadConversations(showLoading = false) {
       if (showLoading) {
@@ -59,17 +66,51 @@ export function ConversationList({ selectedId, onSelect }: ConversationListProps
       }
     }
 
+    async function connectInboxSocket() {
+      if (!token) {
+        return
+      }
+
+      try {
+        const socketClient = createChatSocketClient(token)
+        disconnectSocket = () => socketClient.disconnect()
+        await socketClient.connect()
+
+        if (cancelled) {
+          await socketClient.disconnect()
+          return
+        }
+
+        unsubscribeInbox = socketClient.subscribeToInbox(() => {
+          void loadConversations(false)
+        })
+      } catch {
+        // Keep polling fallback active if realtime cannot connect.
+      }
+    }
+
     void loadConversations(true)
+    void connectInboxSocket()
+
+    function handleNotificationsUpdated() {
+      void loadConversations(false)
+    }
 
     const intervalId = window.setInterval(() => {
       void loadConversations(false)
     }, 15000)
+    window.addEventListener(NOTIFICATIONS_UPDATED_EVENT, handleNotificationsUpdated)
 
     return () => {
       cancelled = true
+      unsubscribeInbox?.()
       window.clearInterval(intervalId)
+      window.removeEventListener(NOTIFICATIONS_UPDATED_EVENT, handleNotificationsUpdated)
+      if (disconnectSocket) {
+        void disconnectSocket()
+      }
     }
-  }, [user])
+  }, [selectedId, user])
 
   const visibleConversations = useMemo(() => {
     return conversations.filter((conversation) => shouldShowConversationInList(conversation, selectedId))
@@ -133,6 +174,7 @@ export function ConversationList({ selectedId, onSelect }: ConversationListProps
               const partner = user ? getConversationPartner(conversation, user.id) : null
               const partnerName = partner?.name ?? 'Người dùng'
               const partnerInitial = partnerName.slice(0, 1).toUpperCase()
+              const unreadCount = getConversationUnreadCount(conversation, selectedId)
 
               return (
                 <button
@@ -150,12 +192,24 @@ export function ConversationList({ selectedId, onSelect }: ConversationListProps
                   <div className="flex flex-1 flex-col overflow-hidden">
                     <div className="flex items-center justify-between gap-2">
                       <span className="truncate font-semibold">{partnerName}</span>
-                      <span className="whitespace-nowrap text-xs text-muted-foreground">
-                        {formatConversationTimestamp(conversation.updatedAt)}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        {unreadCount > 0 && (
+                          <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold leading-none text-primary-foreground">
+                            {unreadCount > 99 ? '99+' : unreadCount}
+                          </span>
+                        )}
+                        <span className="whitespace-nowrap text-xs text-muted-foreground">
+                          {formatConversationTimestamp(conversation.updatedAt)}
+                        </span>
+                      </div>
                     </div>
 
-                    <span className="mt-0.5 truncate text-sm text-muted-foreground">
+                    <span
+                      className={cn(
+                        'mt-0.5 truncate text-sm',
+                        unreadCount > 0 ? 'font-medium text-foreground' : 'text-muted-foreground',
+                      )}
+                    >
                       {getConversationPreview(conversation)}
                     </span>
 

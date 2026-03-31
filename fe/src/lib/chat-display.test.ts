@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   appendLiveMessage,
+  getConversationUnreadCount,
   getConversationPartner,
   getConversationPreview,
   isOwnMessage,
@@ -19,6 +20,7 @@ const sampleConversation: Conversation = {
   sellerId: 'seller-1',
   sellerName: 'Trần Hà Seller',
   lastMessage: 'Mình hẹn xem xe chiều nay nhé',
+  unreadCount: 2,
   updatedAt: '2026-03-17T10:00:00.000Z',
 }
 
@@ -62,16 +64,22 @@ describe('chat-display helpers', () => {
     ).toBe('Chưa có tin nhắn nào.')
   })
 
-  it('hides empty conversations from the list unless they are currently selected', () => {
+  it('keeps new or empty conversations visible in the list', () => {
     const emptyConversation: Conversation = {
       ...sampleConversation,
       id: 'conversation-empty',
       lastMessage: null,
+      unreadCount: 0,
     }
 
     expect(shouldShowConversationInList(sampleConversation, null)).toBe(true)
-    expect(shouldShowConversationInList(emptyConversation, null)).toBe(false)
+    expect(shouldShowConversationInList(emptyConversation, null)).toBe(true)
     expect(shouldShowConversationInList(emptyConversation, 'conversation-empty')).toBe(true)
+  })
+
+  it('hides unread badge for the currently selected conversation only', () => {
+    expect(getConversationUnreadCount(sampleConversation, null)).toBe(2)
+    expect(getConversationUnreadCount(sampleConversation, 'conversation-1')).toBe(0)
   })
 
   it('sorts conversations from newest to oldest', () => {

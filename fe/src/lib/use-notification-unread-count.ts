@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { notificationsApi } from '@/api/notifications.api'
 import { useAuth } from '@/contexts/AuthContext'
-import { NOTIFICATIONS_UPDATED_EVENT } from '@/lib/notification-unread'
+import { emitNotificationsUpdated, NOTIFICATIONS_UPDATED_EVENT } from '@/lib/notification-unread'
+import { authService } from '@/services/authService'
+import { createNotificationSocketClient } from '@/sockets/notification.stomp'
 
 const UNREAD_COUNT_POLL_INTERVAL_MS = 30_000
 
@@ -18,6 +20,8 @@ export function useNotificationUnreadCount() {
     }
 
     let cancelled = false
+    let disconnectSocket: (() => Promise<void>) | null = null
+    const token = authService.getToken()
     setUnreadCount(0)
 
     async function refreshUnreadCount() {
@@ -34,6 +38,34 @@ export function useNotificationUnreadCount() {
       }
     }
 
+    async function connectNotificationSocket() {
+      if (!token) {
+        return
+      }
+
+      try {
+        const socketClient = createNotificationSocketClient(token)
+        disconnectSocket = () => socketClient.disconnect()
+        await socketClient.connect()
+
+        if (cancelled) {
+          await socketClient.disconnect()
+          return
+        }
+
+        socketClient.subscribeToNotifications(() => {
+          if (cancelled) {
+            return
+          }
+
+          setUnreadCount((currentCount) => currentCount + 1)
+          emitNotificationsUpdated()
+        })
+      } catch {
+        // Keep polling fallback active if realtime notification socket cannot connect.
+      }
+    }
+
     function handleFocus() {
       void refreshUnreadCount()
     }
@@ -45,6 +77,7 @@ export function useNotificationUnreadCount() {
     }
 
     void refreshUnreadCount()
+    void connectNotificationSocket()
 
     const intervalId = window.setInterval(() => {
       void refreshUnreadCount()
@@ -60,6 +93,9 @@ export function useNotificationUnreadCount() {
       window.removeEventListener('focus', handleFocus)
       window.removeEventListener(NOTIFICATIONS_UPDATED_EVENT, handleFocus)
       document.removeEventListener('visibilitychange', handleVisibilityChange)
+      if (disconnectSocket) {
+        void disconnectSocket()
+      }
     }
   }, [isAuthenticated, location.pathname, user?.id])
 

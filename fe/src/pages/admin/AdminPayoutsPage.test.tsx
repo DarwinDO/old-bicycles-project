@@ -108,9 +108,9 @@ describe('AdminPayoutsPage', () => {
     expect(screen.getByText('Trek Domane AL 4')).toBeInTheDocument()
     expect(screen.getByText('Hoàn tiền buyer')).toBeInTheDocument()
     expect(screen.getByText('Chờ chuyển khoản')).toBeInTheDocument()
-    expect(document.body).toHaveTextContent('Gross:')
+    expect(document.body).toHaveTextContent('Tổng số tiền:')
     expect(document.body.textContent).toMatch(/2\.000\s₫/)
-    expect(document.body).toHaveTextContent('Fee deduction:')
+    expect(document.body).toHaveTextContent('Khoản phí khấu trừ:')
     expect(document.body.textContent).toMatch(/0\s₫/)
   })
 

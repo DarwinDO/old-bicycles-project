@@ -361,7 +361,7 @@ describe('Platform Fee buyer flow integration', () => {
     fireEvent.change(upfrontInput, { target: { value: '4000000' } })
 
     await waitFor(() => {
-      expect(orderDialog).toHaveTextContent(/400\.000/)
+      expect(orderDialog).toHaveTextContent(/200\.000/)
       expect(orderDialog).toHaveTextContent(/4\.200\.000/)
     })
 

@@ -17,6 +17,7 @@ export const ROUTES = {
   // Admin routes
   ADMIN: '/admin',
   ADMIN_USERS: '/admin/users',
+  ADMIN_ORDERS: '/admin/orders',
   ADMIN_LISTINGS: '/admin/listings',
   ADMIN_REPORTS: '/admin/reports',
   ADMIN_CATEGORIES: '/admin/categories',

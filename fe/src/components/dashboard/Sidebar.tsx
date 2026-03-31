@@ -97,23 +97,24 @@ export function Sidebar({ items }: SidebarProps) {
 }
 
 export const adminNavItems: NavItem[] = [
-  { icon: LayoutDashboard, label: 'Tổng quan', href: '/admin' },
-  { icon: Users, label: 'Người dùng', href: '/admin/users' },
-  { icon: FileText, label: 'Tin đăng', href: '/admin/listings' },
-  { icon: Flag, label: 'Báo cáo', href: '/admin/reports' },
-  { icon: Tags, label: 'Danh mục', href: '/admin/categories' },
-  { icon: Scale, label: 'Tranh chấp', href: '/admin/disputes' },
-  { icon: Wallet, label: 'Giải ngân', href: '/admin/payouts' },
+  { icon: LayoutDashboard, label: 'Tổng quan', href: ROUTES.ADMIN },
+  { icon: Users, label: 'Người dùng', href: ROUTES.ADMIN_USERS },
+  { icon: ShoppingBag, label: 'Đơn hàng', href: ROUTES.ADMIN_ORDERS },
+  { icon: FileText, label: 'Tin đăng', href: ROUTES.ADMIN_LISTINGS },
+  { icon: Flag, label: 'Báo cáo', href: ROUTES.ADMIN_REPORTS },
+  { icon: Tags, label: 'Danh mục', href: ROUTES.ADMIN_CATEGORIES },
+  { icon: Scale, label: 'Tranh chấp', href: ROUTES.ADMIN_DISPUTES },
+  { icon: Wallet, label: 'Giải ngân', href: ROUTES.ADMIN_PAYOUTS },
 ]
 
 export const inspectorNavItems: NavItem[] = [
-  { icon: LayoutDashboard, label: 'Tổng quan', href: '/inspector' },
-  { icon: ClipboardCheck, label: 'Yêu cầu kiểm định', href: '/inspector/requests' },
-  { icon: History, label: 'Lịch sử', href: '/inspector/history' },
+  { icon: LayoutDashboard, label: 'Tổng quan', href: ROUTES.INSPECTOR },
+  { icon: ClipboardCheck, label: 'Yêu cầu kiểm định', href: ROUTES.INSPECTOR_REQUESTS },
+  { icon: History, label: 'Lịch sử', href: ROUTES.INSPECTOR_HISTORY },
 ]
 
 export const sellerNavItems: NavItem[] = [
-  { icon: LayoutDashboard, label: 'Tổng quan', href: '/seller' },
-  { icon: Package, label: 'Quản lý tin đăng', href: '/seller/listings' },
-  { icon: ShoppingBag, label: 'Quản lý đơn cọc', href: '/seller/orders' },
+  { icon: LayoutDashboard, label: 'Tổng quan', href: ROUTES.SELLER },
+  { icon: Package, label: 'Quản lý tin đăng', href: ROUTES.SELLER_LISTINGS },
+  { icon: ShoppingBag, label: 'Quản lý đơn cọc', href: ROUTES.SELLER_ORDERS },
 ]

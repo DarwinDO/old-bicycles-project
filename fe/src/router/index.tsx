@@ -34,6 +34,7 @@ const MyReportsPage = lazy(() => import('../pages/MyReportsPage'));
 // Admin pages (lazy loaded)
 const AdminDashboardPage = lazy(() => import('../pages/admin/AdminDashboardPage'));
 const AdminUsersPage = lazy(() => import('../pages/admin/AdminUsersPage'));
+const AdminOrdersPage = lazy(() => import('../pages/admin/AdminOrdersPage'));
 const AdminListingsPage = lazy(() => import('../pages/admin/AdminListingsPage'));
 const AdminReportsPage = lazy(() => import('../pages/admin/AdminReportsPage'));
 const AdminCategoriesPage = lazy(() => import('../pages/admin/AdminCategoriesPage'));
@@ -140,6 +141,7 @@ export default function AppRouter() {
                 <Route element={<ProtectedRoute allowedRoles={['admin']}><AdminLayout /></ProtectedRoute>}>
                     <Route path={ROUTES.ADMIN} element={<AdminDashboardPage />} />
                     <Route path={ROUTES.ADMIN_USERS} element={<AdminUsersPage />} />
+                    <Route path={ROUTES.ADMIN_ORDERS} element={<AdminOrdersPage />} />
                     <Route path={ROUTES.ADMIN_LISTINGS} element={<AdminListingsPage />} />
                     <Route path={ROUTES.ADMIN_REPORTS} element={<AdminReportsPage />} />
                     <Route path={ROUTES.ADMIN_CATEGORIES} element={<AdminCategoriesPage />} />

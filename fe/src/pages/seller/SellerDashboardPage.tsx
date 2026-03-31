@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Clock, Eye, Loader2, Package, ShoppingBag, TrendingUp } from 'lucide-react'
+import { Clock, Eye, Loader2, Package, ShoppingBag, TrendingUp, Wallet } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { StatCard } from '@/components/dashboard/StatCard'
 import { ordersApi } from '@/api/orders.api'
@@ -74,6 +74,13 @@ export default function SellerDashboardPage() {
   const attentionOrders = incomingRequests.length > 0 ? incomingRequests : acceptedWaitingPayment
   const completedOrders = orders.filter((order) => order.status === 'completed')
   const totalRevenue = completedOrders.reduce((sum, order) => sum + order.totalAmount, 0)
+  const releasedProfit = completedOrders
+    .filter((order) => order.fundingStatus === 'released')
+    .reduce((sum, order) => sum + (order.sellerNetPayoutAmount ?? 0), 0)
+  const pendingPayoutAmount = completedOrders
+    .filter((order) => order.fundingStatus === 'seller_payout_pending')
+    .reduce((sum, order) => sum + (order.sellerNetPayoutAmount ?? 0), 0)
+  const pendingPayoutOrders = completedOrders.filter((order) => order.fundingStatus === 'seller_payout_pending').length
 
   if (isLoading) {
     return (
@@ -88,11 +95,11 @@ export default function SellerDashboardPage() {
       <div>
         <h2 className="text-2xl font-bold tracking-tight">Tổng quan cửa hàng</h2>
         <p className="text-muted-foreground">
-          Theo dõi hoạt động kinh doanh và các yêu cầu mua đang đi vào workflow giao dịch.
+          Theo dõi hoạt động kinh doanh, yêu cầu mua đang chờ xử lý và các khoản tiền seller đã nhận hoặc còn chờ giải ngân.
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <StatCard
           title="Yêu cầu cần phản hồi"
           value={String(incomingRequests.length)}
@@ -123,7 +130,23 @@ export default function SellerDashboardPage() {
           title="Doanh thu"
           value={totalRevenue > 0 ? formatPrice(totalRevenue) : '—'}
           icon={TrendingUp}
-          description="Từ các đơn hoàn tất"
+          description="Tổng giá trị xe của các đơn hoàn tất"
+        />
+        <StatCard
+          title="Seller đã thực nhận"
+          value={releasedProfit > 0 ? formatPrice(releasedProfit) : '—'}
+          icon={Wallet}
+          description="Net payout của các đơn đã released"
+        />
+        <StatCard
+          title="Chờ giải ngân"
+          value={pendingPayoutAmount > 0 ? formatPrice(pendingPayoutAmount) : '—'}
+          icon={Clock}
+          description={
+            pendingPayoutOrders > 0
+              ? `${pendingPayoutOrders} đơn đang chờ admin chuyển khoản`
+              : 'Không có khoản pending payout'
+          }
         />
       </div>
 

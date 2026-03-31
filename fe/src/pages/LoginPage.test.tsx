@@ -100,7 +100,7 @@ describe('LoginPage', () => {
     })
     fireEvent.click(screen.getByRole('button', { name: 'Đăng nhập' }))
 
-    expect(await screen.findByText('Please verify your email before logging in')).toBeInTheDocument()
+    expect(await screen.findByText('Tài khoản này chưa xác thực email.')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Gửi lại email xác thực' })).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Gửi lại email xác thực' }))

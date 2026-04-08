@@ -10,6 +10,11 @@ const completeForm = {
   categoryId: 'road-bikes',
   brandId: 'giant',
   condition: 'used',
+  frameSize: 'M',
+  wheelSize: '700c',
+  brakeTypeId: 'disc',
+  frameMaterialId: 'carbon',
+  groupsetId: 'shimano-105',
   price: '25000000',
   originalPrice: '',
   province: 'Hà Nội',
@@ -36,6 +41,25 @@ describe('sell-bike-form validation', () => {
     })
   })
 
+  it('returns missing required fields for step 2', () => {
+    expect(
+      validateSellBikeStep(2, {
+        ...completeForm,
+        frameSize: '',
+        wheelSize: '',
+        brakeTypeId: '',
+        frameMaterialId: '',
+        groupsetId: '',
+      }),
+    ).toEqual({
+      frameSize: 'Vui lòng chọn size khung.',
+      wheelSize: 'Vui lòng chọn kích thước bánh.',
+      brakeTypeId: 'Vui lòng chọn loại phanh.',
+      frameMaterialId: 'Vui lòng chọn chất liệu khung.',
+      groupsetId: 'Vui lòng chọn bộ truyền động.',
+    })
+  })
+
   it('detects missing required image slots for step 3', () => {
     expect(getMissingRequiredImageTypes([{ type: 'main' }])).toEqual(['groupset', 'serial'])
     expect(
@@ -45,6 +69,21 @@ describe('sell-bike-form validation', () => {
       }),
     ).toEqual({
       images: 'Vui lòng tải đủ 3 ảnh bắt buộc: toàn thân xe, bộ truyền động và số khung.',
+    })
+  })
+
+  it('can validate edit flow image step with at least one image', () => {
+    expect(
+      validateSellBikeStep(
+        3,
+        {
+          ...completeForm,
+          images: [],
+        },
+        { imageRequirement: 'atLeastOne' },
+      ),
+    ).toEqual({
+      images: 'Vui lòng giữ lại hoặc tải lên ít nhất 1 ảnh cho tin đăng.',
     })
   })
 
@@ -103,6 +142,37 @@ describe('sell-bike-form validation', () => {
       step: 1,
       errors: {
         title: 'Vui lòng nhập tiêu đề tin đăng.',
+      },
+    })
+  })
+
+  it('returns step 2 first when technical fields are missing', () => {
+    expect(
+      validateSellBikeForm({
+        ...completeForm,
+        frameSize: '',
+      }),
+    ).toEqual({
+      step: 2,
+      errors: {
+        frameSize: 'Vui lòng chọn size khung.',
+      },
+    })
+  })
+
+  it('returns step 3 first for edit flow when image list is empty', () => {
+    expect(
+      validateSellBikeForm(
+        {
+          ...completeForm,
+          images: [],
+        },
+        { imageRequirement: 'atLeastOne' },
+      ),
+    ).toEqual({
+      step: 3,
+      errors: {
+        images: 'Vui lòng giữ lại hoặc tải lên ít nhất 1 ảnh cho tin đăng.',
       },
     })
   })

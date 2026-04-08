@@ -9,6 +9,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
 import { ROUTES } from '@/constants/routes'
+import {
+  validateSellBikeForm,
+  validateSellBikeStep,
+  type SellBikeStep,
+  type SellBikeValidationErrors,
+  type SellBikeValidationState,
+} from '@/lib/sell-bike-form'
 import { formatCurrencyInput, parseCurrencyInput } from '@/lib/currency-input'
 import { cn } from '@/lib/utils'
 import type { ProductMutationInput } from '@/types/product'
@@ -60,7 +67,9 @@ interface SelectFieldProps {
   onChange: (value: string) => void
   options: { id: string; name: string }[]
   placeholder: string
+  required?: boolean
   loading: boolean
+  error?: string
 }
 
 function SelectField({
@@ -69,20 +78,32 @@ function SelectField({
   onChange,
   options,
   placeholder,
+  required,
   loading,
+  error,
 }: SelectFieldProps) {
   return (
     <div className="space-y-2">
-      <label className="text-sm font-medium">{label}</label>
+      <label className="text-sm font-medium">
+        {label} {required ? <span className="text-red-500">*</span> : null}
+      </label>
 
       {loading ? (
-        <div className="flex h-10 w-full items-center rounded-md border border-input bg-muted px-3 text-sm text-muted-foreground">
+        <div
+          className={cn(
+            'flex h-10 w-full items-center rounded-md border border-input bg-muted px-3 text-sm text-muted-foreground',
+            error && 'border-destructive',
+          )}
+        >
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           Đang tải...
         </div>
       ) : (
         <select
-          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+          className={cn(
+            'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring',
+            error && 'border-destructive focus:ring-destructive',
+          )}
           value={value}
           onChange={(event) => onChange(event.target.value)}
         >
@@ -94,8 +115,28 @@ function SelectField({
           ))}
         </select>
       )}
+
+      {error ? <p className="text-sm text-destructive">{error}</p> : null}
     </div>
   )
+}
+
+function toValidationState(formData: FormState): SellBikeValidationState {
+  return {
+    title: formData.title,
+    categoryId: formData.categoryId,
+    brandId: formData.brandId,
+    condition: formData.condition,
+    frameSize: formData.frameSize,
+    wheelSize: formData.wheelSize,
+    brakeTypeId: formData.brakeTypeId,
+    frameMaterialId: formData.frameMaterialId,
+    groupsetId: formData.groupsetId,
+    price: formData.price,
+    originalPrice: formData.originalPrice,
+    province: formData.province,
+    images: formData.images.map(() => ({ type: 'other' as const })),
+  }
 }
 
 export default function SellerEditProductPage() {
@@ -105,7 +146,7 @@ export default function SellerEditProductPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isLoadingProduct, setIsLoadingProduct] = useState(true)
   const [submitError, setSubmitError] = useState<string | null>(null)
-  const [priceErrors, setPriceErrors] = useState<{ price?: string; originalPrice?: string }>({})
+  const [formErrors, setFormErrors] = useState<SellBikeValidationErrors>({})
   const [formData, setFormData] = useState<FormState>({
     title: '',
     categoryId: '',
@@ -200,6 +241,11 @@ export default function SellerEditProductPage() {
 
   function handleChange<K extends keyof FormState>(name: K, value: FormState[K]) {
     setFormData((current) => ({ ...current, [name]: value }))
+    setFormErrors((current) => {
+      const nextErrors = { ...current }
+      delete nextErrors[name as keyof SellBikeValidationErrors]
+      return nextErrors
+    })
   }
 
   function handlePriceChange(field: 'price' | 'originalPrice', rawValue: string) {
@@ -222,6 +268,11 @@ export default function SellerEditProductPage() {
       ...current,
       images: [...current.images, ...newImages],
     }))
+    setFormErrors((current) => {
+      const nextErrors = { ...current }
+      delete nextErrors.images
+      return nextErrors
+    })
   }
 
   function removeImage(index: number) {
@@ -235,34 +286,39 @@ export default function SellerEditProductPage() {
     })
   }
 
+  function validateCurrentStep(currentStep: SellBikeStep) {
+    const nextErrors = validateSellBikeStep(currentStep, toValidationState(formData), {
+      imageRequirement: 'atLeastOne',
+    })
+
+    setFormErrors(nextErrors)
+    return Object.keys(nextErrors).length === 0
+  }
+
+  function handleNextStep() {
+    const currentStep = step as SellBikeStep
+
+    if (!validateCurrentStep(currentStep)) {
+      return
+    }
+
+    setSubmitError(null)
+    setStep((currentStepValue) => Math.min(4, currentStepValue + 1))
+  }
+
   async function handleSubmit() {
     if (!id) {
       return
     }
 
-    // Client-side price validation
-    const MAX_PRICE = 1_000_000_000_000
-    const nextPriceErrors: { price?: string; originalPrice?: string } = {}
-    const parsedPrice = parseCurrencyInput(formData.price)
+    const validationResult = validateSellBikeForm(toValidationState(formData), {
+      imageRequirement: 'atLeastOne',
+    })
 
-    if (!formData.price.trim() || parsedPrice === null || parsedPrice <= 0) {
-      nextPriceErrors.price = 'Vui lòng nhập giá bán hợp lệ.'
-    } else if (parsedPrice > MAX_PRICE) {
-      nextPriceErrors.price = 'Giá bán không được vượt quá 1.000 tỷ VND.'
-    }
-
-    if (formData.originalPrice.trim()) {
-      const parsedOriginalPrice = parseCurrencyInput(formData.originalPrice)
-
-      if (parsedOriginalPrice !== null && parsedOriginalPrice > MAX_PRICE) {
-        nextPriceErrors.originalPrice = 'Giá gốc không được vượt quá 1.000 tỷ VND.'
-      }
-    }
-
-    setPriceErrors(nextPriceErrors)
-
-    if (Object.keys(nextPriceErrors).length > 0) {
-      setStep(4)
+    if (validationResult) {
+      setFormErrors(validationResult.errors)
+      setStep(validationResult.step)
+      setSubmitError('Vui lòng hoàn thành các mục bắt buộc trước khi lưu thay đổi.')
       return
     }
 
@@ -385,14 +441,14 @@ export default function SellerEditProductPage() {
                 {item.label}
               </span>
 
-              {index < steps.length - 1 && (
+              {index < steps.length - 1 ? (
                 <div className={cn('mx-2 h-1 w-12 rounded sm:w-24', step > item.num ? 'bg-primary' : 'bg-muted')} />
-              )}
+              ) : null}
             </div>
           ))}
         </div>
 
-        {step === 1 && (
+        {step === 1 ? (
           <Card>
             <CardHeader>
               <CardTitle>Thông tin cơ bản</CardTitle>
@@ -403,7 +459,12 @@ export default function SellerEditProductPage() {
                 <label className="text-sm font-medium">
                   Tiêu đề tin đăng <span className="text-red-500">*</span>
                 </label>
-                <Input value={formData.title} onChange={(event) => handleChange('title', event.target.value)} />
+                <Input
+                  className={cn(formErrors.title && 'border-destructive focus-visible:ring-destructive')}
+                  value={formData.title}
+                  onChange={(event) => handleChange('title', event.target.value)}
+                />
+                {formErrors.title ? <p className="text-sm text-destructive">{formErrors.title}</p> : null}
               </div>
 
               <SelectField
@@ -412,7 +473,9 @@ export default function SellerEditProductPage() {
                 onChange={(value) => handleChange('categoryId', value)}
                 options={categories}
                 placeholder="Chọn danh mục"
+                required
                 loading={referenceLoading}
+                error={formErrors.categoryId}
               />
 
               <SelectField
@@ -421,11 +484,15 @@ export default function SellerEditProductPage() {
                 onChange={(value) => handleChange('brandId', value)}
                 options={brands}
                 placeholder="Chọn thương hiệu"
+                required
                 loading={referenceLoading}
+                error={formErrors.brandId}
               />
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">Tình trạng</label>
+                <label className="text-sm font-medium">
+                  Tình trạng <span className="text-red-500">*</span>
+                </label>
                 <div className="flex flex-wrap gap-2">
                   {CONDITION_OPTIONS.map((condition) => (
                     <Button
@@ -439,6 +506,7 @@ export default function SellerEditProductPage() {
                     </Button>
                   ))}
                 </div>
+                {formErrors.condition ? <p className="text-sm text-destructive">{formErrors.condition}</p> : null}
               </div>
 
               <div className="space-y-2">
@@ -451,9 +519,9 @@ export default function SellerEditProductPage() {
               </div>
             </CardContent>
           </Card>
-        )}
+        ) : null}
 
-        {step === 2 && (
+        {step === 2 ? (
           <Card>
             <CardHeader>
               <CardTitle>Thông số kỹ thuật</CardTitle>
@@ -461,7 +529,9 @@ export default function SellerEditProductPage() {
             <CardContent className="space-y-6">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Size khung</label>
+                  <label className="text-sm font-medium">
+                    Size khung <span className="text-red-500">*</span>
+                  </label>
                   <div className="flex flex-wrap gap-2">
                     {FRAME_SIZES.map((frameSize) => (
                       <Button
@@ -475,10 +545,13 @@ export default function SellerEditProductPage() {
                       </Button>
                     ))}
                   </div>
+                  {formErrors.frameSize ? <p className="text-sm text-destructive">{formErrors.frameSize}</p> : null}
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Kích thước bánh</label>
+                  <label className="text-sm font-medium">
+                    Kích thước bánh <span className="text-red-500">*</span>
+                  </label>
                   <div className="flex flex-wrap gap-2">
                     {WHEEL_SIZES.map((wheelSize) => (
                       <Button
@@ -492,6 +565,7 @@ export default function SellerEditProductPage() {
                       </Button>
                     ))}
                   </div>
+                  {formErrors.wheelSize ? <p className="text-sm text-destructive">{formErrors.wheelSize}</p> : null}
                 </div>
               </div>
 
@@ -502,7 +576,9 @@ export default function SellerEditProductPage() {
                   onChange={(value) => handleChange('brakeTypeId', value)}
                   options={brakeTypes}
                   placeholder="Chọn loại phanh"
+                  required
                   loading={referenceLoading}
+                  error={formErrors.brakeTypeId}
                 />
 
                 <SelectField
@@ -511,14 +587,21 @@ export default function SellerEditProductPage() {
                   onChange={(value) => handleChange('frameMaterialId', value)}
                   options={frameMaterials}
                   placeholder="Chọn chất liệu"
+                  required
                   loading={referenceLoading}
+                  error={formErrors.frameMaterialId}
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">Bộ truyền động</label>
+                <label className="text-sm font-medium">
+                  Bộ truyền động <span className="text-red-500">*</span>
+                </label>
                 <select
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  className={cn(
+                    'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring',
+                    formErrors.groupsetId && 'border-destructive focus:ring-destructive',
+                  )}
                   value={formData.groupsetId}
                   onChange={(event) => handleChange('groupsetId', event.target.value)}
                 >
@@ -529,12 +612,13 @@ export default function SellerEditProductPage() {
                     </option>
                   ))}
                 </select>
+                {formErrors.groupsetId ? <p className="text-sm text-destructive">{formErrors.groupsetId}</p> : null}
               </div>
             </CardContent>
           </Card>
-        )}
+        ) : null}
 
-        {step === 3 && (
+        {step === 3 ? (
           <Card>
             <CardHeader>
               <CardTitle>Hình ảnh</CardTitle>
@@ -553,6 +637,7 @@ export default function SellerEditProductPage() {
                   <div key={image.isNew ? image.preview : image.id} className="relative aspect-square overflow-hidden rounded-lg border">
                     <img src={image.isNew ? image.preview : image.url} alt="" className="h-full w-full object-cover" />
                     <button
+                      type="button"
                       onClick={() => removeImage(index)}
                       className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white"
                     >
@@ -567,11 +652,13 @@ export default function SellerEditProductPage() {
                   <input type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} />
                 </label>
               </div>
+
+              {formErrors.images ? <p className="text-sm text-destructive">{formErrors.images}</p> : null}
             </CardContent>
           </Card>
-        )}
+        ) : null}
 
-        {step === 4 && (
+        {step === 4 ? (
           <Card>
             <CardHeader>
               <CardTitle>Giá bán & địa điểm</CardTitle>
@@ -586,12 +673,14 @@ export default function SellerEditProductPage() {
                     type="text"
                     inputMode="numeric"
                     placeholder="VD: 25.000.000"
-                    className={cn(priceErrors.price && 'border-destructive focus-visible:ring-destructive')}
+                    className={cn(formErrors.price && 'border-destructive focus-visible:ring-destructive')}
                     value={formData.price}
                     onChange={(event) => handlePriceChange('price', event.target.value)}
                   />
-                  <p className="text-xs text-muted-foreground">Số tiền sẽ được tự động định dạng theo VND để người mua dễ đọc.</p>
-                  {priceErrors.price ? <p className="text-sm text-destructive">{priceErrors.price}</p> : null}
+                  <p className="text-xs text-muted-foreground">
+                    Số tiền sẽ được tự động định dạng theo VND để người mua dễ đọc.
+                  </p>
+                  {formErrors.price ? <p className="text-sm text-destructive">{formErrors.price}</p> : null}
                 </div>
 
                 <div className="space-y-2">
@@ -600,11 +689,11 @@ export default function SellerEditProductPage() {
                     type="text"
                     inputMode="numeric"
                     placeholder="VD: 36.000.000"
-                    className={cn(priceErrors.originalPrice && 'border-destructive focus-visible:ring-destructive')}
+                    className={cn(formErrors.originalPrice && 'border-destructive focus-visible:ring-destructive')}
                     value={formData.originalPrice}
                     onChange={(event) => handlePriceChange('originalPrice', event.target.value)}
                   />
-                  {priceErrors.originalPrice ? <p className="text-sm text-destructive">{priceErrors.originalPrice}</p> : null}
+                  {formErrors.originalPrice ? <p className="text-sm text-destructive">{formErrors.originalPrice}</p> : null}
                 </div>
               </div>
 
@@ -615,14 +704,16 @@ export default function SellerEditProductPage() {
                 district={formData.district}
                 onProvinceChange={(value) => handleChange('province', value)}
                 onDistrictChange={(value) => handleChange('district', value)}
+                provinceRequired
+                provinceError={formErrors.province}
               />
 
-              {submitError && (
+              {submitError ? (
                 <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{submitError}</div>
-              )}
+              ) : null}
             </CardContent>
           </Card>
-        )}
+        ) : null}
 
         <div className="mt-6 flex justify-between">
           <Button
@@ -634,7 +725,7 @@ export default function SellerEditProductPage() {
           </Button>
 
           {step < 4 ? (
-            <Button onClick={() => setStep((currentStep) => currentStep + 1)}>Tiếp tục</Button>
+            <Button onClick={handleNextStep}>Tiếp tục</Button>
           ) : (
             <Button onClick={() => void handleSubmit()} disabled={isSubmitting}>
               {isSubmitting ? (
